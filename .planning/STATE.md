@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-05)
 
 **Core value:** Developers can drop an AI character into their Unity scene and have it talking -- with synchronized voice, text, and animation events -- in minutes, not weeks.
-**Current focus:** Phase 4 - Function Calling and Conversational Goals
+**Current focus:** Phase 4 complete. Next: Phase 5 - Chirp TTS Voice Backend
 
 ## Current Position
 
-Phase: 4 of 6 (Function Calling and Conversational Goals)
-Plan: 2 of 3 in current phase
-Status: In progress
-Last activity: 2026-02-05 -- Completed 04-02-PLAN.md
+Phase: 4 of 6 (Function Calling and Conversational Goals) -- COMPLETE
+Plan: 3 of 3 in phase 4 (complete)
+Status: Phase complete
+Last activity: 2026-02-05 -- Completed 04-03-PLAN.md
 
-Progress: [███████░░░] 71%
+Progress: [████████░░] 78%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 10
+- Total plans completed: 11
 - Average duration: 1.5 min
-- Total execution time: 0.25 hours
+- Total execution time: 0.28 hours
 
 **By Phase:**
 
@@ -30,10 +30,10 @@ Progress: [███████░░░] 71%
 | 1 | 3/3 | 5 min | 1.7 min |
 | 2 | 3/3 | 5 min | 1.7 min |
 | 3 | 2/2 | 4 min | 2.0 min |
-| 4 | 2/3 | 2 min | 1.0 min |
+| 4 | 3/3 | 5 min | 1.7 min |
 
 **Recent Trend:**
-- Last 5 plans: 03-01 (2 min), 03-02 (2 min), 04-01 (1 min), 04-02 (1 min)
+- Last 5 plans: 03-02 (2 min), 04-01 (1 min), 04-02 (1 min), 04-03 (3 min)
 - Trend: stable
 
 *Updated after each plan completion*
@@ -81,6 +81,10 @@ Recent decisions affecting current work:
 - [04-02]: ConversationalGoal is a class (not struct) -- reference type with identity, managed in a list
 - [04-02]: GoalManager is plain C# (no Unity/Firebase) -- same pattern as PacketAssembler
 - [04-02]: Priority ordering via sequential iteration per level -- zero allocations versus sorting
+- [04-03]: SystemInstructionBuilder.BuildInstructionText is internal (not private) -- PersonaSession needs raw string for mid-session role system ModelContent
+- [04-03]: HandleSyncPacket intercepts FunctionCall packets before forwarding to OnSyncPacket -- developers can still observe function calls
+- [04-03]: SendGoalUpdate uses role system ModelContent with REPLACE semantics -- fallback is disconnect/reconnect if rejected
+- [04-03]: Connect() uses Build(_config, _goalManager) ensuring pre-connect goals are included in initial instruction
 
 ### Pending Todos
 
@@ -94,5 +98,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-05
-Stopped at: Completed 04-02-PLAN.md
+Stopped at: Completed 04-03-PLAN.md (Phase 4 complete)
 Resume file: None

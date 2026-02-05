@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Foundation and Core Session** - UPM structure, threading, persona config, and Gemini Live session lifecycle
 - [x] **Phase 2: Audio Pipeline** - Microphone capture, streaming playback via ring buffer, and Gemini native audio voice path
 - [x] **Phase 3: Synchronization** - PacketAssembler correlates text, audio, and event timing into unified packets
-- [ ] **Phase 4: Function Calling and Conversational Goals** - AI-triggered game actions via C# delegates and goal-driven conversation steering
+- [x] **Phase 4: Function Calling and Conversational Goals** - AI-triggered game actions via C# delegates and goal-driven conversation steering
 - [ ] **Phase 5: Chirp TTS Voice Backend** - Alternative voice path via Cloud TTS HTTP API with per-persona backend selection
 - [ ] **Phase 6: Sample Scene and Integration** - Sample scene demonstrating the full pipeline end-to-end
 
@@ -85,7 +85,7 @@ Plans:
 Plans:
 - [x] 04-01-PLAN.md -- FunctionCallContext typed argument wrapper and FunctionRegistry with registration, freeze, build, and cancellation
 - [x] 04-02-PLAN.md -- GoalPriority enum, ConversationalGoal data class, and GoalManager with lifecycle and instruction composition
-- [ ] 04-03-PLAN.md -- PersonaSession and SystemInstructionBuilder integration: function dispatch, response round-trip, goal API, mid-session updates
+- [x] 04-03-PLAN.md -- PersonaSession and SystemInstructionBuilder integration: function dispatch, response round-trip, goal API, mid-session updates
 
 ### Phase 5: Chirp TTS Voice Backend
 **Goal**: Developer can select Chirp 3 HD as the voice backend for a persona, getting access to 30+ high-quality voices as an alternative to Gemini native audio
@@ -125,6 +125,6 @@ Note: Phase 4 and Phase 5 can execute in parallel (config parallelization: enabl
 | 1. Foundation and Core Session | 3/3 | Complete | 2026-02-05 |
 | 2. Audio Pipeline | 3/3 | Complete | 2026-02-05 |
 | 3. Synchronization | 2/2 | Complete | 2026-02-05 |
-| 4. Function Calling and Conversational Goals | 2/3 | In progress | - |
+| 4. Function Calling and Conversational Goals | 3/3 | Complete | 2026-02-05 |
 | 5. Chirp TTS Voice Backend | 0/2 | Not started | - |
 | 6. Sample Scene and Integration | 0/1 | Not started | - |
