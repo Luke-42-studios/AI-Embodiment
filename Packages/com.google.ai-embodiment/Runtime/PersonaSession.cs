@@ -359,6 +359,22 @@ namespace AIEmbodiment
 
             if (response.Message is LiveSessionContent content)
             {
+                // Route audio to playback component (VOICE-01: Gemini native audio path)
+                var audioChunks = response.AudioAsFloat;
+                if (audioChunks != null && audioChunks.Count > 0 && _audioPlayback != null)
+                {
+                    foreach (var chunk in audioChunks)
+                    {
+                        _audioPlayback.EnqueueAudio(chunk);
+                    }
+                    // Track AI speaking state
+                    if (!_aiSpeaking)
+                    {
+                        _aiSpeaking = true;
+                        MainThreadDispatcher.Enqueue(() => OnAISpeakingStarted?.Invoke());
+                    }
+                }
+
                 if (!string.IsNullOrEmpty(text))
                 {
                     MainThreadDispatcher.Enqueue(() => OnTextReceived?.Invoke(text));
@@ -366,11 +382,26 @@ namespace AIEmbodiment
 
                 if (content.TurnComplete)
                 {
+                    if (_aiSpeaking)
+                    {
+                        _aiSpeaking = false;
+                        MainThreadDispatcher.Enqueue(() => OnAISpeakingStopped?.Invoke());
+                    }
                     MainThreadDispatcher.Enqueue(() => OnTurnComplete?.Invoke());
                 }
 
                 if (content.Interrupted)
                 {
+                    // Clear buffered audio on barge-in (Research Pitfall 9)
+                    if (_audioPlayback != null)
+                    {
+                        _audioPlayback.ClearBuffer();
+                    }
+                    if (_aiSpeaking)
+                    {
+                        _aiSpeaking = false;
+                        MainThreadDispatcher.Enqueue(() => OnAISpeakingStopped?.Invoke());
+                    }
                     MainThreadDispatcher.Enqueue(() => OnInterrupted?.Invoke());
                 }
 
