@@ -125,6 +125,6 @@ Note: Phase 4 and Phase 5 can execute in parallel (config parallelization: enabl
 | 1. Foundation and Core Session | 3/3 | Complete | 2026-02-05 |
 | 2. Audio Pipeline | 3/3 | Complete | 2026-02-05 |
 | 3. Synchronization | 2/2 | Complete | 2026-02-05 |
-| 4. Function Calling and Conversational Goals | 0/3 | Not started | - |
+| 4. Function Calling and Conversational Goals | 1/3 | In progress | - |
 | 5. Chirp TTS Voice Backend | 0/2 | Not started | - |
 | 6. Sample Scene and Integration | 0/1 | Not started | - |
