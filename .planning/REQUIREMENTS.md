@@ -1,0 +1,137 @@
+# Requirements: AI Embodiment
+
+**Defined:** 2026-02-05
+**Core Value:** Developers can drop an AI character into their Unity scene and have it talking — with synchronized voice, text, and animation events — in minutes, not weeks.
+
+## v1 Requirements
+
+### Core Session
+
+- [ ] **SESS-01**: Developer can create a PersonaConfig ScriptableObject with personality fields (archetype, traits, backstory, speech patterns)
+- [ ] **SESS-02**: Developer can select Gemini model in PersonaConfig (e.g., gemini-2.0-flash-exp, gemini-2.5-flash-native-audio)
+- [ ] **SESS-03**: Developer can select voice backend and voice name in PersonaConfig (Gemini native or Chirp)
+- [ ] **SESS-04**: Developer can add PersonaSession MonoBehaviour to a GameObject and assign a PersonaConfig
+- [ ] **SESS-05**: PersonaSession.Connect() establishes a Gemini Live session via Firebase AI Logic
+- [ ] **SESS-06**: PersonaSession handles the receive loop lifecycle (re-calls ReceiveAsync after each TurnComplete)
+- [ ] **SESS-07**: Thread-safe dispatcher marshals Firebase background callbacks to Unity main thread
+- [ ] **SESS-08**: PersonaSession fires state change events (Connecting, Connected, Error, Disconnected)
+- [ ] **SESS-09**: PersonaSession.Disconnect() cleanly closes the session
+
+### Audio Pipeline
+
+- [ ] **AUDIO-01**: AudioCapture component records from Unity Microphone API at 16kHz mono PCM
+- [ ] **AUDIO-02**: AudioCapture streams PCM data to PersonaSession for sending to Gemini Live
+- [ ] **AUDIO-03**: AudioPlayback component plays AI voice through a Unity AudioSource
+- [ ] **AUDIO-04**: AudioPlayback uses ring buffer for streaming real-time PCM without gaps or pops
+
+### Voice Backends
+
+- [ ] **VOICE-01**: Gemini native audio path — audio received directly from LiveSession response
+- [ ] **VOICE-02**: Chirp 3 HD TTS path — text from LiveSession sent via HTTP to Cloud TTS, PCM audio returned
+- [ ] **VOICE-03**: Voice backend selected per-persona in ScriptableObject config
+- [ ] **VOICE-04**: ChirpTTSClient handles HTTP requests to texttospeech.googleapis.com via UnityWebRequest
+
+### Synchronization
+
+- [ ] **SYNC-01**: PacketAssembler correlates text chunks, audio data, and emote timing into unified SyncPackets
+- [ ] **SYNC-02**: SyncPackets expose text, audio, and function call events with timing information
+- [ ] **SYNC-03**: PacketAssembler works for both voice paths (Gemini native audio and Chirp TTS)
+
+### Function Calling
+
+- [ ] **FUNC-01**: Developer can declare function schemas (name, parameters, description) on PersonaSession
+- [ ] **FUNC-02**: Developer registers C# delegate handlers for each declared function
+- [ ] **FUNC-03**: When AI triggers a function call, the registered delegate fires with parsed arguments
+- [ ] **FUNC-04**: Built-in emote function with animation name enum as a reference implementation
+
+### Conversational Goals
+
+- [ ] **GOAL-01**: Developer can define conversational goals on a persona (objective text, priority level)
+- [ ] **GOAL-02**: Goal priorities (low, medium, high) control how urgently the AI steers conversation toward the goal
+- [ ] **GOAL-03**: Developer can add, remove, and reprioritize goals at runtime via API
+- [ ] **GOAL-04**: System instruction builder folds active goals into the prompt with urgency-appropriate framing
+- [ ] **GOAL-05**: AI signals goal completion via a built-in function call (e.g., goal_reached("goal_id"))
+
+### Packaging
+
+- [ ] **PKG-01**: Project structured as UPM package (Runtime/, Samples~/, package.json, asmdef)
+- [ ] **PKG-02**: Sample scene demonstrates full pipeline — persona talking with animation function calls
+
+## v2 Requirements
+
+### Persistence
+
+- **PERSIST-01**: Conversation history saved across sessions
+- **PERSIST-02**: SQLite or similar local storage for conversation memory
+- **PERSIST-03**: Memory context injected into system instruction
+
+### Voice Cloning
+
+- **CLONE-01**: Instant Custom Voice (ICV) support for Chirp 3 HD
+- **CLONE-02**: Developer can provide voice cloning key for custom voices
+
+### Editor Tools
+
+- **EDIT-01**: Custom Inspector for PersonaConfig with personality preview
+- **EDIT-02**: Live testing window — talk to persona in Editor without entering Play Mode
+
+### Advanced Audio
+
+- **ADVAUD-01**: Platform-specific native audio plugins for lower latency
+- **ADVAUD-02**: Automatic sample rate conversion across all boundaries
+
+## Out of Scope
+
+| Feature | Reason |
+|---------|--------|
+| Runtime voice switching mid-session | Voice is set per-persona at connect time — simpler architecture |
+| Visual UI components (chat window, text input) | Headless library — devs build their own UI |
+| OAuth/service account auth | Devs configure Firebase project auth separately |
+| Mobile-specific optimizations | Desktop-first for v1, mobile tested but not optimized |
+| Multi-persona conversations | Single persona per session for v1 |
+| Language translation | Out of scope — persona speaks one language |
+
+## Traceability
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| SESS-01 | — | Pending |
+| SESS-02 | — | Pending |
+| SESS-03 | — | Pending |
+| SESS-04 | — | Pending |
+| SESS-05 | — | Pending |
+| SESS-06 | — | Pending |
+| SESS-07 | — | Pending |
+| SESS-08 | — | Pending |
+| SESS-09 | — | Pending |
+| AUDIO-01 | — | Pending |
+| AUDIO-02 | — | Pending |
+| AUDIO-03 | — | Pending |
+| AUDIO-04 | — | Pending |
+| VOICE-01 | — | Pending |
+| VOICE-02 | — | Pending |
+| VOICE-03 | — | Pending |
+| VOICE-04 | — | Pending |
+| SYNC-01 | — | Pending |
+| SYNC-02 | — | Pending |
+| SYNC-03 | — | Pending |
+| FUNC-01 | — | Pending |
+| FUNC-02 | — | Pending |
+| FUNC-03 | — | Pending |
+| FUNC-04 | — | Pending |
+| GOAL-01 | — | Pending |
+| GOAL-02 | — | Pending |
+| GOAL-03 | — | Pending |
+| GOAL-04 | — | Pending |
+| GOAL-05 | — | Pending |
+| PKG-01 | — | Pending |
+| PKG-02 | — | Pending |
+
+**Coverage:**
+- v1 requirements: 31 total
+- Mapped to phases: 0
+- Unmapped: 31 ⚠️
+
+---
+*Requirements defined: 2026-02-05*
+*Last updated: 2026-02-05 after initial definition*
