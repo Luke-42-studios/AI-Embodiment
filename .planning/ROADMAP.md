@@ -95,11 +95,12 @@ Plans:
   1. ChirpTTSClient sends text to Cloud TTS API via UnityWebRequest and returns PCM audio
   2. When a persona is configured with Chirp backend, text from Gemini Live is routed to Chirp TTS instead of using inline audio
   3. Voice backend selection (Gemini native vs Chirp) is configured per-persona in the ScriptableObject and applied at session creation time
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 05-01: ChirpTTSClient HTTP integration
-- [ ] 05-02: Voice backend router and per-persona selection
+- [ ] 05-01-PLAN.md -- ChirpTTSClient HTTP client and ChirpVoiceList static voice/language data
+- [ ] 05-02-PLAN.md -- PersonaConfig Chirp fields and PersonaConfigEditor custom Inspector with voice dropdowns
+- [ ] 05-03-PLAN.md -- PersonaSession Chirp TTS routing: audio discard, transcription-driven synthesis, sentence and full-response modes
 
 ### Phase 6: Sample Scene and Integration
 **Goal**: Developer can install the package and run a sample scene that demonstrates the full pipeline -- persona talking with synchronized voice, text, and animation function calls -- in under 5 minutes
@@ -126,5 +127,5 @@ Note: Phase 4 and Phase 5 can execute in parallel (config parallelization: enabl
 | 2. Audio Pipeline | 3/3 | Complete | 2026-02-05 |
 | 3. Synchronization | 2/2 | Complete | 2026-02-05 |
 | 4. Function Calling and Conversational Goals | 3/3 | Complete | 2026-02-05 |
-| 5. Chirp TTS Voice Backend | 0/2 | Not started | - |
+| 5. Chirp TTS Voice Backend | 0/3 | Planned | - |
 | 6. Sample Scene and Integration | 0/1 | Not started | - |
