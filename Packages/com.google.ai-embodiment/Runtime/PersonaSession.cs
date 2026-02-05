@@ -67,6 +67,7 @@ namespace AIEmbodiment
         private LiveSession _liveSession;
         private PacketAssembler _packetAssembler;
         private bool _aiSpeaking;
+        private bool _turnStarted;
         private bool _userSpeaking;
         private bool _isListening;
 
@@ -392,17 +393,34 @@ namespace AIEmbodiment
             {
                 // Route audio to playback component (VOICE-01: Gemini native audio path)
                 var audioChunks = response.AudioAsFloat;
-                if (audioChunks != null && audioChunks.Count > 0 && _audioPlayback != null)
+                if (audioChunks != null && audioChunks.Count > 0)
                 {
-                    foreach (var chunk in audioChunks)
+                    if (_audioPlayback != null)
                     {
-                        _audioPlayback.EnqueueAudio(chunk);
+                        foreach (var chunk in audioChunks)
+                        {
+                            _audioPlayback.EnqueueAudio(chunk);
+                        }
                     }
                     // Track AI speaking state
                     if (!_aiSpeaking)
                     {
                         _aiSpeaking = true;
                         MainThreadDispatcher.Enqueue(() => OnAISpeakingStarted?.Invoke());
+                    }
+
+                    // Detect turn start on first audio data
+                    if (!_turnStarted)
+                    {
+                        _turnStarted = true;
+                        MainThreadDispatcher.Enqueue(() => _packetAssembler?.StartTurn());
+                    }
+
+                    // Route audio to PacketAssembler (via main thread) for sync packets
+                    foreach (var chunk in audioChunks)
+                    {
+                        var localChunk = chunk;
+                        MainThreadDispatcher.Enqueue(() => _packetAssembler?.AddAudio(localChunk));
                     }
                 }
 
@@ -419,6 +437,9 @@ namespace AIEmbodiment
                         MainThreadDispatcher.Enqueue(() => OnAISpeakingStopped?.Invoke());
                     }
                     MainThreadDispatcher.Enqueue(() => OnTurnComplete?.Invoke());
+
+                    _turnStarted = false;
+                    MainThreadDispatcher.Enqueue(() => _packetAssembler?.FinishTurn());
                 }
 
                 if (content.Interrupted)
@@ -434,6 +455,9 @@ namespace AIEmbodiment
                         MainThreadDispatcher.Enqueue(() => OnAISpeakingStopped?.Invoke());
                     }
                     MainThreadDispatcher.Enqueue(() => OnInterrupted?.Invoke());
+
+                    _turnStarted = false;
+                    MainThreadDispatcher.Enqueue(() => _packetAssembler?.CancelTurn());
                 }
 
                 if (content.InputTranscription.HasValue)
@@ -446,11 +470,32 @@ namespace AIEmbodiment
                 {
                     string transcript = content.OutputTranscription.Value.Text;
                     MainThreadDispatcher.Enqueue(() => OnOutputTranscription?.Invoke(transcript));
+
+                    // Detect turn start on first transcription data
+                    if (!_turnStarted)
+                    {
+                        _turnStarted = true;
+                        MainThreadDispatcher.Enqueue(() => _packetAssembler?.StartTurn());
+                    }
+
+                    // Route to PacketAssembler for sentence-boundary subtitle packets
+                    string transcriptForAssembler = transcript;
+                    MainThreadDispatcher.Enqueue(() => _packetAssembler?.AddTranscription(transcriptForAssembler));
                 }
             }
-            else if (response.Message is LiveSessionToolCall)
+            else if (response.Message is LiveSessionToolCall toolCall)
             {
-                Debug.Log("PersonaSession: Tool call received (not implemented until Phase 4)");
+                // Route function calls to PacketAssembler (Phase 4 will fully implement handlers)
+                if (toolCall.FunctionCalls != null)
+                {
+                    foreach (var fc in toolCall.FunctionCalls)
+                    {
+                        var name = fc.Name;
+                        var args = fc.Args;
+                        var id = fc.Id;
+                        MainThreadDispatcher.Enqueue(() => _packetAssembler?.AddFunctionCall(name, args, id));
+                    }
+                }
             }
         }
     }
