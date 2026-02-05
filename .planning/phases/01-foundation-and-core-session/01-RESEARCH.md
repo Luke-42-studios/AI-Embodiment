@@ -50,13 +50,13 @@ No new packages to install. Firebase AI SDK is already present. The UPM package 
 ### Recommended Project Structure (UPM Package)
 
 ```
-com.luke42studios.ai-embodiment/    (project root, IS the UPM package)
+com.google.ai-embodiment/    (project root, IS the UPM package)
   package.json
   README.md
   LICENSE.md
   CHANGELOG.md
   Runtime/
-    com.luke42studios.ai-embodiment.asmdef
+    com.google.ai-embodiment.asmdef
     PersonaConfig.cs                    # ScriptableObject
     PersonaSession.cs                   # MonoBehaviour - session lifecycle
     MainThreadDispatcher.cs             # ConcurrentQueue dispatcher
@@ -65,15 +65,15 @@ com.luke42studios.ai-embodiment/    (project root, IS the UPM package)
     Internal/                           # Not part of public API
       (reserved for future internal utilities)
   Editor/
-    com.luke42studios.ai-embodiment.editor.asmdef
+    com.google.ai-embodiment.editor.asmdef
     (empty for Phase 1 -- custom editors in later phases)
   Tests/
     Runtime/
-      com.luke42studios.ai-embodiment.tests.asmdef
+      com.google.ai-embodiment.tests.asmdef
       SystemInstructionBuilderTests.cs
       PersonaConfigTests.cs
     Editor/
-      com.luke42studios.ai-embodiment.editor.tests.asmdef
+      com.google.ai-embodiment.editor.tests.asmdef
   Samples~/
     (empty for Phase 1 -- samples in Phase 6)
   Documentation~/
@@ -564,7 +564,7 @@ public async Task SendText(string message)
 
 ```json
 {
-    "name": "com.luke42studios.ai-embodiment",
+    "name": "com.google.ai-embodiment",
     "rootNamespace": "AIEmbodiment",
     "references": [
         "Firebase.AI"

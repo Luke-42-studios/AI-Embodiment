@@ -10,7 +10,7 @@ requires:
     provides: "First plan -- no prior dependencies"
 provides:
   - "Firebase.AI assembly definition enabling cross-assembly referencing from UPM package"
-  - "UPM package skeleton (com.luke42studios.ai-embodiment) with Runtime, Editor, Tests asmdefs"
+  - "UPM package skeleton (com.google.ai-embodiment) with Runtime, Editor, Tests asmdefs"
   - "MainThreadDispatcher singleton for background-to-main-thread marshaling"
   - "SessionState enum defining session lifecycle states"
 affects: [01-02, 01-03, 02-01, 02-02, 02-03]
@@ -25,14 +25,14 @@ tech-stack:
 key-files:
   created:
     - "Assets/Firebase/FirebaseAI/Firebase.AI.asmdef"
-    - "Packages/com.luke42studios.ai-embodiment/package.json"
-    - "Packages/com.luke42studios.ai-embodiment/Runtime/com.luke42studios.ai-embodiment.asmdef"
-    - "Packages/com.luke42studios.ai-embodiment/Runtime/MainThreadDispatcher.cs"
-    - "Packages/com.luke42studios.ai-embodiment/Runtime/SessionState.cs"
-    - "Packages/com.luke42studios.ai-embodiment/Editor/com.luke42studios.ai-embodiment.editor.asmdef"
-    - "Packages/com.luke42studios.ai-embodiment/Tests/Runtime/com.luke42studios.ai-embodiment.tests.asmdef"
-    - "Packages/com.luke42studios.ai-embodiment/CHANGELOG.md"
-    - "Packages/com.luke42studios.ai-embodiment/LICENSE.md"
+    - "Packages/com.google.ai-embodiment/package.json"
+    - "Packages/com.google.ai-embodiment/Runtime/com.google.ai-embodiment.asmdef"
+    - "Packages/com.google.ai-embodiment/Runtime/MainThreadDispatcher.cs"
+    - "Packages/com.google.ai-embodiment/Runtime/SessionState.cs"
+    - "Packages/com.google.ai-embodiment/Editor/com.google.ai-embodiment.editor.asmdef"
+    - "Packages/com.google.ai-embodiment/Tests/Runtime/com.google.ai-embodiment.tests.asmdef"
+    - "Packages/com.google.ai-embodiment/CHANGELOG.md"
+    - "Packages/com.google.ai-embodiment/LICENSE.md"
   modified: []
 
 key-decisions:
@@ -63,7 +63,7 @@ completed: 2026-02-05
 ## Accomplishments
 
 - Firebase AI SDK source files compile as separate Firebase.AI assembly with precompiled DLL references, enabling cross-assembly referencing from the UPM package
-- Complete UPM package structure under Packages/com.luke42studios.ai-embodiment/ with Runtime, Editor, and Tests assembly definitions
+- Complete UPM package structure under Packages/com.google.ai-embodiment/ with Runtime, Editor, and Tests assembly definitions
 - MainThreadDispatcher singleton auto-initializes before scene load, drains ConcurrentQueue in Update, survives scene transitions, hidden from hierarchy
 - SessionState enum with 5 lifecycle states (Disconnected, Connecting, Connected, Disconnecting, Error)
 
@@ -77,14 +77,14 @@ Each task was committed atomically:
 ## Files Created/Modified
 
 - `Assets/Firebase/FirebaseAI/Firebase.AI.asmdef` - Assembly definition for Firebase AI SDK source with precompiled DLL references
-- `Packages/com.luke42studios.ai-embodiment/package.json` - UPM package manifest (v0.1.0)
-- `Packages/com.luke42studios.ai-embodiment/Runtime/com.luke42studios.ai-embodiment.asmdef` - Runtime assembly referencing Firebase.AI
-- `Packages/com.luke42studios.ai-embodiment/Editor/com.luke42studios.ai-embodiment.editor.asmdef` - Editor-only assembly referencing Runtime
-- `Packages/com.luke42studios.ai-embodiment/Tests/Runtime/com.luke42studios.ai-embodiment.tests.asmdef` - Test assembly with UNITY_INCLUDE_TESTS constraint
-- `Packages/com.luke42studios.ai-embodiment/Runtime/MainThreadDispatcher.cs` - Thread-safe main thread dispatch via ConcurrentQueue
-- `Packages/com.luke42studios.ai-embodiment/Runtime/SessionState.cs` - Session lifecycle state enum
-- `Packages/com.luke42studios.ai-embodiment/CHANGELOG.md` - Keepachangelog format
-- `Packages/com.luke42studios.ai-embodiment/LICENSE.md` - MIT license
+- `Packages/com.google.ai-embodiment/package.json` - UPM package manifest (v0.1.0)
+- `Packages/com.google.ai-embodiment/Runtime/com.google.ai-embodiment.asmdef` - Runtime assembly referencing Firebase.AI
+- `Packages/com.google.ai-embodiment/Editor/com.google.ai-embodiment.editor.asmdef` - Editor-only assembly referencing Runtime
+- `Packages/com.google.ai-embodiment/Tests/Runtime/com.google.ai-embodiment.tests.asmdef` - Test assembly with UNITY_INCLUDE_TESTS constraint
+- `Packages/com.google.ai-embodiment/Runtime/MainThreadDispatcher.cs` - Thread-safe main thread dispatch via ConcurrentQueue
+- `Packages/com.google.ai-embodiment/Runtime/SessionState.cs` - Session lifecycle state enum
+- `Packages/com.google.ai-embodiment/CHANGELOG.md` - Keepachangelog format
+- `Packages/com.google.ai-embodiment/LICENSE.md` - MIT license
 
 ## Decisions Made
 

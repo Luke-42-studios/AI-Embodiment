@@ -189,13 +189,13 @@ This path requests only text from Gemini, then synthesizes speech via a separate
 Based on Unity's custom package layout conventions (verified against Unity 6 documentation and existing UPM packages).
 
 ```
-com.luke42studios.ai-embodiment/
+com.google.ai-embodiment/
   package.json                          # Package manifest (name, version, dependencies)
   README.md                             # Package documentation shown in Package Manager
   LICENSE.md                            # License file
   CHANGELOG.md                          # Version history
   Runtime/
-    com.luke42studios.ai-embodiment.asmdef  # Runtime assembly definition
+    com.google.ai-embodiment.asmdef  # Runtime assembly definition
     PersonaConfig.cs                    # ScriptableObject (persona definition)
     PersonaSession.cs                   # MonoBehaviour (session lifecycle)
     AudioCapture.cs                     # Microphone capture component
@@ -211,18 +211,18 @@ com.luke42studios.ai-embodiment/
       AudioConverter.cs                 # PCM <-> float[] utilities with buffer pooling
       SentenceBoundaryDetector.cs       # Text chunking for TTS path
   Editor/
-    com.luke42studios.ai-embodiment.editor.asmdef  # Editor assembly definition
+    com.google.ai-embodiment.editor.asmdef  # Editor assembly definition
     PersonaConfigEditor.cs              # Custom Inspector for PersonaConfig
     PersonaSessionEditor.cs             # Custom Inspector with connect/test buttons
   Tests/
     Runtime/
-      com.luke42studios.ai-embodiment.tests.asmdef
+      com.google.ai-embodiment.tests.asmdef
       PersonaConfigTests.cs
       PacketAssemblerTests.cs
       AudioConverterTests.cs
       SystemInstructionBuilderTests.cs
     Editor/
-      com.luke42studios.ai-embodiment.editor.tests.asmdef
+      com.google.ai-embodiment.editor.tests.asmdef
   Samples~/
     BasicConversation/
       BasicConversation.unity           # Scene with one persona talking
@@ -241,10 +241,10 @@ com.luke42studios.ai-embodiment/
 
 ### Assembly Definition Requirements
 
-**Runtime asmdef** (`com.luke42studios.ai-embodiment.asmdef`):
+**Runtime asmdef** (`com.google.ai-embodiment.asmdef`):
 ```json
 {
-  "name": "com.luke42studios.ai-embodiment",
+  "name": "com.google.ai-embodiment",
   "rootNamespace": "AIEmbodiment",
   "references": [],
   "includePlatforms": [],
@@ -266,7 +266,7 @@ com.luke42studios.ai-embodiment/
 The `package.json` should list Firebase AI Logic as a dependency that devs install separately:
 ```json
 {
-  "name": "com.luke42studios.ai-embodiment",
+  "name": "com.google.ai-embodiment",
   "version": "0.1.0",
   "displayName": "AI Embodiment",
   "description": "AI-powered game characters with real-time conversation",

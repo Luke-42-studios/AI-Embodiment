@@ -1,10 +1,10 @@
 {
-    "name": "com.luke42studios.ai-embodiment",
-    "rootNamespace": "AIEmbodiment",
+    "name": "com.google.ai-embodiment.editor",
+    "rootNamespace": "AIEmbodiment.Editor",
     "references": [
-        "Firebase.AI"
+        "com.google.ai-embodiment"
     ],
-    "includePlatforms": [],
+    "includePlatforms": ["Editor"],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": false,

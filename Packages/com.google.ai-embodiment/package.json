@@ -1,12 +1,12 @@
 {
-  "name": "com.luke42studios.ai-embodiment",
+  "name": "com.google.ai-embodiment",
   "version": "0.1.0",
   "displayName": "AI Embodiment",
   "description": "Drop-in AI conversational characters for Unity with synchronized voice, text, and animation events.",
   "unity": "6000.0",
   "dependencies": {},
   "author": {
-    "name": "Luke42 Studios"
+    "name": "Google"
   },
   "keywords": ["ai", "gemini", "conversational", "npc", "character"]
 }

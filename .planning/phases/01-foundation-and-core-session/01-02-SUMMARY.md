@@ -23,9 +23,9 @@ tech-stack:
 
 key-files:
   created:
-    - "Packages/com.luke42studios.ai-embodiment/Runtime/PersonaConfig.cs"
-    - "Packages/com.luke42studios.ai-embodiment/Runtime/VoiceBackend.cs"
-    - "Packages/com.luke42studios.ai-embodiment/Runtime/SystemInstructionBuilder.cs"
+    - "Packages/com.google.ai-embodiment/Runtime/PersonaConfig.cs"
+    - "Packages/com.google.ai-embodiment/Runtime/VoiceBackend.cs"
+    - "Packages/com.google.ai-embodiment/Runtime/SystemInstructionBuilder.cs"
   modified: []
 
 key-decisions:
@@ -69,9 +69,9 @@ Each task was committed atomically:
 
 ## Files Created/Modified
 
-- `Packages/com.luke42studios.ai-embodiment/Runtime/PersonaConfig.cs` - ScriptableObject with persona personality, model, and voice configuration
-- `Packages/com.luke42studios.ai-embodiment/Runtime/VoiceBackend.cs` - Enum for voice backend selection (GeminiNative, ChirpTTS)
-- `Packages/com.luke42studios.ai-embodiment/Runtime/SystemInstructionBuilder.cs` - Static builder composing PersonaConfig into ModelContent system instruction
+- `Packages/com.google.ai-embodiment/Runtime/PersonaConfig.cs` - ScriptableObject with persona personality, model, and voice configuration
+- `Packages/com.google.ai-embodiment/Runtime/VoiceBackend.cs` - Enum for voice backend selection (GeminiNative, ChirpTTS)
+- `Packages/com.google.ai-embodiment/Runtime/SystemInstructionBuilder.cs` - Static builder composing PersonaConfig into ModelContent system instruction
 
 ## Decisions Made
 

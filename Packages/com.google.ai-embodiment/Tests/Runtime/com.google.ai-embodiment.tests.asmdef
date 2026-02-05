@@ -1,8 +1,8 @@
 {
-    "name": "com.luke42studios.ai-embodiment.tests",
+    "name": "com.google.ai-embodiment.tests",
     "rootNamespace": "AIEmbodiment.Tests",
     "references": [
-        "com.luke42studios.ai-embodiment",
+        "com.google.ai-embodiment",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],
