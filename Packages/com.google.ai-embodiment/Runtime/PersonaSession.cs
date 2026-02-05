@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Firebase.AI;
@@ -56,8 +57,15 @@ namespace AIEmbodiment
         /// <summary>Fires on errors with the exception details.</summary>
         public event Action<Exception> OnError;
 
+        /// <summary>
+        /// Fires with correlated text, audio, and function call data packaged into SyncPackets.
+        /// Subscribe to this for synchronized subtitles, audio, and event handling.
+        /// </summary>
+        public event Action<SyncPacket> OnSyncPacket;
+
         private CancellationTokenSource _sessionCts;
         private LiveSession _liveSession;
+        private PacketAssembler _packetAssembler;
         private bool _aiSpeaking;
         private bool _userSpeaking;
         private bool _isListening;
@@ -114,6 +122,9 @@ namespace AIEmbodiment
                 _liveSession = await liveModel.ConnectAsync(_sessionCts.Token);
 
                 SetState(SessionState.Connected);
+
+                _packetAssembler = new PacketAssembler();
+                _packetAssembler.SetPacketCallback(packet => OnSyncPacket?.Invoke(packet));
 
                 if (_audioPlayback != null)
                 {
@@ -208,6 +219,21 @@ namespace AIEmbodiment
         }
 
         /// <summary>
+        /// Registers a sync driver that controls packet release timing.
+        /// The highest-latency driver wins.
+        /// </summary>
+        /// <param name="driver">The sync driver to register.</param>
+        public void RegisterSyncDriver(ISyncDriver driver)
+        {
+            if (_packetAssembler == null)
+            {
+                Debug.LogWarning("PersonaSession: Cannot register sync driver -- no active session.");
+                return;
+            }
+            _packetAssembler.RegisterSyncDriver(driver);
+        }
+
+        /// <summary>
         /// Handles audio chunks from AudioCapture and forwards them to Gemini Live.
         /// Tracks user speaking state and fires corresponding events.
         /// </summary>
@@ -251,6 +277,9 @@ namespace AIEmbodiment
                 }
                 _aiSpeaking = false;
 
+                _packetAssembler?.Reset();
+                _packetAssembler = null;
+
                 if (_liveSession != null)
                 {
                     try
@@ -290,6 +319,8 @@ namespace AIEmbodiment
                 _audioCapture.OnAudioCaptured -= HandleAudioCaptured;
             }
             _audioPlayback?.Stop();
+
+            _packetAssembler?.Reset();
 
             _sessionCts?.Cancel();
             _liveSession?.Dispose();
