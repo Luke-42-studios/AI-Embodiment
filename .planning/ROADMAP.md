@@ -64,11 +64,11 @@ Plans:
   2. Text displayed as subtitles aligns with corresponding audio playback (no drift or mismatch)
   3. PacketAssembler works correctly for the Gemini native audio path (Chirp path support validated in Phase 5)
   4. AI output transcript text streams incrementally as chunks arrive for real-time subtitle display
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 03-01: PacketAssembler and SyncPacket data model
-- [ ] 03-02: Text-audio correlation and timing synchronization
+- [ ] 03-01-PLAN.md -- SyncPacket readonly struct, ISyncDriver interface, and PacketAssembler with sentence boundary buffering
+- [ ] 03-02-PLAN.md -- PersonaSession integration: OnSyncPacket event, ProcessResponse routing through PacketAssembler
 
 ### Phase 4: Function Calling and Conversational Goals
 **Goal**: AI can trigger game actions via function calls with registered C# delegate handlers, and developers can define conversational goals that steer the AI's behavior with urgency-based prioritization
