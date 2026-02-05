@@ -1,7 +1,7 @@
 # Requirements: AI Embodiment
 
 **Defined:** 2026-02-05
-**Core Value:** Developers can drop an AI character into their Unity scene and have it talking — with synchronized voice, text, and animation events — in minutes, not weeks.
+**Core Value:** Developers can drop an AI character into their Unity scene and have it talking -- with synchronized voice, text, and animation events -- in minutes, not weeks.
 
 ## v1 Requirements
 
@@ -26,8 +26,8 @@
 
 ### Voice Backends
 
-- [ ] **VOICE-01**: Gemini native audio path — audio received directly from LiveSession response
-- [ ] **VOICE-02**: Chirp 3 HD TTS path — text from LiveSession sent via HTTP to Cloud TTS, PCM audio returned
+- [ ] **VOICE-01**: Gemini native audio path -- audio received directly from LiveSession response
+- [ ] **VOICE-02**: Chirp 3 HD TTS path -- text from LiveSession sent via HTTP to Cloud TTS, PCM audio returned
 - [ ] **VOICE-03**: Voice backend selected per-persona in ScriptableObject config
 - [ ] **VOICE-04**: ChirpTTSClient handles HTTP requests to texttospeech.googleapis.com via UnityWebRequest
 
@@ -55,7 +55,7 @@
 ### Packaging
 
 - [ ] **PKG-01**: Project structured as UPM package (Runtime/, Samples~/, package.json, asmdef)
-- [ ] **PKG-02**: Sample scene demonstrates full pipeline — persona talking with animation function calls
+- [ ] **PKG-02**: Sample scene demonstrates full pipeline -- persona talking with animation function calls
 
 ## v2 Requirements
 
@@ -73,7 +73,7 @@
 ### Editor Tools
 
 - **EDIT-01**: Custom Inspector for PersonaConfig with personality preview
-- **EDIT-02**: Live testing window — talk to persona in Editor without entering Play Mode
+- **EDIT-02**: Live testing window -- talk to persona in Editor without entering Play Mode
 
 ### Advanced Audio
 
@@ -84,54 +84,54 @@
 
 | Feature | Reason |
 |---------|--------|
-| Runtime voice switching mid-session | Voice is set per-persona at connect time — simpler architecture |
-| Visual UI components (chat window, text input) | Headless library — devs build their own UI |
+| Runtime voice switching mid-session | Voice is set per-persona at connect time -- simpler architecture |
+| Visual UI components (chat window, text input) | Headless library -- devs build their own UI |
 | OAuth/service account auth | Devs configure Firebase project auth separately |
 | Mobile-specific optimizations | Desktop-first for v1, mobile tested but not optimized |
 | Multi-persona conversations | Single persona per session for v1 |
-| Language translation | Out of scope — persona speaks one language |
+| Language translation | Out of scope -- persona speaks one language |
 
 ## Traceability
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SESS-01 | — | Pending |
-| SESS-02 | — | Pending |
-| SESS-03 | — | Pending |
-| SESS-04 | — | Pending |
-| SESS-05 | — | Pending |
-| SESS-06 | — | Pending |
-| SESS-07 | — | Pending |
-| SESS-08 | — | Pending |
-| SESS-09 | — | Pending |
-| AUDIO-01 | — | Pending |
-| AUDIO-02 | — | Pending |
-| AUDIO-03 | — | Pending |
-| AUDIO-04 | — | Pending |
-| VOICE-01 | — | Pending |
-| VOICE-02 | — | Pending |
-| VOICE-03 | — | Pending |
-| VOICE-04 | — | Pending |
-| SYNC-01 | — | Pending |
-| SYNC-02 | — | Pending |
-| SYNC-03 | — | Pending |
-| FUNC-01 | — | Pending |
-| FUNC-02 | — | Pending |
-| FUNC-03 | — | Pending |
-| FUNC-04 | — | Pending |
-| GOAL-01 | — | Pending |
-| GOAL-02 | — | Pending |
-| GOAL-03 | — | Pending |
-| GOAL-04 | — | Pending |
-| GOAL-05 | — | Pending |
-| PKG-01 | — | Pending |
-| PKG-02 | — | Pending |
+| SESS-01 | Phase 1 | Pending |
+| SESS-02 | Phase 1 | Pending |
+| SESS-03 | Phase 1 | Pending |
+| SESS-04 | Phase 1 | Pending |
+| SESS-05 | Phase 1 | Pending |
+| SESS-06 | Phase 1 | Pending |
+| SESS-07 | Phase 1 | Pending |
+| SESS-08 | Phase 1 | Pending |
+| SESS-09 | Phase 1 | Pending |
+| AUDIO-01 | Phase 2 | Pending |
+| AUDIO-02 | Phase 2 | Pending |
+| AUDIO-03 | Phase 2 | Pending |
+| AUDIO-04 | Phase 2 | Pending |
+| VOICE-01 | Phase 2 | Pending |
+| VOICE-02 | Phase 5 | Pending |
+| VOICE-03 | Phase 5 | Pending |
+| VOICE-04 | Phase 5 | Pending |
+| SYNC-01 | Phase 3 | Pending |
+| SYNC-02 | Phase 3 | Pending |
+| SYNC-03 | Phase 3 | Pending |
+| FUNC-01 | Phase 4 | Pending |
+| FUNC-02 | Phase 4 | Pending |
+| FUNC-03 | Phase 4 | Pending |
+| FUNC-04 | Phase 4 | Pending |
+| GOAL-01 | Phase 4 | Pending |
+| GOAL-02 | Phase 4 | Pending |
+| GOAL-03 | Phase 4 | Pending |
+| GOAL-04 | Phase 4 | Pending |
+| GOAL-05 | Phase 4 | Pending |
+| PKG-01 | Phase 1 | Pending |
+| PKG-02 | Phase 6 | Pending |
 
 **Coverage:**
 - v1 requirements: 31 total
-- Mapped to phases: 0
-- Unmapped: 31 ⚠️
+- Mapped to phases: 31
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-05*
-*Last updated: 2026-02-05 after initial definition*
+*Last updated: 2026-02-05 after roadmap creation*
