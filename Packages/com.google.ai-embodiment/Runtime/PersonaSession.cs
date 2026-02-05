@@ -70,6 +70,7 @@ namespace AIEmbodiment
         public event Action<SyncPacket> OnSyncPacket;
 
         private readonly FunctionRegistry _functionRegistry = new FunctionRegistry();
+        private readonly GoalManager _goalManager = new GoalManager();
 
         private CancellationTokenSource _sessionCts;
         private LiveSession _liveSession;
@@ -120,7 +121,7 @@ namespace AIEmbodiment
                     outputAudioTranscription: new AudioTranscriptionConfig()
                 );
 
-                var systemInstruction = SystemInstructionBuilder.Build(_config);
+                var systemInstruction = SystemInstructionBuilder.Build(_config, _goalManager);
                 var tools = _functionRegistry.HasRegistrations ? _functionRegistry.BuildTools() : null;
 
                 var liveModel = ai.GetLiveModel(
@@ -241,6 +242,39 @@ namespace AIEmbodiment
             _functionRegistry.Register(name, declaration, handler);
         }
 
+        /// <summary>Adds a conversational goal. Triggers immediate instruction update if connected.</summary>
+        /// <param name="id">Unique identifier for this goal.</param>
+        /// <param name="description">Natural language description of what the AI should try to accomplish.</param>
+        /// <param name="priority">Urgency level for this goal.</param>
+        public void AddGoal(string id, string description, GoalPriority priority)
+        {
+            _goalManager.AddGoal(new ConversationalGoal(id, description, priority));
+            SendGoalUpdate();
+        }
+
+        /// <summary>Removes a conversational goal by ID. Triggers immediate instruction update if connected.</summary>
+        /// <param name="goalId">The identifier of the goal to remove.</param>
+        /// <returns>True if the goal was found and removed; false otherwise.</returns>
+        public bool RemoveGoal(string goalId)
+        {
+            bool removed = _goalManager.RemoveGoal(goalId);
+            if (removed) SendGoalUpdate();
+            return removed;
+        }
+
+        /// <summary>Changes a goal's priority. Triggers immediate instruction update if connected.</summary>
+        /// <param name="goalId">The identifier of the goal to reprioritize.</param>
+        /// <param name="newPriority">The new urgency level for this goal.</param>
+        /// <returns>True if the goal was found and reprioritized; false otherwise.</returns>
+        public bool ReprioritizeGoal(string goalId, GoalPriority newPriority)
+        {
+            var goal = _goalManager.GetGoal(goalId);
+            if (goal == null) return false;
+            goal.Priority = newPriority;
+            SendGoalUpdate();
+            return true;
+        }
+
         /// <summary>
         /// Registers a sync driver that controls packet release timing.
         /// The highest-latency driver wins.
@@ -347,6 +381,36 @@ namespace AIEmbodiment
                 {
                     OnError?.Invoke(ex);
                     Debug.LogError($"PersonaSession: Function response send failed: {ex.Message}");
+                });
+            }
+        }
+
+        /// <summary>
+        /// Sends an updated system instruction (persona + goals) to the live session.
+        /// Uses role "system" ModelContent via SendAsync with REPLACE semantics.
+        /// If the wire format is rejected, the error is logged with fallback guidance
+        /// (disconnect and reconnect to apply goal changes via initial system instruction).
+        /// </summary>
+        private async void SendGoalUpdate()
+        {
+            if (_liveSession == null || State != SessionState.Connected) return;
+
+            try
+            {
+                var text = SystemInstructionBuilder.BuildInstructionText(_config, _goalManager);
+                var content = new ModelContent("system", new ModelContent.TextPart(text));
+                await _liveSession.SendAsync(content: content, turnComplete: false, cancellationToken: _sessionCts.Token);
+            }
+            catch (Exception ex)
+            {
+                // If role "system" clientContent is rejected, this will fire.
+                // Fallback: developer can listen to OnError, disconnect, and reconnect.
+                // A future enhancement could auto-reconnect here.
+                MainThreadDispatcher.Enqueue(() =>
+                {
+                    OnError?.Invoke(ex);
+                    Debug.LogError($"PersonaSession: Goal update failed: {ex.Message}. " +
+                        "Fallback: disconnect and reconnect to apply goal changes via initial system instruction.");
                 });
             }
         }
