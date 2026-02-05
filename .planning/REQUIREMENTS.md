@@ -19,21 +19,21 @@
 
 ### Audio Pipeline
 
-- [ ] **AUDIO-01**: AudioCapture component records from Unity Microphone API at 16kHz mono PCM
-- [ ] **AUDIO-02**: AudioCapture streams PCM data to PersonaSession for sending to Gemini Live
-- [ ] **AUDIO-03**: AudioPlayback component plays AI voice through a Unity AudioSource
-- [ ] **AUDIO-04**: AudioPlayback uses ring buffer for streaming real-time PCM without gaps or pops
+- [x] **AUDIO-01**: AudioCapture component records from Unity Microphone API at 16kHz mono PCM
+- [x] **AUDIO-02**: AudioCapture streams PCM data to PersonaSession for sending to Gemini Live
+- [x] **AUDIO-03**: AudioPlayback component plays AI voice through a Unity AudioSource
+- [x] **AUDIO-04**: AudioPlayback uses ring buffer for streaming real-time PCM without gaps or pops
 
 ### Voice Backends
 
-- [ ] **VOICE-01**: Gemini native audio path -- audio received directly from LiveSession response
+- [x] **VOICE-01**: Gemini native audio path -- audio received directly from LiveSession response
 - [ ] **VOICE-02**: Chirp 3 HD TTS path -- text from LiveSession sent via HTTP to Cloud TTS, PCM audio returned
 - [ ] **VOICE-03**: Voice backend selected per-persona in ScriptableObject config
 - [ ] **VOICE-04**: ChirpTTSClient handles HTTP requests to texttospeech.googleapis.com via UnityWebRequest
 
 ### Transcription
 
-- [ ] **TRNS-01**: PersonaSession exposes user input transcript (speech-to-text from Gemini) via event/callback
+- [x] **TRNS-01**: PersonaSession exposes user input transcript (speech-to-text from Gemini) via event/callback
 - [ ] **TRNS-02**: PersonaSession exposes AI output transcript (response text for subtitles) via event/callback
 - [ ] **TRNS-03**: Output transcript text streams incrementally as chunks arrive (not buffered until turn end)
 
@@ -110,15 +110,15 @@
 | SESS-07 | Phase 1 | Complete |
 | SESS-08 | Phase 1 | Complete |
 | SESS-09 | Phase 1 | Complete |
-| AUDIO-01 | Phase 2 | Pending |
-| AUDIO-02 | Phase 2 | Pending |
-| AUDIO-03 | Phase 2 | Pending |
-| AUDIO-04 | Phase 2 | Pending |
-| VOICE-01 | Phase 2 | Pending |
+| AUDIO-01 | Phase 2 | Complete |
+| AUDIO-02 | Phase 2 | Complete |
+| AUDIO-03 | Phase 2 | Complete |
+| AUDIO-04 | Phase 2 | Complete |
+| VOICE-01 | Phase 2 | Complete |
 | VOICE-02 | Phase 5 | Pending |
 | VOICE-03 | Phase 5 | Pending |
 | VOICE-04 | Phase 5 | Pending |
-| TRNS-01 | Phase 2 | Pending |
+| TRNS-01 | Phase 2 | Complete |
 | TRNS-02 | Phase 3 | Pending |
 | TRNS-03 | Phase 3 | Pending |
 | SYNC-01 | Phase 3 | Pending |
