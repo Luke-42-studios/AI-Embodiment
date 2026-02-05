@@ -34,14 +34,14 @@
 ### Transcription
 
 - [x] **TRNS-01**: PersonaSession exposes user input transcript (speech-to-text from Gemini) via event/callback
-- [ ] **TRNS-02**: PersonaSession exposes AI output transcript (response text for subtitles) via event/callback
-- [ ] **TRNS-03**: Output transcript text streams incrementally as chunks arrive (not buffered until turn end)
+- [x] **TRNS-02**: PersonaSession exposes AI output transcript (response text for subtitles) via event/callback
+- [x] **TRNS-03**: Output transcript text streams incrementally as chunks arrive (not buffered until turn end)
 
 ### Synchronization
 
-- [ ] **SYNC-01**: PacketAssembler correlates text chunks, audio data, and emote timing into unified SyncPackets
-- [ ] **SYNC-02**: SyncPackets expose text, audio, and function call events with timing information
-- [ ] **SYNC-03**: PacketAssembler works for both voice paths (Gemini native audio and Chirp TTS)
+- [x] **SYNC-01**: PacketAssembler correlates text chunks, audio data, and emote timing into unified SyncPackets
+- [x] **SYNC-02**: SyncPackets expose text, audio, and function call events with timing information
+- [x] **SYNC-03**: PacketAssembler works for both voice paths (Gemini native audio and Chirp TTS)
 
 ### Function Calling
 
@@ -119,11 +119,11 @@
 | VOICE-03 | Phase 5 | Pending |
 | VOICE-04 | Phase 5 | Pending |
 | TRNS-01 | Phase 2 | Complete |
-| TRNS-02 | Phase 3 | Pending |
-| TRNS-03 | Phase 3 | Pending |
-| SYNC-01 | Phase 3 | Pending |
-| SYNC-02 | Phase 3 | Pending |
-| SYNC-03 | Phase 3 | Pending |
+| TRNS-02 | Phase 3 | Complete |
+| TRNS-03 | Phase 3 | Complete |
+| SYNC-01 | Phase 3 | Complete |
+| SYNC-02 | Phase 3 | Complete |
+| SYNC-03 | Phase 3 | Complete |
 | FUNC-01 | Phase 4 | Pending |
 | FUNC-02 | Phase 4 | Pending |
 | FUNC-03 | Phase 4 | Pending |
