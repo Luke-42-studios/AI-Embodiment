@@ -45,18 +45,18 @@
 
 ### Function Calling
 
-- [ ] **FUNC-01**: Developer can declare function schemas (name, parameters, description) on PersonaSession
-- [ ] **FUNC-02**: Developer registers C# delegate handlers for each declared function
-- [ ] **FUNC-03**: When AI triggers a function call, the registered delegate fires with parsed arguments
+- [x] **FUNC-01**: Developer can declare function schemas (name, parameters, description) on PersonaSession
+- [x] **FUNC-02**: Developer registers C# delegate handlers for each declared function
+- [x] **FUNC-03**: When AI triggers a function call, the registered delegate fires with parsed arguments
 - [ ] **FUNC-04**: Built-in emote function with animation name enum as a reference implementation
 
 ### Conversational Goals
 
-- [ ] **GOAL-01**: Developer can define conversational goals on a persona (objective text, priority level)
-- [ ] **GOAL-02**: Goal priorities (low, medium, high) control how urgently the AI steers conversation toward the goal
-- [ ] **GOAL-03**: Developer can add, remove, and reprioritize goals at runtime via API
-- [ ] **GOAL-04**: System instruction builder folds active goals into the prompt with urgency-appropriate framing
-- [ ] **GOAL-05**: AI signals goal completion via a built-in function call (e.g., goal_reached("goal_id"))
+- [x] **GOAL-01**: Developer can define conversational goals on a persona (objective text, priority level)
+- [x] **GOAL-02**: Goal priorities (low, medium, high) control how urgently the AI steers conversation toward the goal
+- [x] **GOAL-03**: Developer can add, remove, and reprioritize goals at runtime via API
+- [x] **GOAL-04**: System instruction builder folds active goals into the prompt with urgency-appropriate framing
+- [x] **GOAL-05**: AI signals goal completion via a built-in function call (e.g., goal_reached("goal_id"))
 
 ### Packaging
 
@@ -124,15 +124,15 @@
 | SYNC-01 | Phase 3 | Complete |
 | SYNC-02 | Phase 3 | Complete |
 | SYNC-03 | Phase 3 | Complete |
-| FUNC-01 | Phase 4 | Pending |
-| FUNC-02 | Phase 4 | Pending |
-| FUNC-03 | Phase 4 | Pending |
+| FUNC-01 | Phase 4 | Complete |
+| FUNC-02 | Phase 4 | Complete |
+| FUNC-03 | Phase 4 | Complete |
 | FUNC-04 | Phase 4 | Pending |
-| GOAL-01 | Phase 4 | Pending |
-| GOAL-02 | Phase 4 | Pending |
-| GOAL-03 | Phase 4 | Pending |
-| GOAL-04 | Phase 4 | Pending |
-| GOAL-05 | Phase 4 | Pending |
+| GOAL-01 | Phase 4 | Complete |
+| GOAL-02 | Phase 4 | Complete |
+| GOAL-03 | Phase 4 | Complete |
+| GOAL-04 | Phase 4 | Complete |
+| GOAL-05 | Phase 4 | Complete |
 | PKG-01 | Phase 1 | Complete |
 | PKG-02 | Phase 6 | Pending |
 
