@@ -10,28 +10,28 @@ See: .planning/PROJECT.md (updated 2026-02-05)
 ## Current Position
 
 Phase: 1 of 6 (Foundation and Core Session)
-Plan: 1 of 3 in current phase
+Plan: 2 of 3 in current phase
 Status: In progress
-Last activity: 2026-02-05 -- Completed 01-01-PLAN.md
+Last activity: 2026-02-05 -- Completed 01-02-PLAN.md
 
-Progress: [█░░░░░░░░░░░░░] 7%
+Progress: [██░░░░░░░░░░░░] 14%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 1
-- Average duration: 2 min
-- Total execution time: 0.03 hours
+- Total plans completed: 2
+- Average duration: 1.5 min
+- Total execution time: 0.05 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 1 | 1/3 | 2 min | 2 min |
+| 1 | 2/3 | 3 min | 1.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (2 min)
-- Trend: -
+- Last 5 plans: 01-01 (2 min), 01-02 (1 min)
+- Trend: stable
 
 *Updated after each plan completion*
 
@@ -46,6 +46,8 @@ Recent decisions affecting current work:
 - [Roadmap]: Phases 4 and 5 can execute in parallel -- function calling and Chirp TTS are independent work streams
 - [01-01]: Firebase.AI asmdef uses overrideReferences with 4 precompiled DLLs for cross-assembly referencing
 - [01-01]: UPM package at Packages/ as embedded package for auto-discovery
+- [01-02]: PersonaConfig is pure Unity ScriptableObject -- Firebase boundary only in SystemInstructionBuilder
+- [01-02]: VoiceBackend enum in separate file for independent cross-class referencing
 
 ### Pending Todos
 
@@ -58,6 +60,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-05T18:50:01Z
-Stopped at: Completed 01-01-PLAN.md
+Last session: 2026-02-05T18:52:59Z
+Stopped at: Completed 01-02-PLAN.md
 Resume file: None
