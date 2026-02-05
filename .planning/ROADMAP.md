@@ -77,15 +77,15 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. Developer can declare function schemas and register C# delegate handlers on PersonaSession
   2. When the AI triggers a function call during conversation, the registered delegate fires on the main thread with parsed arguments
-  3. Built-in emote function works as a reference implementation -- AI calls emote("wave") and the developer's handler receives it
-  4. Developer can define conversational goals with priority levels (low, medium, high) and add/remove/reprioritize them at runtime
-  5. System instruction builder incorporates active goals with urgency-appropriate framing, and AI signals goal completion via a built-in goal_reached function call
-**Plans**: TBD
+  3. Developer can define conversational goals with priority levels (low, medium, high) and add/remove/reprioritize them at runtime
+  4. System instruction builder incorporates active goals with urgency-appropriate framing
+  5. Goal changes trigger immediate system instruction update to the live session without reconnection
+**Plans**: 3 plans
 
 Plans:
-- [ ] 04-01: FunctionCallHandler with delegate registration and dispatch
-- [ ] 04-02: Built-in emote function and function call response round-trip
-- [ ] 04-03: Conversational goal system and system instruction integration
+- [ ] 04-01-PLAN.md -- FunctionCallContext typed argument wrapper and FunctionRegistry with registration, freeze, build, and cancellation
+- [ ] 04-02-PLAN.md -- GoalPriority enum, ConversationalGoal data class, and GoalManager with lifecycle and instruction composition
+- [ ] 04-03-PLAN.md -- PersonaSession and SystemInstructionBuilder integration: function dispatch, response round-trip, goal API, mid-session updates
 
 ### Phase 5: Chirp TTS Voice Backend
 **Goal**: Developer can select Chirp 3 HD as the voice backend for a persona, getting access to 30+ high-quality voices as an alternative to Gemini native audio
