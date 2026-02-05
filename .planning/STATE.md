@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-05)
 
 **Core value:** Developers can drop an AI character into their Unity scene and have it talking -- with synchronized voice, text, and animation events -- in minutes, not weeks.
-**Current focus:** Phase 4 verified and complete. Next: Phase 5 - Chirp TTS Voice Backend
+**Current focus:** Phase 5 - Chirp TTS Voice Backend (Plan 02 complete, Plans 01 and 03 remaining)
 
 ## Current Position
 
-Phase: 4 of 6 (Function Calling and Conversational Goals) -- VERIFIED
-Plan: 3 of 3 in phase 4 (complete)
-Status: Phase verified and complete
-Last activity: 2026-02-05 -- Phase 4 verified (5/5 must-haves passed)
+Phase: 5 of 6 (Chirp TTS Voice Backend)
+Plan: 2 of 3 in phase 5 (05-02 complete; 05-01 and 05-03 pending)
+Status: In progress
+Last activity: 2026-02-05 -- Completed 05-02-PLAN.md (PersonaConfig Chirp fields and Inspector Editor)
 
-Progress: [████████░░] 78%
+Progress: [████████░░] 80%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 11
+- Total plans completed: 12
 - Average duration: 1.5 min
-- Total execution time: 0.28 hours
+- Total execution time: 0.32 hours
 
 **By Phase:**
 
@@ -31,9 +31,10 @@ Progress: [████████░░] 78%
 | 2 | 3/3 | 5 min | 1.7 min |
 | 3 | 2/2 | 4 min | 2.0 min |
 | 4 | 3/3 | 5 min | 1.7 min |
+| 5 | 1/3 | 2 min | 2.0 min |
 
 **Recent Trend:**
-- Last 5 plans: 03-02 (2 min), 04-01 (1 min), 04-02 (1 min), 04-03 (3 min)
+- Last 5 plans: 04-01 (1 min), 04-02 (1 min), 04-03 (3 min), 05-02 (2 min)
 - Trend: stable
 
 *Updated after each plan completion*
@@ -85,6 +86,10 @@ Recent decisions affecting current work:
 - [04-03]: HandleSyncPacket intercepts FunctionCall packets before forwarding to OnSyncPacket -- developers can still observe function calls
 - [04-03]: SendGoalUpdate uses role system ModelContent with REPLACE semantics -- fallback is disconnect/reconnect if rejected
 - [04-03]: Connect() uses Build(_config, _goalManager) ensuring pre-connect goals are included in initial instruction
+- [05-02]: ChirpSynthesisMode enum in same file as PersonaConfig -- collocated with the config that uses it
+- [05-02]: chirpVoiceName auto-synced by Editor from language + short name -- runtime code reads full API name directly
+- [05-02]: IsCustomChirpVoice convenience property on PersonaConfig references ChirpVoiceList.CustomVoice constant
+- [05-02]: Voice dropdown shows all 30 voices regardless of language -- Chirp 3 HD voices work across all locales
 
 ### Pending Todos
 
@@ -98,5 +103,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-05
-Stopped at: Phase 4 verified and complete, ready to plan Phase 5
+Stopped at: Completed 05-02-PLAN.md (PersonaConfig Chirp fields and Inspector Editor)
 Resume file: None
