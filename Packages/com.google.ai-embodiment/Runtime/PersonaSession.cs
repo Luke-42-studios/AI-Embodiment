@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Firebase.AI;
@@ -80,6 +81,10 @@ namespace AIEmbodiment
         private bool _userSpeaking;
         private bool _isListening;
 
+        private ChirpTTSClient _chirpClient;
+        private readonly StringBuilder _chirpTextBuffer = new StringBuilder();
+        private bool _chirpSynthesizing;  // prevents overlapping synthesis requests
+
         private void SetState(SessionState newState)
         {
             if (State == newState) return;
@@ -141,6 +146,14 @@ namespace AIEmbodiment
                 if (_audioPlayback != null)
                 {
                     _audioPlayback.Initialize();
+                }
+
+                // Initialize Chirp TTS client when backend is ChirpTTS
+                if (_config.voiceBackend == VoiceBackend.ChirpTTS)
+                {
+                    string apiKey = Firebase.FirebaseApp.DefaultInstance.Options.ApiKey;
+                    _chirpClient = new ChirpTTSClient(apiKey);
+                    _chirpClient.OnError += HandleChirpError;
                 }
 
                 // Fire and forget -- ReceiveLoopAsync handles its own error reporting
@@ -313,13 +326,79 @@ namespace AIEmbodiment
         /// </summary>
         private void HandleSyncPacket(SyncPacket packet)
         {
+            // Chirp sentence-by-sentence synthesis: synthesize text from each SyncPacket
+            if (_config.voiceBackend == VoiceBackend.ChirpTTS
+                && _config.chirpSynthesisMode == ChirpSynthesisMode.SentenceBySentence
+                && packet.Type == SyncPacketType.TextAudio
+                && !string.IsNullOrEmpty(packet.Text))
+            {
+                SynthesizeAndEnqueue(packet.Text);
+            }
+
+            // Existing function dispatch (unchanged)
             if (packet.Type == SyncPacketType.FunctionCall && !string.IsNullOrEmpty(packet.FunctionName))
             {
                 DispatchFunctionCall(packet);
             }
 
-            // Always forward to developer subscribers (they can observe function calls too)
+            // Always forward to developer subscribers (unchanged)
             OnSyncPacket?.Invoke(packet);
+        }
+
+        /// <summary>
+        /// Synthesizes text via Chirp TTS and enqueues the resulting PCM audio for playback.
+        /// Runs on the main thread (required by UnityWebRequest).
+        /// On failure: logs error, fires OnError, but conversation continues (silent skip per CONTEXT.md).
+        /// </summary>
+        private async void SynthesizeAndEnqueue(string text)
+        {
+            if (_chirpClient == null || _audioPlayback == null || string.IsNullOrEmpty(text)) return;
+
+            try
+            {
+                // Determine voice parameters from config
+                string voiceCloningKey = _config.IsCustomChirpVoice ? _config.voiceCloningKey : null;
+                string voiceName = _config.IsCustomChirpVoice ? _config.customVoiceName : _config.chirpVoiceShortName;
+
+                // Fire AI speaking started on first synthesis of a turn
+                if (!_aiSpeaking)
+                {
+                    _aiSpeaking = true;
+                    OnAISpeakingStarted?.Invoke();
+                }
+
+                float[] pcm = await _chirpClient.SynthesizeAsync(
+                    text,
+                    voiceName,
+                    _config.chirpLanguageCode,
+                    voiceCloningKey
+                );
+
+                if (pcm != null && pcm.Length > 0 && _audioPlayback != null)
+                {
+                    _audioPlayback.EnqueueAudio(pcm);
+                }
+            }
+            catch (Exception ex)
+            {
+                // Silent skip + error event per CONTEXT.md decision
+                // Text still displays via OnSyncPacket, conversation continues
+                OnError?.Invoke(ex);
+                Debug.LogWarning($"PersonaSession: Chirp TTS synthesis failed (text still displayed): {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Handles errors from the ChirpTTSClient's OnError event.
+        /// Routes to main thread for safe Unity API access.
+        /// </summary>
+        private void HandleChirpError(Exception ex)
+        {
+            MainThreadDispatcher.Enqueue(() =>
+            {
+                OnError?.Invoke(ex);
+                Debug.LogWarning($"PersonaSession: Chirp TTS error: {ex.Message}");
+            });
         }
 
         /// <summary>
@@ -444,6 +523,15 @@ namespace AIEmbodiment
                 _packetAssembler?.Reset();
                 _packetAssembler = null;
 
+                if (_chirpClient != null)
+                {
+                    _chirpClient.OnError -= HandleChirpError;
+                    _chirpClient.Dispose();
+                    _chirpClient = null;
+                }
+                _chirpTextBuffer.Clear();
+                _aiSpeaking = false;
+
                 if (_liveSession != null)
                 {
                     try
@@ -485,6 +573,9 @@ namespace AIEmbodiment
             _audioPlayback?.Stop();
 
             _packetAssembler?.Reset();
+
+            _chirpClient?.Dispose();
+            _chirpClient = null;
 
             _sessionCts?.Cancel();
             _liveSession?.Dispose();
@@ -558,32 +649,40 @@ namespace AIEmbodiment
                 var audioChunks = response.AudioAsFloat;
                 if (audioChunks != null && audioChunks.Count > 0)
                 {
-                    if (_audioPlayback != null)
+                    // Only route Gemini native audio to playback when using GeminiNative backend
+                    if (_config.voiceBackend == VoiceBackend.GeminiNative && _audioPlayback != null)
                     {
                         foreach (var chunk in audioChunks)
                         {
                             _audioPlayback.EnqueueAudio(chunk);
                         }
                     }
-                    // Track AI speaking state
-                    if (!_aiSpeaking)
+                    // NOTE: When ChirpTTS is selected, Gemini audio is intentionally discarded.
+                    // Audio playback is driven by ChirpTTSClient synthesis instead.
+
+                    // AI speaking state tracking -- keep for GeminiNative only
+                    if (_config.voiceBackend == VoiceBackend.GeminiNative && !_aiSpeaking)
                     {
                         _aiSpeaking = true;
                         MainThreadDispatcher.Enqueue(() => OnAISpeakingStarted?.Invoke());
                     }
 
-                    // Detect turn start on first audio data
+                    // Turn start detection unchanged (needed for PacketAssembler in both paths)
                     if (!_turnStarted)
                     {
                         _turnStarted = true;
                         MainThreadDispatcher.Enqueue(() => _packetAssembler?.StartTurn());
                     }
 
-                    // Route audio to PacketAssembler (via main thread) for sync packets
-                    foreach (var chunk in audioChunks)
+                    // Route audio to PacketAssembler ONLY for GeminiNative
+                    // (Chirp path: PacketAssembler gets text from transcription, audio from Chirp synthesis)
+                    if (_config.voiceBackend == VoiceBackend.GeminiNative)
                     {
-                        var localChunk = chunk;
-                        MainThreadDispatcher.Enqueue(() => _packetAssembler?.AddAudio(localChunk));
+                        foreach (var chunk in audioChunks)
+                        {
+                            var localChunk = chunk;
+                            MainThreadDispatcher.Enqueue(() => _packetAssembler?.AddAudio(localChunk));
+                        }
                     }
                 }
 
@@ -603,6 +702,16 @@ namespace AIEmbodiment
 
                     _turnStarted = false;
                     MainThreadDispatcher.Enqueue(() => _packetAssembler?.FinishTurn());
+
+                    // Chirp full-response mode: synthesize accumulated text on turn end
+                    if (_config.voiceBackend == VoiceBackend.ChirpTTS
+                        && _config.chirpSynthesisMode == ChirpSynthesisMode.FullResponse
+                        && _chirpTextBuffer.Length > 0)
+                    {
+                        string fullText = _chirpTextBuffer.ToString();
+                        _chirpTextBuffer.Clear();
+                        MainThreadDispatcher.Enqueue(() => SynthesizeAndEnqueue(fullText));
+                    }
                 }
 
                 if (content.Interrupted)
@@ -621,6 +730,9 @@ namespace AIEmbodiment
 
                     _turnStarted = false;
                     MainThreadDispatcher.Enqueue(() => _packetAssembler?.CancelTurn());
+
+                    // Clear Chirp text buffer on interruption
+                    _chirpTextBuffer.Clear();
                 }
 
                 if (content.InputTranscription.HasValue)
@@ -644,6 +756,12 @@ namespace AIEmbodiment
                     // Route to PacketAssembler for sentence-boundary subtitle packets
                     string transcriptForAssembler = transcript;
                     MainThreadDispatcher.Enqueue(() => _packetAssembler?.AddTranscription(transcriptForAssembler));
+
+                    // Chirp TTS: capture text for synthesis
+                    if (_config.voiceBackend == VoiceBackend.ChirpTTS)
+                    {
+                        _chirpTextBuffer.Append(transcript);
+                    }
                 }
             }
             else if (response.Message is LiveSessionToolCall toolCall)
