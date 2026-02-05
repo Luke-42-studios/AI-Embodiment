@@ -10,27 +10,28 @@ See: .planning/PROJECT.md (updated 2026-02-05)
 ## Current Position
 
 Phase: 2 of 6 (Audio Pipeline)
-Plan: 0 of 3 in current phase
-Status: Ready to plan
-Last activity: 2026-02-05 -- Phase 1 verified and complete
+Plan: 2 of 3 in current phase
+Status: In progress
+Last activity: 2026-02-05 -- Completed 02-02-PLAN.md (AudioCapture)
 
-Progress: [██░░░░░░░░] 17%
+Progress: [███░░░░░░░] 29%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 3
-- Average duration: 1.7 min
-- Total execution time: 0.08 hours
+- Total plans completed: 4
+- Average duration: 1.5 min
+- Total execution time: 0.1 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1 | 3/3 | 5 min | 1.7 min |
+| 2 | 1/3 | 1 min | 1 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (2 min), 01-02 (1 min), 01-03 (2 min)
+- Last 5 plans: 01-01 (2 min), 01-02 (1 min), 01-03 (2 min), 02-02 (1 min)
 - Trend: stable
 
 *Updated after each plan completion*
@@ -52,6 +53,9 @@ Recent decisions affecting current work:
 - [01-03]: Outer while loop for ReceiveAsync solves single-turn trap (Pitfall 1)
 - [01-03]: All ProcessResponse callbacks dispatched through MainThreadDispatcher (Pitfall 2)
 - [01-03]: OnDestroy uses synchronous Cancel/Dispose -- no async Disconnect in Unity lifecycle
+- [02-02]: System default microphone only (null device) -- no device selection API per CONTEXT.md
+- [02-02]: 100ms chunk accumulation (1600 samples at 16kHz) before callback to prevent WebSocket flooding
+- [02-02]: Preprocessor guards for Android using directive to avoid compile errors on non-Android
 
 ### Pending Todos
 
@@ -64,6 +68,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-05
-Stopped at: Phase 1 verified and complete, ready to plan Phase 2
+Last session: 2026-02-05T20:24:44Z
+Stopped at: Completed 02-02-PLAN.md (AudioCapture)
 Resume file: None
