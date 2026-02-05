@@ -83,8 +83,8 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 04-01-PLAN.md -- FunctionCallContext typed argument wrapper and FunctionRegistry with registration, freeze, build, and cancellation
-- [ ] 04-02-PLAN.md -- GoalPriority enum, ConversationalGoal data class, and GoalManager with lifecycle and instruction composition
+- [x] 04-01-PLAN.md -- FunctionCallContext typed argument wrapper and FunctionRegistry with registration, freeze, build, and cancellation
+- [x] 04-02-PLAN.md -- GoalPriority enum, ConversationalGoal data class, and GoalManager with lifecycle and instruction composition
 - [ ] 04-03-PLAN.md -- PersonaSession and SystemInstructionBuilder integration: function dispatch, response round-trip, goal API, mid-session updates
 
 ### Phase 5: Chirp TTS Voice Backend
@@ -125,6 +125,6 @@ Note: Phase 4 and Phase 5 can execute in parallel (config parallelization: enabl
 | 1. Foundation and Core Session | 3/3 | Complete | 2026-02-05 |
 | 2. Audio Pipeline | 3/3 | Complete | 2026-02-05 |
 | 3. Synchronization | 2/2 | Complete | 2026-02-05 |
-| 4. Function Calling and Conversational Goals | 1/3 | In progress | - |
+| 4. Function Calling and Conversational Goals | 2/3 | In progress | - |
 | 5. Chirp TTS Voice Backend | 0/2 | Not started | - |
 | 6. Sample Scene and Integration | 0/1 | Not started | - |

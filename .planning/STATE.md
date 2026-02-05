@@ -14,14 +14,14 @@ Plan: 2 of 3 in current phase
 Status: In progress
 Last activity: 2026-02-05 -- Completed 04-02-PLAN.md
 
-Progress: [██████░░░░] 64%
+Progress: [███████░░░] 71%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 9
-- Average duration: 1.6 min
-- Total execution time: 0.24 hours
+- Total plans completed: 10
+- Average duration: 1.5 min
+- Total execution time: 0.25 hours
 
 **By Phase:**
 
@@ -30,10 +30,10 @@ Progress: [██████░░░░] 64%
 | 1 | 3/3 | 5 min | 1.7 min |
 | 2 | 3/3 | 5 min | 1.7 min |
 | 3 | 2/2 | 4 min | 2.0 min |
-| 4 | 1/3 | 1 min | 1.0 min |
+| 4 | 2/3 | 2 min | 1.0 min |
 
 **Recent Trend:**
-- Last 5 plans: 02-03 (2 min), 03-01 (2 min), 03-02 (2 min), 04-02 (1 min)
+- Last 5 plans: 03-01 (2 min), 03-02 (2 min), 04-01 (1 min), 04-02 (1 min)
 - Trend: stable
 
 *Updated after each plan completion*
@@ -75,6 +75,9 @@ Recent decisions affecting current work:
 - [03-02]: Turn start detection via _turnStarted flag on first audio or transcription chunk per AI response
 - [03-02]: Assembler routing after existing events -- backward-compatible event ordering preserved
 - [03-02]: FunctionCallPart.Args is IReadOnlyDictionary -- matches PacketAssembler.AddFunctionCall signature directly
+- [04-01]: FunctionHandler delegate returns IDictionary<string, object> or null -- null means fire-and-forget, non-null auto-sends response
+- [04-01]: IsCancelled uses one-shot Remove semantics -- avoids double-checking and automatic cleanup
+- [04-01]: GetObject/GetArray use as-cast with concrete type fallback for MiniJSON compatibility
 - [04-02]: ConversationalGoal is a class (not struct) -- reference type with identity, managed in a list
 - [04-02]: GoalManager is plain C# (no Unity/Firebase) -- same pattern as PacketAssembler
 - [04-02]: Priority ordering via sequential iteration per level -- zero allocations versus sorting
