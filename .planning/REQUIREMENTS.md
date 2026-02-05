@@ -31,6 +31,12 @@
 - [ ] **VOICE-03**: Voice backend selected per-persona in ScriptableObject config
 - [ ] **VOICE-04**: ChirpTTSClient handles HTTP requests to texttospeech.googleapis.com via UnityWebRequest
 
+### Transcription
+
+- [ ] **TRNS-01**: PersonaSession exposes user input transcript (speech-to-text from Gemini) via event/callback
+- [ ] **TRNS-02**: PersonaSession exposes AI output transcript (response text for subtitles) via event/callback
+- [ ] **TRNS-03**: Output transcript text streams incrementally as chunks arrive (not buffered until turn end)
+
 ### Synchronization
 
 - [ ] **SYNC-01**: PacketAssembler correlates text chunks, audio data, and emote timing into unified SyncPackets
@@ -112,6 +118,9 @@
 | VOICE-02 | Phase 5 | Pending |
 | VOICE-03 | Phase 5 | Pending |
 | VOICE-04 | Phase 5 | Pending |
+| TRNS-01 | Phase 2 | Pending |
+| TRNS-02 | Phase 3 | Pending |
+| TRNS-03 | Phase 3 | Pending |
 | SYNC-01 | Phase 3 | Pending |
 | SYNC-02 | Phase 3 | Pending |
 | SYNC-03 | Phase 3 | Pending |
@@ -128,8 +137,8 @@
 | PKG-02 | Phase 6 | Pending |
 
 **Coverage:**
-- v1 requirements: 31 total
-- Mapped to phases: 31
+- v1 requirements: 34 total
+- Mapped to phases: 34
 - Unmapped: 0
 
 ---

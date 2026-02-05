@@ -41,12 +41,13 @@ Plans:
 ### Phase 2: Audio Pipeline
 **Goal**: User speaks into microphone, audio streams to Gemini Live, and AI voice response plays back through AudioSource without gaps or artifacts
 **Depends on**: Phase 1
-**Requirements**: AUDIO-01, AUDIO-02, AUDIO-03, AUDIO-04, VOICE-01
+**Requirements**: AUDIO-01, AUDIO-02, AUDIO-03, AUDIO-04, VOICE-01, TRNS-01
 **Success Criteria** (what must be TRUE):
   1. AudioCapture records from the user's microphone at 16kHz mono PCM and streams chunks to the active Gemini Live session
   2. AI voice response (Gemini native audio) plays through a Unity AudioSource in real time as chunks arrive
   3. Streaming playback uses a ring buffer with write-ahead watermark -- no pops, silence gaps, or garbled audio during continuous speech
   4. Developer can assign any AudioSource to AudioPlayback, enabling spatialization and audio mixing through standard Unity tools
+  5. User input transcript (speech-to-text from Gemini) is exposed via event/callback on PersonaSession
 **Plans**: TBD
 
 Plans:
@@ -57,11 +58,12 @@ Plans:
 ### Phase 3: Synchronization
 **Goal**: Text chunks, audio data, and event timing are correlated into unified packets so developers can synchronize subtitles, animations, and audio playback
 **Depends on**: Phase 2
-**Requirements**: SYNC-01, SYNC-02, SYNC-03
+**Requirements**: SYNC-01, SYNC-02, SYNC-03, TRNS-02, TRNS-03
 **Success Criteria** (what must be TRUE):
   1. PacketAssembler produces SyncPackets containing correlated text, audio, and function call events with timing information
   2. Text displayed as subtitles aligns with corresponding audio playback (no drift or mismatch)
   3. PacketAssembler works correctly for the Gemini native audio path (Chirp path support validated in Phase 5)
+  4. AI output transcript text streams incrementally as chunks arrive for real-time subtitle display
 **Plans**: TBD
 
 Plans:
