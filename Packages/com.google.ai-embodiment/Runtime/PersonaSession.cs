@@ -197,11 +197,98 @@ namespace AIEmbodiment
             _sessionCts = null;
         }
 
-        // ReceiveLoopAsync and ProcessResponse will be added in Task 2
+        /// <summary>
+        /// Continuous receive loop that processes AI responses across multiple turns.
+        /// Wraps ReceiveAsync in an outer while loop to solve the single-turn trap
+        /// (Research Pitfall 1): ReceiveAsync breaks the IAsyncEnumerable at each
+        /// TurnComplete, so without the outer loop the session processes exactly one
+        /// response turn and silently stops receiving.
+        /// Runs on a background thread pool thread for the entire session duration.
+        /// </summary>
         private async Task ReceiveLoopAsync(LiveSession session, CancellationToken ct)
         {
-            // Placeholder -- implemented in Task 2
-            await Task.CompletedTask;
+            try
+            {
+                while (!ct.IsCancellationRequested)
+                {
+                    await foreach (var response in session.ReceiveAsync(ct))
+                    {
+                        ProcessResponse(response);
+                    }
+                    // ReceiveAsync completed because TurnComplete was received.
+                    // Loop back to receive the next turn.
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // Expected during shutdown -- session is intentionally closing
+            }
+            catch (Exception ex)
+            {
+                MainThreadDispatcher.Enqueue(() =>
+                {
+                    SetState(SessionState.Error);
+                    OnError?.Invoke(ex);
+                    Debug.LogError($"PersonaSession: Receive loop error: {ex.Message}");
+                });
+            }
+            finally
+            {
+                // If the loop exits for any reason and State is still Connected,
+                // transition to Disconnected so consumer code knows the session ended.
+                MainThreadDispatcher.Enqueue(() =>
+                {
+                    if (State == SessionState.Connected)
+                        SetState(SessionState.Disconnected);
+                });
+            }
+        }
+
+        /// <summary>
+        /// Processes a single response from the Gemini Live session.
+        /// This runs on a BACKGROUND THREAD -- every callback MUST go through
+        /// <see cref="MainThreadDispatcher.Enqueue"/> to safely interact with Unity.
+        /// All response data is captured into local variables before lambda capture
+        /// to prevent stale references.
+        /// </summary>
+        private void ProcessResponse(LiveSessionResponse response)
+        {
+            // Capture text into local variable before lambda capture
+            string text = response.Text;
+
+            if (response.Message is LiveSessionContent content)
+            {
+                if (!string.IsNullOrEmpty(text))
+                {
+                    MainThreadDispatcher.Enqueue(() => OnTextReceived?.Invoke(text));
+                }
+
+                if (content.TurnComplete)
+                {
+                    MainThreadDispatcher.Enqueue(() => OnTurnComplete?.Invoke());
+                }
+
+                if (content.Interrupted)
+                {
+                    MainThreadDispatcher.Enqueue(() => OnInterrupted?.Invoke());
+                }
+
+                if (content.InputTranscription.HasValue)
+                {
+                    string transcript = content.InputTranscription.Value.Text;
+                    MainThreadDispatcher.Enqueue(() => OnInputTranscription?.Invoke(transcript));
+                }
+
+                if (content.OutputTranscription.HasValue)
+                {
+                    string transcript = content.OutputTranscription.Value.Text;
+                    MainThreadDispatcher.Enqueue(() => OnOutputTranscription?.Invoke(transcript));
+                }
+            }
+            else if (response.Message is LiveSessionToolCall)
+            {
+                Debug.Log("PersonaSession: Tool call received (not implemented until Phase 4)");
+            }
         }
     }
 }
