@@ -1,0 +1,18 @@
+{
+    "name": "com.google.ai-embodiment.samples.ayalivestream",
+    "rootNamespace": "AIEmbodiment.Samples",
+    "references": [
+        "com.google.ai-embodiment",
+        "Firebase.AI",
+        "Unity.InputSystem"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
