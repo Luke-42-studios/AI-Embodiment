@@ -109,10 +109,12 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. Sample scene loads and runs with a working persona that responds to voice input with synchronized speech, text, and animation events
   2. Sample scene demonstrates function calling (emote triggers) and at least one conversational goal in action
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 06-01: Sample scene with full pipeline demonstration
+- [ ] 06-01-PLAN.md -- UPM sample folder structure, package.json samples entry, asmdef, UI Toolkit layout (UXML) and styling (USS)
+- [ ] 06-02-PLAN.md -- AyaChatUI chat log controller and AyaSampleController with function calls, intro, push-to-talk, goal injection
+- [ ] 06-03-PLAN.md -- Unity Editor scene and asset creation checkpoint (scene, PersonaConfig, PanelSettings, component wiring)
 
 ## Progress
 
@@ -128,4 +130,4 @@ Note: Phase 4 and Phase 5 can execute in parallel (config parallelization: enabl
 | 3. Synchronization | 2/2 | Complete | 2026-02-05 |
 | 4. Function Calling and Conversational Goals | 3/3 | Complete | 2026-02-05 |
 | 5. Chirp TTS Voice Backend | 3/3 | Complete | 2026-02-05 |
-| 6. Sample Scene and Integration | 0/1 | Not started | - |
+| 6. Sample Scene and Integration | 0/3 | Not started | - |
