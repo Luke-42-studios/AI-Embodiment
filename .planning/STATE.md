@@ -12,26 +12,26 @@ See: .planning/PROJECT.md (updated 2026-02-05)
 Phase: 2 of 6 (Audio Pipeline)
 Plan: 2 of 3 in current phase
 Status: In progress
-Last activity: 2026-02-05 -- Completed 02-02-PLAN.md (AudioCapture)
+Last activity: 2026-02-05 -- Completed 02-01-PLAN.md (AudioRingBuffer and AudioPlayback)
 
-Progress: [███░░░░░░░] 29%
+Progress: [████░░░░░░] 36%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 4
-- Average duration: 1.5 min
-- Total execution time: 0.1 hours
+- Total plans completed: 5
+- Average duration: 1.6 min
+- Total execution time: 0.13 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1 | 3/3 | 5 min | 1.7 min |
-| 2 | 1/3 | 1 min | 1 min |
+| 2 | 2/3 | 3 min | 1.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (2 min), 01-02 (1 min), 01-03 (2 min), 02-02 (1 min)
+- Last 5 plans: 01-02 (1 min), 01-03 (2 min), 02-01 (2 min), 02-02 (1 min)
 - Trend: stable
 
 *Updated after each plan completion*
@@ -53,6 +53,10 @@ Recent decisions affecting current work:
 - [01-03]: Outer while loop for ReceiveAsync solves single-turn trap (Pitfall 1)
 - [01-03]: All ProcessResponse callbacks dispatched through MainThreadDispatcher (Pitfall 2)
 - [01-03]: OnDestroy uses synchronous Cancel/Dispose -- no async Disconnect in Unity lifecycle
+- [02-01]: Ring buffer capacity 2 seconds (48000 samples) absorbs network jitter; watermark 150ms (3600 samples) balances latency vs jitter
+- [02-01]: Zero allocations in OnAudioFilterRead -- all buffers pre-allocated in Initialize
+- [02-01]: Dummy silent AudioClip trick activates OnAudioFilterRead (Research Pitfall 8)
+- [02-01]: Linear interpolation resampling with fractional position tracking across callbacks for pitch-accurate continuity
 - [02-02]: System default microphone only (null device) -- no device selection API per CONTEXT.md
 - [02-02]: 100ms chunk accumulation (1600 samples at 16kHz) before callback to prevent WebSocket flooding
 - [02-02]: Preprocessor guards for Android using directive to avoid compile errors on non-Android
@@ -68,6 +72,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-05T20:24:44Z
-Stopped at: Completed 02-02-PLAN.md (AudioCapture)
+Last session: 2026-02-05T20:25:18Z
+Stopped at: Completed 02-01-PLAN.md (AudioRingBuffer and AudioPlayback)
 Resume file: None
