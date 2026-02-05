@@ -1,0 +1,16 @@
+{
+    "name": "com.luke42studios.ai-embodiment.editor",
+    "rootNamespace": "AIEmbodiment.Editor",
+    "references": [
+        "com.luke42studios.ai-embodiment"
+    ],
+    "includePlatforms": ["Editor"],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

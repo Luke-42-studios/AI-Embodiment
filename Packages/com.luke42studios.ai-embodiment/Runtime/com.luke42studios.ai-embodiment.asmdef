@@ -1,0 +1,16 @@
+{
+    "name": "com.luke42studios.ai-embodiment",
+    "rootNamespace": "AIEmbodiment",
+    "references": [
+        "Firebase.AI"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
