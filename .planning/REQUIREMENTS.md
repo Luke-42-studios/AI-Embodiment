@@ -7,15 +7,15 @@
 
 ### Core Session
 
-- [ ] **SESS-01**: Developer can create a PersonaConfig ScriptableObject with personality fields (archetype, traits, backstory, speech patterns)
-- [ ] **SESS-02**: Developer can select Gemini model in PersonaConfig (e.g., gemini-2.0-flash-exp, gemini-2.5-flash-native-audio)
-- [ ] **SESS-03**: Developer can select voice backend and voice name in PersonaConfig (Gemini native or Chirp)
-- [ ] **SESS-04**: Developer can add PersonaSession MonoBehaviour to a GameObject and assign a PersonaConfig
-- [ ] **SESS-05**: PersonaSession.Connect() establishes a Gemini Live session via Firebase AI Logic
-- [ ] **SESS-06**: PersonaSession handles the receive loop lifecycle (re-calls ReceiveAsync after each TurnComplete)
-- [ ] **SESS-07**: Thread-safe dispatcher marshals Firebase background callbacks to Unity main thread
-- [ ] **SESS-08**: PersonaSession fires state change events (Connecting, Connected, Error, Disconnected)
-- [ ] **SESS-09**: PersonaSession.Disconnect() cleanly closes the session
+- [x] **SESS-01**: Developer can create a PersonaConfig ScriptableObject with personality fields (archetype, traits, backstory, speech patterns)
+- [x] **SESS-02**: Developer can select Gemini model in PersonaConfig (e.g., gemini-2.0-flash-exp, gemini-2.5-flash-native-audio)
+- [x] **SESS-03**: Developer can select voice backend and voice name in PersonaConfig (Gemini native or Chirp)
+- [x] **SESS-04**: Developer can add PersonaSession MonoBehaviour to a GameObject and assign a PersonaConfig
+- [x] **SESS-05**: PersonaSession.Connect() establishes a Gemini Live session via Firebase AI Logic
+- [x] **SESS-06**: PersonaSession handles the receive loop lifecycle (re-calls ReceiveAsync after each TurnComplete)
+- [x] **SESS-07**: Thread-safe dispatcher marshals Firebase background callbacks to Unity main thread
+- [x] **SESS-08**: PersonaSession fires state change events (Connecting, Connected, Error, Disconnected)
+- [x] **SESS-09**: PersonaSession.Disconnect() cleanly closes the session
 
 ### Audio Pipeline
 
@@ -60,7 +60,7 @@
 
 ### Packaging
 
-- [ ] **PKG-01**: Project structured as UPM package (Runtime/, Samples~/, package.json, asmdef)
+- [x] **PKG-01**: Project structured as UPM package (Runtime/, Samples~/, package.json, asmdef)
 - [ ] **PKG-02**: Sample scene demonstrates full pipeline -- persona talking with animation function calls
 
 ## v2 Requirements
@@ -101,15 +101,15 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SESS-01 | Phase 1 | Pending |
-| SESS-02 | Phase 1 | Pending |
-| SESS-03 | Phase 1 | Pending |
-| SESS-04 | Phase 1 | Pending |
-| SESS-05 | Phase 1 | Pending |
-| SESS-06 | Phase 1 | Pending |
-| SESS-07 | Phase 1 | Pending |
-| SESS-08 | Phase 1 | Pending |
-| SESS-09 | Phase 1 | Pending |
+| SESS-01 | Phase 1 | Complete |
+| SESS-02 | Phase 1 | Complete |
+| SESS-03 | Phase 1 | Complete |
+| SESS-04 | Phase 1 | Complete |
+| SESS-05 | Phase 1 | Complete |
+| SESS-06 | Phase 1 | Complete |
+| SESS-07 | Phase 1 | Complete |
+| SESS-08 | Phase 1 | Complete |
+| SESS-09 | Phase 1 | Complete |
 | AUDIO-01 | Phase 2 | Pending |
 | AUDIO-02 | Phase 2 | Pending |
 | AUDIO-03 | Phase 2 | Pending |
@@ -133,7 +133,7 @@
 | GOAL-03 | Phase 4 | Pending |
 | GOAL-04 | Phase 4 | Pending |
 | GOAL-05 | Phase 4 | Pending |
-| PKG-01 | Phase 1 | Pending |
+| PKG-01 | Phase 1 | Complete |
 | PKG-02 | Phase 6 | Pending |
 
 **Coverage:**
