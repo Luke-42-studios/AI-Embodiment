@@ -31,12 +31,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. PersonaSession sustains multi-turn text conversation (receives responses after TurnComplete without dying)
   4. PersonaSession fires state change events (Connecting, Connected, Error, Disconnected) that developer code can subscribe to
   5. PersonaSession.Disconnect() cleanly closes the session without leaked threads or WebSocket connections, including during scene transitions
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 01-01: UPM package structure and MainThreadDispatcher
-- [ ] 01-02: PersonaConfig ScriptableObject and SystemInstructionBuilder
-- [ ] 01-03: PersonaSession lifecycle, receive loop, and state events
+- [ ] 01-01-PLAN.md -- UPM package skeleton, Firebase.AI asmdef, MainThreadDispatcher, SessionState enum
+- [ ] 01-02-PLAN.md -- PersonaConfig ScriptableObject, VoiceBackend enum, SystemInstructionBuilder
+- [ ] 01-03-PLAN.md -- PersonaSession lifecycle, multi-turn receive loop, state events, SendText, Disconnect
 
 ### Phase 2: Audio Pipeline
 **Goal**: User speaks into microphone, audio streams to Gemini Live, and AI voice response plays back through AudioSource without gaps or artifacts
@@ -122,7 +122,7 @@ Note: Phase 4 and Phase 5 can execute in parallel (config parallelization: enabl
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation and Core Session | 0/3 | Not started | - |
+| 1. Foundation and Core Session | 0/3 | Planned | - |
 | 2. Audio Pipeline | 0/3 | Not started | - |
 | 3. Synchronization | 0/2 | Not started | - |
 | 4. Function Calling and Conversational Goals | 0/3 | Not started | - |
