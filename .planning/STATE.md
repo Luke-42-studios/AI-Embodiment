@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-05)
 ## Current Position
 
 Phase: 3 of 6 (Synchronization)
-Plan: 0 of 2 in current phase
-Status: Ready to plan
-Last activity: 2026-02-05 -- Phase 2 verified and complete
+Plan: 1 of 2 in current phase
+Status: In progress
+Last activity: 2026-02-05 -- Completed 03-01-PLAN.md
 
-Progress: [███░░░░░░░] 33%
+Progress: [████░░░░░░] 39%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 6
+- Total plans completed: 7
 - Average duration: 1.7 min
-- Total execution time: 0.17 hours
+- Total execution time: 0.20 hours
 
 **By Phase:**
 
@@ -29,9 +29,10 @@ Progress: [███░░░░░░░] 33%
 |-------|-------|-------|----------|
 | 1 | 3/3 | 5 min | 1.7 min |
 | 2 | 3/3 | 5 min | 1.7 min |
+| 3 | 1/2 | 2 min | 2.0 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-03 (2 min), 02-01 (2 min), 02-02 (1 min), 02-03 (2 min)
+- Last 5 plans: 02-01 (2 min), 02-02 (1 min), 02-03 (2 min), 03-01 (2 min)
 - Trend: stable
 
 *Updated after each plan completion*
@@ -64,6 +65,11 @@ Recent decisions affecting current work:
 - [02-03]: Audio components are optional SerializeField references -- null checks preserve text-only fallback
 - [02-03]: HandleAudioCaptured fires OnUserSpeakingStarted on first chunk for accurate speaking state
 - [02-03]: AudioPlayback.Initialize() called after SetState(Connected) so playback pipeline is ready before first audio
+- [03-01]: SyncPacket readonly struct with 9-property constructor -- follows Firebase SDK convention, zero GC pressure
+- [03-01]: SyncPacketType enum discriminator (TextAudio, FunctionCall) -- avoids polymorphism per CONTEXT.md
+- [03-01]: PacketAssembler is plain C# class -- only Unity dependency is Time.time for flush timeout
+- [03-01]: FindSentenceBoundary returns last boundary found -- greedy sentence emission per scan
+- [03-01]: FunctionCall packets emit immediately (no sentence buffering) -- function calls are discrete events
 
 ### Pending Todos
 
@@ -76,6 +82,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-05
-Stopped at: Phase 2 verified and complete, ready to plan Phase 3
+Last session: 2026-02-05 21:10 UTC
+Stopped at: Completed 03-01-PLAN.md
 Resume file: None
