@@ -1,0 +1,17 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <ui:VisualElement name="root-container" class="root">
+        <ui:VisualElement name="header" class="header">
+            <ui:VisualElement name="speaking-indicator" class="indicator" />
+            <ui:Label name="persona-name" text="Aya" class="name-label" />
+        </ui:VisualElement>
+
+        <ui:ScrollView name="chat-log" class="chat-log"
+            vertical-scroller-visibility="Auto"
+            horizontal-scroller-visibility="Hidden" />
+
+        <ui:VisualElement name="footer" class="footer">
+            <ui:Label name="status-label" text="Starting up..." class="status" />
+            <ui:Button name="ptt-button" text="Hold to Talk" class="ptt-button" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>
