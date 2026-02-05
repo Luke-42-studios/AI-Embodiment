@@ -58,10 +58,18 @@ namespace AIEmbodiment
         public event Action<Exception> OnError;
 
         /// <summary>
+        /// Fires when a function handler throws an exception.
+        /// The conversation continues despite the error.
+        /// </summary>
+        public event Action<string, Exception> OnFunctionError;
+
+        /// <summary>
         /// Fires with correlated text, audio, and function call data packaged into SyncPackets.
         /// Subscribe to this for synchronized subtitles, audio, and event handling.
         /// </summary>
         public event Action<SyncPacket> OnSyncPacket;
+
+        private readonly FunctionRegistry _functionRegistry = new FunctionRegistry();
 
         private CancellationTokenSource _sessionCts;
         private LiveSession _liveSession;
@@ -113,10 +121,12 @@ namespace AIEmbodiment
                 );
 
                 var systemInstruction = SystemInstructionBuilder.Build(_config);
+                var tools = _functionRegistry.HasRegistrations ? _functionRegistry.BuildTools() : null;
 
                 var liveModel = ai.GetLiveModel(
                     modelName: _config.modelName,
                     liveGenerationConfig: liveConfig,
+                    tools: tools,
                     systemInstruction: systemInstruction
                 );
 
@@ -125,7 +135,7 @@ namespace AIEmbodiment
                 SetState(SessionState.Connected);
 
                 _packetAssembler = new PacketAssembler();
-                _packetAssembler.SetPacketCallback(packet => OnSyncPacket?.Invoke(packet));
+                _packetAssembler.SetPacketCallback(HandleSyncPacket);
 
                 if (_audioPlayback != null)
                 {
@@ -220,6 +230,18 @@ namespace AIEmbodiment
         }
 
         /// <summary>
+        /// Registers a function that the AI can call during conversation.
+        /// Must be called before <see cref="Connect"/> -- functions are fixed for the session lifetime.
+        /// </summary>
+        /// <param name="name">The function name matching the FunctionDeclaration.</param>
+        /// <param name="declaration">The Firebase FunctionDeclaration describing the function schema.</param>
+        /// <param name="handler">The delegate invoked when the AI calls this function.</param>
+        public void RegisterFunction(string name, FunctionDeclaration declaration, FunctionHandler handler)
+        {
+            _functionRegistry.Register(name, declaration, handler);
+        }
+
+        /// <summary>
         /// Registers a sync driver that controls packet release timing.
         /// The highest-latency driver wins.
         /// </summary>
@@ -250,6 +272,83 @@ namespace AIEmbodiment
 
             // Fire-and-forget send: SDK handles float->PCM->base64->JSON->WebSocket
             _ = _liveSession.SendAudioAsync(chunk, _sessionCts.Token);
+        }
+
+        /// <summary>
+        /// Routes SyncPackets to function dispatch when applicable, then forwards to subscribers.
+        /// </summary>
+        private void HandleSyncPacket(SyncPacket packet)
+        {
+            if (packet.Type == SyncPacketType.FunctionCall && !string.IsNullOrEmpty(packet.FunctionName))
+            {
+                DispatchFunctionCall(packet);
+            }
+
+            // Always forward to developer subscribers (they can observe function calls too)
+            OnSyncPacket?.Invoke(packet);
+        }
+
+        /// <summary>
+        /// Dispatches a function call SyncPacket to its registered handler.
+        /// Checks cancellation, invokes the handler, and sends the response if non-null.
+        /// </summary>
+        private void DispatchFunctionCall(SyncPacket packet)
+        {
+            // Check cancellation (Pitfall 3: race condition)
+            if (packet.FunctionId != null && _functionRegistry.IsCancelled(packet.FunctionId))
+            {
+                return; // Call was cancelled by user interruption, skip dispatch
+            }
+
+            if (!_functionRegistry.TryGetHandler(packet.FunctionName, out var handler))
+            {
+                Debug.LogWarning($"PersonaSession: No handler registered for function '{packet.FunctionName}'");
+                return;
+            }
+
+            IDictionary<string, object> result = null;
+            try
+            {
+                var context = new FunctionCallContext(packet.FunctionName, packet.FunctionId, packet.FunctionArgs);
+                result = handler(context);
+            }
+            catch (Exception ex)
+            {
+                OnFunctionError?.Invoke(packet.FunctionName, ex);
+                Debug.LogError($"PersonaSession: Function handler '{packet.FunctionName}' threw: {ex.Message}");
+                return; // Don't send response on error
+            }
+
+            // If handler returned a value, send it back to Gemini (Pitfall 1: timing)
+            if (result != null && packet.FunctionId != null)
+            {
+                _ = SendFunctionResponseAsync(packet.FunctionName, result, packet.FunctionId);
+            }
+        }
+
+        /// <summary>
+        /// Sends a function response back to Gemini via the live session.
+        /// </summary>
+        private async Task SendFunctionResponseAsync(string name, IDictionary<string, object> result, string callId)
+        {
+            try
+            {
+                if (_liveSession == null || State != SessionState.Connected) return;
+
+                // Check cancellation one more time before sending (Pitfall 3)
+                if (_functionRegistry.IsCancelled(callId)) return;
+
+                var response = ModelContent.FunctionResponse(name, result, callId);
+                await _liveSession.SendAsync(content: response, cancellationToken: _sessionCts.Token);
+            }
+            catch (Exception ex)
+            {
+                MainThreadDispatcher.Enqueue(() =>
+                {
+                    OnError?.Invoke(ex);
+                    Debug.LogError($"PersonaSession: Function response send failed: {ex.Message}");
+                });
+            }
         }
 
         /// <summary>
@@ -485,7 +584,7 @@ namespace AIEmbodiment
             }
             else if (response.Message is LiveSessionToolCall toolCall)
             {
-                // Route function calls to PacketAssembler (Phase 4 will fully implement handlers)
+                // Route function calls to PacketAssembler for SyncPacket dispatch
                 if (toolCall.FunctionCalls != null)
                 {
                     foreach (var fc in toolCall.FunctionCalls)
@@ -495,6 +594,14 @@ namespace AIEmbodiment
                         var id = fc.Id;
                         MainThreadDispatcher.Enqueue(() => _packetAssembler?.AddFunctionCall(name, args, id));
                     }
+                }
+            }
+            else if (response.Message is LiveSessionToolCallCancellation cancellation)
+            {
+                foreach (var id in cancellation.FunctionIds)
+                {
+                    var localId = id;
+                    MainThreadDispatcher.Enqueue(() => _functionRegistry.MarkCancelled(localId));
                 }
             }
         }
