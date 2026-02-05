@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-05)
 
 **Core value:** Developers can drop an AI character into their Unity scene and have it talking -- with synchronized voice, text, and animation events -- in minutes, not weeks.
-**Current focus:** Phase 3 - Synchronization
+**Current focus:** Phase 4 - Function Calling and Conversational Goals
 
 ## Current Position
 
 Phase: 3 of 6 (Synchronization)
-Plan: 1 of 2 in current phase
-Status: In progress
-Last activity: 2026-02-05 -- Completed 03-01-PLAN.md
+Plan: 2 of 2 in current phase
+Status: Phase complete
+Last activity: 2026-02-05 -- Completed 03-02-PLAN.md
 
-Progress: [████░░░░░░] 39%
+Progress: [██████░░░░] 57%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 7
-- Average duration: 1.7 min
-- Total execution time: 0.20 hours
+- Total plans completed: 8
+- Average duration: 1.6 min
+- Total execution time: 0.22 hours
 
 **By Phase:**
 
@@ -29,10 +29,10 @@ Progress: [████░░░░░░] 39%
 |-------|-------|-------|----------|
 | 1 | 3/3 | 5 min | 1.7 min |
 | 2 | 3/3 | 5 min | 1.7 min |
-| 3 | 1/2 | 2 min | 2.0 min |
+| 3 | 2/2 | 4 min | 2.0 min |
 
 **Recent Trend:**
-- Last 5 plans: 02-01 (2 min), 02-02 (1 min), 02-03 (2 min), 03-01 (2 min)
+- Last 5 plans: 02-02 (1 min), 02-03 (2 min), 03-01 (2 min), 03-02 (2 min)
 - Trend: stable
 
 *Updated after each plan completion*
@@ -70,6 +70,10 @@ Recent decisions affecting current work:
 - [03-01]: PacketAssembler is plain C# class -- only Unity dependency is Time.time for flush timeout
 - [03-01]: FindSentenceBoundary returns last boundary found -- greedy sentence emission per scan
 - [03-01]: FunctionCall packets emit immediately (no sentence buffering) -- function calls are discrete events
+- [03-02]: Audio routing split: AudioPlayback inside null check, PacketAssembler outside it but inside audioChunks check
+- [03-02]: Turn start detection via _turnStarted flag on first audio or transcription chunk per AI response
+- [03-02]: Assembler routing after existing events -- backward-compatible event ordering preserved
+- [03-02]: FunctionCallPart.Args is IReadOnlyDictionary -- matches PacketAssembler.AddFunctionCall signature directly
 
 ### Pending Todos
 
@@ -82,6 +86,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-05 21:10 UTC
-Stopped at: Completed 03-01-PLAN.md
+Last session: 2026-02-05 21:14 UTC
+Stopped at: Completed 03-02-PLAN.md (Phase 3 complete)
 Resume file: None
