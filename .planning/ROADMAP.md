@@ -12,7 +12,7 @@ AI Embodiment delivers a Unity UPM package that lets developers add AI-powered c
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Foundation and Core Session** - UPM structure, threading, persona config, and Gemini Live session lifecycle
+- [x] **Phase 1: Foundation and Core Session** - UPM structure, threading, persona config, and Gemini Live session lifecycle
 - [ ] **Phase 2: Audio Pipeline** - Microphone capture, streaming playback via ring buffer, and Gemini native audio voice path
 - [ ] **Phase 3: Synchronization** - PacketAssembler correlates text, audio, and event timing into unified packets
 - [ ] **Phase 4: Function Calling and Conversational Goals** - AI-triggered game actions via C# delegates and goal-driven conversation steering
@@ -36,7 +36,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 Plans:
 - [x] 01-01-PLAN.md -- UPM package skeleton, Firebase.AI asmdef, MainThreadDispatcher, SessionState enum
 - [x] 01-02-PLAN.md -- PersonaConfig ScriptableObject, VoiceBackend enum, SystemInstructionBuilder
-- [ ] 01-03-PLAN.md -- PersonaSession lifecycle, multi-turn receive loop, state events, SendText, Disconnect
+- [x] 01-03-PLAN.md -- PersonaSession lifecycle, multi-turn receive loop, state events, SendText, Disconnect
 
 ### Phase 2: Audio Pipeline
 **Goal**: User speaks into microphone, audio streams to Gemini Live, and AI voice response plays back through AudioSource without gaps or artifacts
@@ -122,7 +122,7 @@ Note: Phase 4 and Phase 5 can execute in parallel (config parallelization: enabl
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation and Core Session | 2/3 | In progress | - |
+| 1. Foundation and Core Session | 3/3 | Complete | 2026-02-05 |
 | 2. Audio Pipeline | 0/3 | Not started | - |
 | 3. Synchronization | 0/2 | Not started | - |
 | 4. Function Calling and Conversational Goals | 0/3 | Not started | - |
