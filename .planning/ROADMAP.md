@@ -34,7 +34,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 3 plans
 
 Plans:
-- [ ] 01-01-PLAN.md -- UPM package skeleton, Firebase.AI asmdef, MainThreadDispatcher, SessionState enum
+- [x] 01-01-PLAN.md -- UPM package skeleton, Firebase.AI asmdef, MainThreadDispatcher, SessionState enum
 - [ ] 01-02-PLAN.md -- PersonaConfig ScriptableObject, VoiceBackend enum, SystemInstructionBuilder
 - [ ] 01-03-PLAN.md -- PersonaSession lifecycle, multi-turn receive loop, state events, SendText, Disconnect
 
@@ -122,7 +122,7 @@ Note: Phase 4 and Phase 5 can execute in parallel (config parallelization: enabl
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation and Core Session | 0/3 | Planned | - |
+| 1. Foundation and Core Session | 1/3 | In progress | - |
 | 2. Audio Pipeline | 0/3 | Not started | - |
 | 3. Synchronization | 0/2 | Not started | - |
 | 4. Function Calling and Conversational Goals | 0/3 | Not started | - |
