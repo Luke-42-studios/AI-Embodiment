@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-05)
 
 **Core value:** Developers can drop an AI character into their Unity scene and have it talking -- with synchronized voice, text, and animation events -- in minutes, not weeks.
-**Current focus:** Phase 5 - Chirp TTS Voice Backend (Plans 01 and 02 complete, Plan 03 remaining)
+**Current focus:** Phase 5 complete. Phase 6 (Sample Scene and Integration) remaining.
 
 ## Current Position
 
 Phase: 5 of 6 (Chirp TTS Voice Backend)
-Plan: 2 of 3 in phase 5 (05-01 and 05-02 complete; 05-03 pending)
-Status: In progress
-Last activity: 2026-02-05 -- Completed 05-01-PLAN.md (Cloud TTS Client and Voice Data)
+Plan: 3 of 3 in phase 5 (all complete)
+Status: Phase complete
+Last activity: 2026-02-05 -- Completed 05-03-PLAN.md (PersonaSession Chirp TTS Integration)
 
-Progress: [█████████░] 93%
+Progress: [██████████████░] 93%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 13
+- Total plans completed: 14
 - Average duration: 1.6 min
-- Total execution time: 0.37 hours
+- Total execution time: 0.39 hours
 
 **By Phase:**
 
@@ -31,10 +31,10 @@ Progress: [█████████░] 93%
 | 2 | 3/3 | 5 min | 1.7 min |
 | 3 | 2/2 | 4 min | 2.0 min |
 | 4 | 3/3 | 5 min | 1.7 min |
-| 5 | 2/3 | 5 min | 2.5 min |
+| 5 | 3/3 | 7 min | 2.3 min |
 
 **Recent Trend:**
-- Last 5 plans: 04-02 (1 min), 04-03 (3 min), 05-02 (2 min), 05-01 (3 min)
+- Last 5 plans: 04-03 (3 min), 05-02 (2 min), 05-01 (3 min), 05-03 (2 min)
 - Trend: stable
 
 *Updated after each plan completion*
@@ -94,6 +94,11 @@ Recent decisions affecting current work:
 - [05-02]: chirpVoiceName auto-synced by Editor from language + short name -- runtime code reads full API name directly
 - [05-02]: IsCustomChirpVoice convenience property on PersonaConfig references ChirpVoiceList.CustomVoice constant
 - [05-02]: Voice dropdown shows all 30 voices regardless of language -- Chirp 3 HD voices work across all locales
+- [05-03]: Gemini Live stays in audio mode (ResponseModality.Audio) for both backends -- native audio discarded for Chirp path
+- [05-03]: AI speaking events for ChirpTTS driven by SynthesizeAndEnqueue not Gemini audio arrival
+- [05-03]: SynthesizeAndEnqueue is async void (fire-and-forget from callback context) with internal error handling
+- [05-03]: Chirp text buffer (_chirpTextBuffer) separate from PacketAssembler text buffer -- each serves different purpose
+- [05-03]: SynthesizeAndEnqueue passes chirpVoiceShortName for standard voices, customVoiceName for custom
 
 ### Pending Todos
 
@@ -107,5 +112,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-05
-Stopped at: Completed 05-01-PLAN.md (Cloud TTS Client and Voice Data)
+Stopped at: Completed 05-03-PLAN.md (PersonaSession Chirp TTS Integration) -- Phase 5 complete
 Resume file: None
