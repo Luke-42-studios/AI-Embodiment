@@ -48,12 +48,12 @@ Plans:
   3. Streaming playback uses a ring buffer with write-ahead watermark -- no pops, silence gaps, or garbled audio during continuous speech
   4. Developer can assign any AudioSource to AudioPlayback, enabling spatialization and audio mixing through standard Unity tools
   5. User input transcript (speech-to-text from Gemini) is exposed via event/callback on PersonaSession
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 02-01: AudioCapture component and microphone-to-session streaming
-- [ ] 02-02: AudioPlayback component with ring buffer streaming
-- [ ] 02-03: Gemini native audio integration and end-to-end voice loop
+- [ ] 02-01-PLAN.md -- AudioRingBuffer and AudioPlayback with OnAudioFilterRead streaming, resampling, and watermark buffering
+- [ ] 02-02-PLAN.md -- AudioCapture with microphone recording, permission handling, and chunked output callback
+- [ ] 02-03-PLAN.md -- PersonaSession audio integration: push-to-talk API, audio routing, speaking events, and clean teardown
 
 ### Phase 3: Synchronization
 **Goal**: Text chunks, audio data, and event timing are correlated into unified packets so developers can synchronize subtitles, animations, and audio playback
