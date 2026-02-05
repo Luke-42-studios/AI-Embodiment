@@ -13,7 +13,7 @@ AI Embodiment delivers a Unity UPM package that lets developers add AI-powered c
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation and Core Session** - UPM structure, threading, persona config, and Gemini Live session lifecycle
-- [ ] **Phase 2: Audio Pipeline** - Microphone capture, streaming playback via ring buffer, and Gemini native audio voice path
+- [x] **Phase 2: Audio Pipeline** - Microphone capture, streaming playback via ring buffer, and Gemini native audio voice path
 - [ ] **Phase 3: Synchronization** - PacketAssembler correlates text, audio, and event timing into unified packets
 - [ ] **Phase 4: Function Calling and Conversational Goals** - AI-triggered game actions via C# delegates and goal-driven conversation steering
 - [ ] **Phase 5: Chirp TTS Voice Backend** - Alternative voice path via Cloud TTS HTTP API with per-persona backend selection
@@ -52,8 +52,8 @@ Plans:
 
 Plans:
 - [x] 02-01-PLAN.md -- AudioRingBuffer and AudioPlayback with OnAudioFilterRead streaming, resampling, and watermark buffering
-- [ ] 02-02-PLAN.md -- AudioCapture with microphone recording, permission handling, and chunked output callback
-- [ ] 02-03-PLAN.md -- PersonaSession audio integration: push-to-talk API, audio routing, speaking events, and clean teardown
+- [x] 02-02-PLAN.md -- AudioCapture with microphone recording, permission handling, and chunked output callback
+- [x] 02-03-PLAN.md -- PersonaSession audio integration: push-to-talk API, audio routing, speaking events, and clean teardown
 
 ### Phase 3: Synchronization
 **Goal**: Text chunks, audio data, and event timing are correlated into unified packets so developers can synchronize subtitles, animations, and audio playback
@@ -123,7 +123,7 @@ Note: Phase 4 and Phase 5 can execute in parallel (config parallelization: enabl
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation and Core Session | 3/3 | Complete | 2026-02-05 |
-| 2. Audio Pipeline | 2/3 | In progress | - |
+| 2. Audio Pipeline | 3/3 | Complete | 2026-02-05 |
 | 3. Synchronization | 0/2 | Not started | - |
 | 4. Function Calling and Conversational Goals | 0/3 | Not started | - |
 | 5. Chirp TTS Voice Backend | 0/2 | Not started | - |

@@ -5,33 +5,33 @@
 See: .planning/PROJECT.md (updated 2026-02-05)
 
 **Core value:** Developers can drop an AI character into their Unity scene and have it talking -- with synchronized voice, text, and animation events -- in minutes, not weeks.
-**Current focus:** Phase 2 - Audio Pipeline
+**Current focus:** Phase 3 - Synchronization
 
 ## Current Position
 
-Phase: 2 of 6 (Audio Pipeline)
-Plan: 2 of 3 in current phase
-Status: In progress
-Last activity: 2026-02-05 -- Completed 02-01-PLAN.md (AudioRingBuffer and AudioPlayback)
+Phase: 2 of 6 (Audio Pipeline) -- COMPLETE
+Plan: 3 of 3 in current phase
+Status: Phase complete
+Last activity: 2026-02-05 -- Completed 02-03-PLAN.md (PersonaSession audio integration)
 
-Progress: [████░░░░░░] 36%
+Progress: [████░░░░░░] 43%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 5
-- Average duration: 1.6 min
-- Total execution time: 0.13 hours
+- Total plans completed: 6
+- Average duration: 1.7 min
+- Total execution time: 0.17 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1 | 3/3 | 5 min | 1.7 min |
-| 2 | 2/3 | 3 min | 1.5 min |
+| 2 | 3/3 | 5 min | 1.7 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-02 (1 min), 01-03 (2 min), 02-01 (2 min), 02-02 (1 min)
+- Last 5 plans: 01-03 (2 min), 02-01 (2 min), 02-02 (1 min), 02-03 (2 min)
 - Trend: stable
 
 *Updated after each plan completion*
@@ -60,6 +60,10 @@ Recent decisions affecting current work:
 - [02-02]: System default microphone only (null device) -- no device selection API per CONTEXT.md
 - [02-02]: 100ms chunk accumulation (1600 samples at 16kHz) before callback to prevent WebSocket flooding
 - [02-02]: Preprocessor guards for Android using directive to avoid compile errors on non-Android
+- [02-03]: Push-to-talk API lives on PersonaSession per CONTEXT.md -- session is the single developer-facing API surface
+- [02-03]: Audio components are optional SerializeField references -- null checks preserve text-only fallback
+- [02-03]: HandleAudioCaptured fires OnUserSpeakingStarted on first chunk for accurate speaking state
+- [02-03]: AudioPlayback.Initialize() called after SetState(Connected) so playback pipeline is ready before first audio
 
 ### Pending Todos
 
@@ -72,6 +76,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-05T20:25:18Z
-Stopped at: Completed 02-01-PLAN.md (AudioRingBuffer and AudioPlayback)
+Last session: 2026-02-05T20:28:51Z
+Stopped at: Completed 02-03-PLAN.md (PersonaSession audio integration) -- Phase 2 complete
 Resume file: None
