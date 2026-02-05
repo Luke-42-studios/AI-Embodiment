@@ -27,9 +27,9 @@
 ### Voice Backends
 
 - [x] **VOICE-01**: Gemini native audio path -- audio received directly from LiveSession response
-- [ ] **VOICE-02**: Chirp 3 HD TTS path -- text from LiveSession sent via HTTP to Cloud TTS, PCM audio returned
-- [ ] **VOICE-03**: Voice backend selected per-persona in ScriptableObject config
-- [ ] **VOICE-04**: ChirpTTSClient handles HTTP requests to texttospeech.googleapis.com via UnityWebRequest
+- [x] **VOICE-02**: Chirp 3 HD TTS path -- text from LiveSession sent via HTTP to Cloud TTS, PCM audio returned
+- [x] **VOICE-03**: Voice backend selected per-persona in ScriptableObject config
+- [x] **VOICE-04**: ChirpTTSClient handles HTTP requests to texttospeech.googleapis.com via UnityWebRequest
 
 ### Transcription
 
@@ -115,9 +115,9 @@
 | AUDIO-03 | Phase 2 | Complete |
 | AUDIO-04 | Phase 2 | Complete |
 | VOICE-01 | Phase 2 | Complete |
-| VOICE-02 | Phase 5 | Pending |
-| VOICE-03 | Phase 5 | Pending |
-| VOICE-04 | Phase 5 | Pending |
+| VOICE-02 | Phase 5 | Complete |
+| VOICE-03 | Phase 5 | Complete |
+| VOICE-04 | Phase 5 | Complete |
 | TRNS-01 | Phase 2 | Complete |
 | TRNS-02 | Phase 3 | Complete |
 | TRNS-03 | Phase 3 | Complete |
