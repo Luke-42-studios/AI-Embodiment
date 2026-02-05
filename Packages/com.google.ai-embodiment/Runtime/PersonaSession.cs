@@ -14,6 +14,8 @@ namespace AIEmbodiment
     public class PersonaSession : MonoBehaviour
     {
         [SerializeField] private PersonaConfig _config;
+        [SerializeField] private AudioCapture _audioCapture;   // optional
+        [SerializeField] private AudioPlayback _audioPlayback;  // optional
 
         /// <summary>Current session lifecycle state.</summary>
         public SessionState State { get; private set; } = SessionState.Disconnected;
@@ -39,11 +41,26 @@ namespace AIEmbodiment
         /// <summary>Fires when the user interrupts the AI.</summary>
         public event Action OnInterrupted;
 
+        /// <summary>Fires when the AI starts producing audio output.</summary>
+        public event Action OnAISpeakingStarted;
+
+        /// <summary>Fires when the AI finishes producing audio output (after buffer drains).</summary>
+        public event Action OnAISpeakingStopped;
+
+        /// <summary>Fires when the user starts speaking (first audio chunk sent after StartListening).</summary>
+        public event Action OnUserSpeakingStarted;
+
+        /// <summary>Fires when the user stops speaking (StopListening called).</summary>
+        public event Action OnUserSpeakingStopped;
+
         /// <summary>Fires on errors with the exception details.</summary>
         public event Action<Exception> OnError;
 
         private CancellationTokenSource _sessionCts;
         private LiveSession _liveSession;
+        private bool _aiSpeaking;
+        private bool _userSpeaking;
+        private bool _isListening;
 
         private void SetState(SessionState newState)
         {
@@ -98,6 +115,11 @@ namespace AIEmbodiment
 
                 SetState(SessionState.Connected);
 
+                if (_audioPlayback != null)
+                {
+                    _audioPlayback.Initialize();
+                }
+
                 // Fire and forget -- ReceiveLoopAsync handles its own error reporting
                 _ = ReceiveLoopAsync(_liveSession, _sessionCts.Token);
             }
@@ -143,6 +165,67 @@ namespace AIEmbodiment
         }
 
         /// <summary>
+        /// Begins microphone capture and streams audio to Gemini Live.
+        /// Requires an <see cref="AudioCapture"/> component assigned in the Inspector.
+        /// No-op if already listening, not connected, or no AudioCapture assigned.
+        /// </summary>
+        public void StartListening()
+        {
+            if (_audioCapture == null)
+            {
+                Debug.LogWarning("PersonaSession: No AudioCapture assigned -- cannot listen.");
+                return;
+            }
+            if (State != SessionState.Connected)
+            {
+                Debug.LogWarning("PersonaSession: Cannot start listening -- session is not connected.");
+                return;
+            }
+            if (_isListening) return;
+
+            _isListening = true;
+            _audioCapture.OnAudioCaptured += HandleAudioCaptured;
+            _audioCapture.StartCapture();
+        }
+
+        /// <summary>
+        /// Stops microphone capture and audio streaming.
+        /// No-op if not currently listening.
+        /// </summary>
+        public void StopListening()
+        {
+            if (!_isListening) return;
+
+            _isListening = false;
+            _audioCapture.StopCapture();
+            _audioCapture.OnAudioCaptured -= HandleAudioCaptured;
+
+            if (_userSpeaking)
+            {
+                _userSpeaking = false;
+                OnUserSpeakingStopped?.Invoke();
+            }
+        }
+
+        /// <summary>
+        /// Handles audio chunks from AudioCapture and forwards them to Gemini Live.
+        /// Tracks user speaking state and fires corresponding events.
+        /// </summary>
+        private void HandleAudioCaptured(float[] chunk)
+        {
+            if (_liveSession == null || State != SessionState.Connected) return;
+
+            if (!_userSpeaking)
+            {
+                _userSpeaking = true;
+                OnUserSpeakingStarted?.Invoke();
+            }
+
+            // Fire-and-forget send: SDK handles float->PCM->base64->JSON->WebSocket
+            _ = _liveSession.SendAudioAsync(chunk, _sessionCts.Token);
+        }
+
+        /// <summary>
         /// Cleanly disconnects the session: cancels the receive loop,
         /// awaits the WebSocket close handshake, and disposes resources.
         /// </summary>
@@ -156,6 +239,17 @@ namespace AIEmbodiment
                 SetState(SessionState.Disconnecting);
 
                 _sessionCts?.Cancel();
+
+                // Stop audio components (CONTEXT.md: "PersonaSession auto-stops on disconnect")
+                if (_isListening)
+                {
+                    StopListening();
+                }
+                if (_audioPlayback != null)
+                {
+                    _audioPlayback.Stop();
+                }
+                _aiSpeaking = false;
 
                 if (_liveSession != null)
                 {
@@ -190,6 +284,13 @@ namespace AIEmbodiment
         /// </summary>
         private void OnDestroy()
         {
+            if (_isListening && _audioCapture != null)
+            {
+                _audioCapture.StopCapture();
+                _audioCapture.OnAudioCaptured -= HandleAudioCaptured;
+            }
+            _audioPlayback?.Stop();
+
             _sessionCts?.Cancel();
             _liveSession?.Dispose();
             _sessionCts?.Dispose();
