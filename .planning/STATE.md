@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-05)
 
 **Core value:** Developers can drop an AI character into their Unity scene and have it talking -- with synchronized voice, text, and animation events -- in minutes, not weeks.
-**Current focus:** Phase 5 verified and complete. Next: Phase 6 - Sample Scene and Integration
+**Current focus:** Phase 6 - Sample Scene and Integration (Plan 01 complete)
 
 ## Current Position
 
-Phase: 5 of 6 (Chirp TTS Voice Backend) -- VERIFIED
-Plan: 3 of 3 in phase 5 (complete)
-Status: Phase verified and complete
-Last activity: 2026-02-05 -- Phase 5 verified (3/3 must-haves passed)
+Phase: 6 of 6 (Sample Scene and Integration)
+Plan: 1 of 3 in phase 6
+Status: In progress
+Last activity: 2026-02-05 -- Completed 06-01-PLAN.md
 
-Progress: [██████████████░] 93%
+Progress: [███████████████] 94%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 14
+- Total plans completed: 15
 - Average duration: 1.6 min
-- Total execution time: 0.39 hours
+- Total execution time: 0.41 hours
 
 **By Phase:**
 
@@ -32,9 +32,10 @@ Progress: [██████████████░] 93%
 | 3 | 2/2 | 4 min | 2.0 min |
 | 4 | 3/3 | 5 min | 1.7 min |
 | 5 | 3/3 | 7 min | 2.3 min |
+| 6 | 1/3 | 1 min | 1.0 min |
 
 **Recent Trend:**
-- Last 5 plans: 04-03 (3 min), 05-02 (2 min), 05-01 (3 min), 05-03 (2 min)
+- Last 5 plans: 05-02 (2 min), 05-01 (3 min), 05-03 (2 min), 06-01 (1 min)
 - Trend: stable
 
 *Updated after each plan completion*
@@ -99,6 +100,8 @@ Recent decisions affecting current work:
 - [05-03]: SynthesizeAndEnqueue is async void (fire-and-forget from callback context) with internal error handling
 - [05-03]: Chirp text buffer (_chirpTextBuffer) separate from PacketAssembler text buffer -- each serves different purpose
 - [05-03]: SynthesizeAndEnqueue passes chirpVoiceShortName for standard voices, customVoiceName for custom
+- [06-01]: UXML element names (chat-log, persona-name, speaking-indicator, status-label, ptt-button) are the binding contract for Plan 02 C# scripts
+- [06-01]: USS uses border-color glow for speaking indicator since box-shadow is unsupported in UI Toolkit
 
 ### Pending Todos
 
@@ -111,6 +114,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-05
-Stopped at: Phase 5 verified and complete, ready to plan Phase 6
+Last session: 2026-02-05T23:59:48Z
+Stopped at: Completed 06-01-PLAN.md (Sample scaffold)
 Resume file: None
