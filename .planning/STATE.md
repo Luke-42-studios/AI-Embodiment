@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-05)
 
 **Core value:** Developers can drop an AI character into their Unity scene and have it talking -- with synchronized voice, text, and animation events -- in minutes, not weeks.
-**Current focus:** Phase 6 - Sample Scene and Integration (Plan 02 complete)
+**Current focus:** All 6 phases complete. Milestone ready for audit.
 
 ## Current Position
 
-Phase: 6 of 6 (Sample Scene and Integration)
-Plan: 2 of 3 in phase 6
-Status: In progress
-Last activity: 2026-02-06 -- Completed 06-02-PLAN.md
+Phase: 6 of 6 (Sample Scene and Integration) -- VERIFIED
+Plan: 3 of 3 in phase 6 (complete)
+Status: Phase verified and complete
+Last activity: 2026-02-05 -- Phase 6 verified (human checkpoint approved)
 
-Progress: [████████████████] 94%
+Progress: [████████████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 16
+- Total plans completed: 17
 - Average duration: 1.6 min
-- Total execution time: 0.44 hours
+- Total execution time: 0.47 hours
 
 **By Phase:**
 
@@ -32,10 +32,10 @@ Progress: [████████████████] 94%
 | 3 | 2/2 | 4 min | 2.0 min |
 | 4 | 3/3 | 5 min | 1.7 min |
 | 5 | 3/3 | 7 min | 2.3 min |
-| 6 | 2/3 | 3 min | 1.5 min |
+| 6 | 3/3 | 5 min | 1.7 min |
 
 **Recent Trend:**
-- Last 5 plans: 05-01 (3 min), 05-03 (2 min), 06-01 (1 min), 06-02 (2 min)
+- Last 5 plans: 05-03 (2 min), 06-01 (1 min), 06-02 (2 min), 06-03 (checkpoint)
 - Trend: stable
 
 *Updated after each plan completion*
@@ -107,6 +107,8 @@ Recent decisions affecting current work:
 - [06-02]: Function handlers are all fire-and-forget (return null) with LogSystemMessage for observability
 - [06-02]: Goal injection at exactly 3 exchanges (WarmUpExchanges) with bool guard preventing double-injection
 - [06-02]: PTT button uses PointerDown/PointerUp events for hold-to-talk semantics matching spacebar behavior
+- [06-03]: PersonaConfig .asset created as YAML with known script GUID -- Unity imports correctly
+- [06-03]: Test files placed in Assets/AyaLiveStream/ for Editor testing, to be copied to Samples~ when ready
 
 ### Pending Todos
 
@@ -119,6 +121,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-06T00:03:00Z
-Stopped at: Completed 06-02-PLAN.md (Sample scripts)
+Last session: 2026-02-05
+Stopped at: All phases complete. Milestone ready for audit.
 Resume file: None

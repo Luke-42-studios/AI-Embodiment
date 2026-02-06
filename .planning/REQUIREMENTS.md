@@ -48,7 +48,7 @@
 - [x] **FUNC-01**: Developer can declare function schemas (name, parameters, description) on PersonaSession
 - [x] **FUNC-02**: Developer registers C# delegate handlers for each declared function
 - [x] **FUNC-03**: When AI triggers a function call, the registered delegate fires with parsed arguments
-- [ ] **FUNC-04**: Built-in emote function with animation name enum as a reference implementation
+- [x] **FUNC-04**: Built-in emote function with animation name enum as a reference implementation
 
 ### Conversational Goals
 
@@ -61,7 +61,7 @@
 ### Packaging
 
 - [x] **PKG-01**: Project structured as UPM package (Runtime/, Samples~/, package.json, asmdef)
-- [ ] **PKG-02**: Sample scene demonstrates full pipeline -- persona talking with animation function calls
+- [x] **PKG-02**: Sample scene demonstrates full pipeline -- persona talking with animation function calls
 
 ## v2 Requirements
 
@@ -127,14 +127,14 @@
 | FUNC-01 | Phase 4 | Complete |
 | FUNC-02 | Phase 4 | Complete |
 | FUNC-03 | Phase 4 | Complete |
-| FUNC-04 | Phase 4 | Pending |
+| FUNC-04 | Phase 6 | Complete |
 | GOAL-01 | Phase 4 | Complete |
 | GOAL-02 | Phase 4 | Complete |
 | GOAL-03 | Phase 4 | Complete |
 | GOAL-04 | Phase 4 | Complete |
 | GOAL-05 | Phase 4 | Complete |
 | PKG-01 | Phase 1 | Complete |
-| PKG-02 | Phase 6 | Pending |
+| PKG-02 | Phase 6 | Complete |
 
 **Coverage:**
 - v1 requirements: 34 total
