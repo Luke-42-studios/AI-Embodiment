@@ -1,0 +1,44 @@
+# Unity generated
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+
+# IDE
+.vscode/
+.idea/
+*.sln
+*.slnx
+*.csproj
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Firebase SDK (users install via Firebase Unity SDK package)
+Assets/Firebase/
+Assets/Firebase.meta
+Assets/ExternalDependencyManager/
+Assets/ExternalDependencyManager.meta
+Assets/Plugins/
+Assets/Plugins.meta
+Assets/Editor Default Resources/
+Assets/Editor Default Resources.meta
+
+# Firebase credentials (sensitive)
+Assets/google-services.json
+Assets/google-services.json.meta
+Assets/StreamingAssets/google-services-desktop.json
+Assets/StreamingAssets/google-services-desktop.json.meta
+
+# Crashlytics
+crashlytics-build.properties
+
+# Builds
+*.apk
+*.aab
+*.unitypackage
+*.app
