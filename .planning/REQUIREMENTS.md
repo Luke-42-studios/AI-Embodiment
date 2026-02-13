@@ -23,10 +23,10 @@
 
 ### TTS Abstraction
 
-- [ ] **TTS-01**: ITTSProvider interface with `SynthesizeAsync(text, voiceConfig)` returning PCM audio
-- [ ] **TTS-02**: ChirpTTSClient implements ITTSProvider (existing HTTP client, adapted)
-- [ ] **TTS-03**: Chirp TTS path: discard Gemini native audio, route outputTranscription text to ITTSProvider
-- [ ] **TTS-04**: ChirpTTSClient uses Newtonsoft.Json for request/response serialization (replacing MiniJSON)
+- [x] **TTS-01**: ITTSProvider interface with `SynthesizeAsync(text, voiceConfig)` returning PCM audio
+- [x] **TTS-02**: ChirpTTSClient implements ITTSProvider (existing HTTP client, adapted)
+- [x] **TTS-03**: Chirp TTS path: discard Gemini native audio, route outputTranscription text to ITTSProvider
+- [x] **TTS-04**: ChirpTTSClient uses Newtonsoft.Json for request/response serialization (replacing MiniJSON)
 
 ### PersonaSession Migration
 
@@ -89,10 +89,10 @@
 | AUD-03 | Phase 7 | Complete |
 | AUD-04 | Phase 7 | Complete |
 | AUD-05 | Phase 7 | Complete |
-| TTS-01 | Phase 9 | Pending |
-| TTS-02 | Phase 9 | Pending |
-| TTS-03 | Phase 9 | Pending |
-| TTS-04 | Phase 9 | Pending |
+| TTS-01 | Phase 9 | Complete |
+| TTS-02 | Phase 9 | Complete |
+| TTS-03 | Phase 9 | Complete |
+| TTS-04 | Phase 9 | Complete |
 | MIG-01 | Phase 8 | Complete |
 | MIG-02 | Phase 8 | Complete |
 | MIG-03 | Phase 8 | Complete |
@@ -113,4 +113,4 @@
 
 ---
 *Requirements defined: 2026-02-13*
-*Last updated: 2026-02-13 after Phase 8 completion*
+*Last updated: 2026-02-13 after Phase 9 completion*
