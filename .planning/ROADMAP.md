@@ -71,11 +71,11 @@ Plans:
   1. ITTSProvider interface exists with SynthesizeAsync method returning PCM audio
   2. ChirpTTSClient implements ITTSProvider and uses Newtonsoft.Json for request/response serialization (MiniJSON removed)
   3. When voice backend is ChirpTTS, Gemini native audio is discarded and outputTranscription text is routed through ITTSProvider for synthesis and playback
-**Plans**: TBD
+**Plans:** 2 plans
 
 Plans:
-- [ ] 09-01: ITTSProvider interface and ChirpTTSClient adaptation (interface definition, implement on ChirpTTSClient, Newtonsoft.Json migration)
-- [ ] 09-02: Chirp TTS routing in PersonaSession (outputTranscription -> ITTSProvider -> AudioPlayback pipeline)
+- [ ] 09-01-PLAN.md -- ITTSProvider interface + TTSResult struct + TTSSynthesisMode enum, VoiceBackend.Custom, ChirpTTSClient implements ITTSProvider, PersonaConfig field renames
+- [ ] 09-02-PLAN.md -- PersonaSession provider-agnostic TTS routing, SetTTSProvider API, PersonaConfigEditor Custom backend UI
 
 ### Phase 10: Function Calling and Goals Migration
 **Goal**: AI-triggered function calls and conversational goals work over the WebSocket transport with the same developer-facing API
