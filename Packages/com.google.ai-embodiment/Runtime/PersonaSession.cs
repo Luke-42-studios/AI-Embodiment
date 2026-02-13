@@ -160,17 +160,12 @@ namespace AIEmbodiment
             {
                 _sessionCts = new CancellationTokenSource();
 
-                var systemInstruction = SystemInstructionBuilder.Build(_config, _goalManager);
-
-                // Prompt-based function calling: append function instructions to system prompt
+                string functionInstructions = null;
                 if (_functionRegistry.HasRegistrations && !UseNativeFunctionCalling)
                 {
-                    var functionInstructions = _functionRegistry.BuildPromptInstructions();
-                    if (!string.IsNullOrEmpty(functionInstructions))
-                    {
-                        systemInstruction += "\n\n" + functionInstructions;
-                    }
+                    functionInstructions = _functionRegistry.BuildPromptInstructions();
                 }
+                var systemInstruction = SystemInstructionBuilder.Build(_config, _goalManager, functionInstructions);
 
                 var liveConfig = new GeminiLiveConfig
                 {

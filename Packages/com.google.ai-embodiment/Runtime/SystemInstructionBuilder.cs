@@ -32,6 +32,25 @@ namespace AIEmbodiment
         }
 
         /// <summary>
+        /// Builds a system instruction string including conversational goals and optional
+        /// function calling instructions for the prompt-based fallback path.
+        /// </summary>
+        /// <param name="config">The persona configuration to convert.</param>
+        /// <param name="goalManager">The goal manager containing active conversational goals.</param>
+        /// <param name="functionInstructions">Optional function calling instructions for prompt-based path. Null or empty to omit.</param>
+        /// <returns>The formatted system instruction text.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="config"/> is null.</exception>
+        public static string Build(PersonaConfig config, GoalManager goalManager, string functionInstructions)
+        {
+            var text = BuildInstructionText(config, goalManager);
+            if (!string.IsNullOrEmpty(functionInstructions))
+            {
+                text += "\n\n" + functionInstructions;
+            }
+            return text;
+        }
+
+        /// <summary>
         /// Builds the raw instruction text string from persona config.
         /// Internal so PersonaSession can access it for mid-session instruction updates.
         /// </summary>
