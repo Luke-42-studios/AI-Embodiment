@@ -4,9 +4,9 @@ using UnityEngine;
 namespace AIEmbodiment.Editor
 {
     /// <summary>
-    /// Custom Inspector for PersonaConfig. Shows/hides Chirp-specific fields
+    /// Custom Inspector for PersonaConfig. Shows/hides voice-backend-specific fields
     /// based on VoiceBackend selection, with language-filtered voice dropdown
-    /// and custom voice cloning support.
+    /// for Chirp and custom TTS provider support.
     /// </summary>
     [CustomEditor(typeof(PersonaConfig))]
     public class PersonaConfigEditor : UnityEditor.Editor
@@ -33,6 +33,7 @@ namespace AIEmbodiment.Editor
         SerializedProperty _synthesisMode;
         SerializedProperty _customVoiceName;
         SerializedProperty _voiceCloningKey;
+        SerializedProperty _customTTSProvider;
 
         void OnEnable()
         {
@@ -54,6 +55,7 @@ namespace AIEmbodiment.Editor
             _synthesisMode = serializedObject.FindProperty("synthesisMode");
             _customVoiceName = serializedObject.FindProperty("customVoiceName");
             _voiceCloningKey = serializedObject.FindProperty("voiceCloningKey");
+            _customTTSProvider = serializedObject.FindProperty("_customTTSProvider");
         }
 
         public override void OnInspectorGUI()
@@ -98,6 +100,10 @@ namespace AIEmbodiment.Editor
             else if (backend == VoiceBackend.ChirpTTS)
             {
                 DrawChirpFields();
+            }
+            else if (backend == VoiceBackend.Custom)
+            {
+                DrawCustomFields();
             }
 
             EditorGUI.indentLevel--;
@@ -199,6 +205,48 @@ namespace AIEmbodiment.Editor
             {
                 EditorGUILayout.HelpBox(
                     "Entire response synthesized at once. Higher latency but single request.",
+                    MessageType.Info);
+            }
+        }
+
+        void DrawCustomFields()
+        {
+            // Custom TTS provider MonoBehaviour slot
+            EditorGUILayout.PropertyField(_customTTSProvider,
+                new GUIContent("TTS Provider", "MonoBehaviour implementing ITTSProvider"));
+
+            // Validate assigned reference at edit time
+            var mb = _customTTSProvider.objectReferenceValue as MonoBehaviour;
+            if (mb != null && !(mb is ITTSProvider))
+            {
+                EditorGUILayout.HelpBox(
+                    $"{mb.GetType().Name} does not implement ITTSProvider.",
+                    MessageType.Error);
+            }
+            else if (mb == null && _customTTSProvider.objectReferenceValue != null)
+            {
+                EditorGUILayout.HelpBox(
+                    "Assigned object is not a MonoBehaviour.",
+                    MessageType.Error);
+            }
+
+            EditorGUILayout.Space(4);
+
+            // Synthesis mode (shared with ChirpTTS)
+            EditorGUILayout.PropertyField(_synthesisMode,
+                new GUIContent("Synthesis Mode", "How text is sent to the TTS provider for audio generation"));
+
+            var mode = (TTSSynthesisMode)_synthesisMode.enumValueIndex;
+            if (mode == TTSSynthesisMode.SentenceBySentence)
+            {
+                EditorGUILayout.HelpBox(
+                    "Each sentence synthesized as it arrives via PacketAssembler.",
+                    MessageType.Info);
+            }
+            else if (mode == TTSSynthesisMode.FullResponse)
+            {
+                EditorGUILayout.HelpBox(
+                    "Entire response synthesized at once after turn completes.",
                     MessageType.Info);
             }
         }
