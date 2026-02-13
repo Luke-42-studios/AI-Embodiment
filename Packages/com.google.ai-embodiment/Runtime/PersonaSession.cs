@@ -86,9 +86,8 @@ namespace AIEmbodiment
         private bool _userSpeaking;
         private bool _isListening;
 
-        private ChirpTTSClient _chirpClient;
-        private readonly StringBuilder _chirpTextBuffer = new StringBuilder();
-        private bool _chirpSynthesizing;  // prevents overlapping synthesis requests
+        private ITTSProvider _ttsProvider;
+        private readonly StringBuilder _ttsTextBuffer = new StringBuilder();
 
         private void SetState(SessionState newState)
         {
@@ -173,11 +172,22 @@ namespace AIEmbodiment
                     _audioPlayback.Initialize();
                 }
 
-                // Initialize Chirp TTS if backend is ChirpTTS
+                // Initialize TTS provider based on voice backend
                 if (_config.voiceBackend == VoiceBackend.ChirpTTS)
                 {
-                    _chirpClient = new ChirpTTSClient(settings.ApiKey);
+                    _ttsProvider = new ChirpTTSClient(
+                        settings.ApiKey,
+                        _config.IsCustomChirpVoice ? _config.voiceCloningKey : null);
                 }
+                else if (_config.voiceBackend == VoiceBackend.Custom)
+                {
+                    _ttsProvider = _config.CustomTTSProvider;
+                    if (_ttsProvider == null)
+                    {
+                        Debug.LogError("PersonaSession: VoiceBackend.Custom selected but no ITTSProvider assigned in PersonaConfig.");
+                    }
+                }
+                // GeminiNative: _ttsProvider remains null
 
                 // NOTE: SetState(Connected) is NOT called here.
                 // It happens in HandleGeminiEvent when GeminiEventType.Connected arrives
@@ -272,6 +282,21 @@ namespace AIEmbodiment
         public void RegisterFunction(string name, FunctionHandler handler)
         {
             _functionRegistry.Register(name, handler);
+        }
+
+        /// <summary>
+        /// Sets a custom TTS provider for the next session. Must be called before Connect().
+        /// Throws if called while a session is active.
+        /// </summary>
+        /// <param name="provider">The ITTSProvider implementation to use, or null to use config defaults.</param>
+        public void SetTTSProvider(ITTSProvider provider)
+        {
+            if (State != SessionState.Disconnected)
+            {
+                Debug.LogError("PersonaSession: SetTTSProvider must be called before Connect(). Current state: " + State);
+                return;
+            }
+            _ttsProvider = provider;
         }
 
         /// <summary>Adds a conversational goal. Triggers immediate instruction update if connected.</summary>
@@ -412,9 +437,9 @@ namespace AIEmbodiment
                 _packetAssembler?.StartTurn();
             }
 
-            if (_config.voiceBackend == VoiceBackend.GeminiNative)
+            if (_ttsProvider == null)
             {
-                // Enqueue audio for playback
+                // Native audio path (GeminiNative or Custom with no provider assigned)
                 _audioPlayback?.EnqueueAudio(ev.AudioData);
 
                 // Track AI speaking state
@@ -427,13 +452,13 @@ namespace AIEmbodiment
                 // Route to PacketAssembler for sync packet correlation
                 _packetAssembler?.AddAudio(ev.AudioData);
             }
-            // If voiceBackend is ChirpTTS: discard Gemini audio (Chirp TTS handles playback)
+            // If _ttsProvider != null: discard Gemini audio (TTS provider handles playback)
         }
 
         /// <summary>
         /// Handles output transcription events from GeminiLiveClient.
         /// Fires both OnOutputTranscription and OnTextReceived, routes to PacketAssembler,
-        /// and accumulates text for Chirp TTS if applicable.
+        /// and accumulates text for TTS provider if applicable.
         /// </summary>
         private void HandleOutputTranscription(string text)
         {
@@ -452,16 +477,16 @@ namespace AIEmbodiment
             // Route to PacketAssembler for sync packet correlation
             _packetAssembler?.AddTranscription(text);
 
-            // Chirp TTS text accumulation
-            if (_config.voiceBackend == VoiceBackend.ChirpTTS)
+            // TTS text accumulation (for any active TTS provider)
+            if (_ttsProvider != null)
             {
-                _chirpTextBuffer.Append(text);
+                _ttsTextBuffer.Append(text);
             }
         }
 
         /// <summary>
         /// Handles turn complete events from GeminiLiveClient.
-        /// Stops AI speaking, fires events, and triggers Chirp TTS full-response synthesis.
+        /// Stops AI speaking, fires events, and triggers TTS full-response synthesis.
         /// </summary>
         private void HandleTurnCompleteEvent()
         {
@@ -475,13 +500,13 @@ namespace AIEmbodiment
             _turnStarted = false;
             _packetAssembler?.FinishTurn();
 
-            // Chirp full-response mode: synthesize accumulated text on turn complete
-            if (_config.voiceBackend == VoiceBackend.ChirpTTS
+            // TTS full-response mode: synthesize accumulated text on turn complete
+            if (_ttsProvider != null
                 && _config.synthesisMode == TTSSynthesisMode.FullResponse
-                && _chirpTextBuffer.Length > 0)
+                && _ttsTextBuffer.Length > 0)
             {
-                string fullText = _chirpTextBuffer.ToString();
-                _chirpTextBuffer.Clear();
+                string fullText = _ttsTextBuffer.ToString();
+                _ttsTextBuffer.Clear();
                 SynthesizeAndEnqueue(fullText);
             }
         }
@@ -503,7 +528,7 @@ namespace AIEmbodiment
             OnInterrupted?.Invoke();
             _turnStarted = false;
             _packetAssembler?.CancelTurn();
-            _chirpTextBuffer.Clear();
+            _ttsTextBuffer.Clear();
         }
 
         /// <summary>
@@ -522,7 +547,7 @@ namespace AIEmbodiment
         }
 
         // =====================================================================
-        // SyncPacket, Function Dispatch, Chirp TTS
+        // SyncPacket, Function Dispatch, TTS Synthesis
         // =====================================================================
 
         /// <summary>
@@ -530,8 +555,8 @@ namespace AIEmbodiment
         /// </summary>
         private void HandleSyncPacket(SyncPacket packet)
         {
-            // Chirp sentence-by-sentence synthesis: synthesize text from each SyncPacket
-            if (_config.voiceBackend == VoiceBackend.ChirpTTS
+            // TTS sentence-by-sentence synthesis: synthesize text from each SyncPacket
+            if (_ttsProvider != null
                 && _config.synthesisMode == TTSSynthesisMode.SentenceBySentence
                 && packet.Type == SyncPacketType.TextAudio
                 && !string.IsNullOrEmpty(packet.Text))
@@ -550,45 +575,44 @@ namespace AIEmbodiment
         }
 
         /// <summary>
-        /// Synthesizes text via Chirp TTS and enqueues the resulting PCM audio for playback.
-        /// Runs on the main thread (required by UnityWebRequest).
+        /// Synthesizes text via the active TTS provider and enqueues the resulting PCM audio for playback.
+        /// Runs on the main thread (required by UnityWebRequest for REST-based providers).
         /// On failure: logs error, fires OnError, but conversation continues (silent skip per CONTEXT.md).
         /// </summary>
         private async void SynthesizeAndEnqueue(string text)
         {
-            if (_chirpClient == null || _audioPlayback == null || string.IsNullOrEmpty(text)) return;
+            if (_ttsProvider == null || _audioPlayback == null || string.IsNullOrEmpty(text)) return;
 
             try
             {
-                // Determine voice parameters from config
-                string voiceCloningKey = _config.IsCustomChirpVoice ? _config.voiceCloningKey : null;
-                string voiceName = _config.IsCustomChirpVoice ? _config.customVoiceName : _config.chirpVoiceShortName;
+                string voiceName = _config.voiceBackend == VoiceBackend.ChirpTTS
+                    ? (_config.IsCustomChirpVoice ? _config.customVoiceName : _config.chirpVoiceShortName)
+                    : _config.customVoiceName;
+                string languageCode = _config.chirpLanguageCode;
 
-                // Fire AI speaking started on first synthesis of a turn
                 if (!_aiSpeaking)
                 {
                     _aiSpeaking = true;
                     OnAISpeakingStarted?.Invoke();
                 }
 
-                float[] pcm = await _chirpClient.SynthesizeAsync(
-                    text,
-                    voiceName,
-                    _config.chirpLanguageCode,
-                    voiceCloningKey
-                );
+                TTSResult result = await _ttsProvider.SynthesizeAsync(text, voiceName, languageCode);
 
-                if (pcm != null && pcm.Length > 0 && _audioPlayback != null)
+                if (result.HasAudio && _audioPlayback != null)
                 {
-                    _audioPlayback.EnqueueAudio(pcm);
+                    if (result.SampleRate != 24000)
+                    {
+                        Debug.LogWarning(
+                            $"PersonaSession: TTS provider returned {result.SampleRate}Hz audio. " +
+                            "AudioPlayback expects 24000Hz. Audio may play at wrong speed.");
+                    }
+                    _audioPlayback.EnqueueAudio(result.Samples);
                 }
             }
             catch (Exception ex)
             {
-                // Silent skip + error event per CONTEXT.md decision
-                // Text still displays via OnSyncPacket, conversation continues
                 OnError?.Invoke(ex);
-                Debug.LogWarning($"PersonaSession: Chirp TTS synthesis failed (text still displayed): {ex.Message}");
+                Debug.LogWarning($"PersonaSession: TTS synthesis failed (text still displayed): {ex.Message}");
             }
         }
 
@@ -689,12 +713,12 @@ namespace AIEmbodiment
                 _packetAssembler?.Reset();
                 _packetAssembler = null;
 
-                if (_chirpClient != null)
+                if (_ttsProvider != null)
                 {
-                    _chirpClient.Dispose();
-                    _chirpClient = null;
+                    _ttsProvider.Dispose();
+                    _ttsProvider = null;
                 }
-                _chirpTextBuffer.Clear();
+                _ttsTextBuffer.Clear();
 
                 if (_client != null)
                 {
@@ -729,10 +753,10 @@ namespace AIEmbodiment
 
             _packetAssembler?.Reset();
 
-            if (_chirpClient != null)
+            if (_ttsProvider != null)
             {
-                _chirpClient.Dispose();
-                _chirpClient = null;
+                _ttsProvider.Dispose();
+                _ttsProvider = null;
             }
 
             _sessionCts?.Cancel();
