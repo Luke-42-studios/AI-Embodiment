@@ -277,11 +277,11 @@ namespace AIEmbodiment
         /// Must be called before <see cref="Connect"/> -- functions are fixed for the session lifetime.
         /// </summary>
         /// <param name="name">The function name used for lookup.</param>
+        /// <param name="declaration">Typed function declaration describing parameters and schema.</param>
         /// <param name="handler">The delegate invoked when the AI calls this function.</param>
-        // TODO: Phase 10 -- add function declaration parameter back with WebSocket-native type
-        public void RegisterFunction(string name, FunctionHandler handler)
+        public void RegisterFunction(string name, FunctionDeclaration declaration, FunctionHandler handler)
         {
-            _functionRegistry.Register(name, handler);
+            _functionRegistry.Register(name, declaration, handler);
         }
 
         /// <summary>
