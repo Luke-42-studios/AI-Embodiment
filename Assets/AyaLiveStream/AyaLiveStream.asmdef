@@ -3,7 +3,6 @@
     "rootNamespace": "AIEmbodiment.Samples",
     "references": [
         "com.google.ai-embodiment",
-        "Firebase.AI",
         "Unity.InputSystem"
     ],
     "includePlatforms": [],

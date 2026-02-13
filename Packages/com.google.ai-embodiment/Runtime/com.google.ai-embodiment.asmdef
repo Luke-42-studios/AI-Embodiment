@@ -1,9 +1,7 @@
 {
     "name": "com.google.ai-embodiment",
     "rootNamespace": "AIEmbodiment",
-    "references": [
-        "Firebase.AI"
-    ],
+    "references": [],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
