@@ -116,7 +116,7 @@ Plans:
 | 5. Chirp TTS Voice Backend | v1 | 3/3 | Complete | 2026-02-05 |
 | 6. Sample Scene and Integration | v1 | 3/3 | Complete | 2026-02-05 |
 | 7. WebSocket Transport and Audio Parsing | v0.8 | 2/2 | Complete | 2026-02-13 |
-| 8. PersonaSession Migration and Dependency Removal | v0.8 | 0/2 | Not started | - |
+| 8. PersonaSession Migration and Dependency Removal | v0.8 | 1/2 | In progress | - |
 | 9. TTS Abstraction | v0.8 | 0/2 | Not started | - |
 | 10. Function Calling and Goals Migration | v0.8 | 0/2 | Not started | - |
 | 11. Integration Verification | v0.8 | 0/1 | Not started | - |
