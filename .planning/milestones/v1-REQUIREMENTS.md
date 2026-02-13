@@ -1,4 +1,12 @@
-# Requirements: AI Embodiment
+# Requirements Archive: v1 MVP
+
+**Archived:** 2026-02-13
+**Status:** SHIPPED
+
+This is the archived requirements specification for v1.
+For current requirements, see `.planning/REQUIREMENTS.md` (created for next milestone).
+
+---
 
 **Defined:** 2026-02-05
 **Core Value:** Developers can drop an AI character into their Unity scene and have it talking -- with synchronized voice, text, and animation events -- in minutes, not weeks.
@@ -63,7 +71,7 @@
 - [x] **PKG-01**: Project structured as UPM package (Runtime/, Samples~/, package.json, asmdef)
 - [x] **PKG-02**: Sample scene demonstrates full pipeline -- persona talking with animation function calls
 
-## v2 Requirements
+## v2 Requirements (Deferred)
 
 ### Persistence
 
@@ -85,17 +93,6 @@
 
 - **ADVAUD-01**: Platform-specific native audio plugins for lower latency
 - **ADVAUD-02**: Automatic sample rate conversion across all boundaries
-
-## Out of Scope
-
-| Feature | Reason |
-|---------|--------|
-| Runtime voice switching mid-session | Voice is set per-persona at connect time -- simpler architecture |
-| Visual UI components (chat window, text input) | Headless library -- devs build their own UI |
-| OAuth/service account auth | Devs configure Firebase project auth separately |
-| Mobile-specific optimizations | Desktop-first for v1, mobile tested but not optimized |
-| Multi-persona conversations | Single persona per session for v1 |
-| Language translation | Out of scope -- persona speaks one language |
 
 ## Traceability
 
@@ -138,9 +135,17 @@
 
 **Coverage:**
 - v1 requirements: 34 total
-- Mapped to phases: 34
-- Unmapped: 0
+- Shipped: 34
+- Adjusted: 0
+- Dropped: 0
 
 ---
-*Requirements defined: 2026-02-05*
-*Last updated: 2026-02-05 after roadmap creation*
+
+## Milestone Summary
+
+**Shipped:** 34 of 34 v1 requirements
+**Adjusted:** FUNC-04 and GOAL-05 implemented as developer-registered patterns rather than built-in functions (design decision, not a gap)
+**Dropped:** None
+
+---
+*Archived: 2026-02-13 as part of v1 milestone completion*

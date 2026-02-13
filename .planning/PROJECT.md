@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A Unity UPM package that lets game developers add AI-powered characters to their games. Developers create persona configurations as ScriptableObjects, attach a PersonaSession component to a GameObject, and get real-time AI conversation with synchronized voice, text, and animation events. Built on Firebase AI Logic for Gemini Live and a ported Chirp 3 HD TTS client for custom voices.
+A Unity UPM package that lets game developers add AI-powered characters to their games. Developers create persona configurations as ScriptableObjects, attach a PersonaSession component to a GameObject, and get real-time AI conversation with synchronized voice, text, and animation events. Built on Firebase AI Logic for Gemini Live with dual voice backends: Gemini native audio and Chirp 3 HD TTS.
 
 ## Core Value
 
@@ -12,24 +12,23 @@ Developers can drop an AI character into their Unity scene and have it talking �
 
 ### Validated
 
-(None yet — ship to validate)
+- Developer can create a PersonaConfig ScriptableObject with personality, voice settings, and model selection — v1
+- Developer can add a PersonaSession MonoBehaviour to a GameObject and assign a PersonaConfig — v1
+- PersonaSession connects to Gemini Live via Firebase AI Logic and streams bidirectional audio/text — v1
+- Audio capture from user's microphone via Unity Microphone API (16kHz PCM) — v1
+- Audio playback of AI responses through a standard Unity AudioSource component — v1
+- Two voice paths: Gemini native audio and Chirp 3 HD TTS — v1
+- Voice backend selected per-persona in the ScriptableObject config — v1
+- Chirp TTS client ported to Unity via HTTP to Cloud TTS API — v1
+- PacketAssembler synchronizes text chunks, audio data, and emote timing into unified packets — v1
+- Function calling system with C# delegates for AI-triggered game actions — v1
+- System instruction generation from persona config (archetype, traits, backstory, speech patterns) — v1
+- Conversational goals with priority-based urgency steering — v1
+- Distributed as UPM package with sample scene — v1
 
 ### Active
 
-- [ ] Developer can create a PersonaConfig ScriptableObject with personality, voice settings, and model selection
-- [ ] Developer can add a PersonaSession MonoBehaviour to a GameObject and assign a PersonaConfig
-- [ ] PersonaSession connects to Gemini Live via Firebase AI Logic and streams bidirectional audio/text
-- [ ] Audio capture from user's microphone via Unity Microphone API (16kHz PCM)
-- [ ] Audio playback of AI responses through a standard Unity AudioSource component
-- [ ] Two voice paths: Gemini native audio (Puck, Kore, Aoede, Charon, Fenrir) and Chirp 3 HD TTS
-- [ ] Voice backend selected per-persona in the ScriptableObject config
-- [ ] Chirp TTS client ported to Unity — HTTP to Cloud TTS API, returns PCM audio
-- [ ] PacketAssembler synchronizes text chunks, audio data, and emote timing into unified packets
-- [ ] Function calling system with C# delegates — devs register handlers for AI-triggered functions
-- [ ] Emote/animation function as built-in example (AI calls emote("wave"), dev's handler fires)
-- [ ] System instruction generation from persona config (archetype, traits, backstory, speech patterns)
-- [ ] Distributed as UPM package — devs install Firebase AI Logic separately, then add this package
-- [ ] Sample scene demonstrating full pipeline: persona talking with animations triggered by function calls
+(No active requirements — next milestone not started)
 
 ### Out of Scope
 
@@ -43,12 +42,12 @@ Developers can drop an AI character into their Unity scene and have it talking �
 
 ## Context
 
-- **Rebuilding from**: The Persona C++ library at `/home/cachy/workspaces/projects/persona` — a C library with WebSocket Gemini Live integration, Chirp TTS, packet assembler, persona config, and function calling
-- **Existing code**: This Unity project already has Firebase AI Logic SDK imported (`Assets/Firebase/FirebaseAI/`) including `LiveGenerativeModel`, `LiveSession`, and `LiveSessionResponse` classes that handle the Gemini Live WebSocket protocol
-- **Firebase AI Logic SDK**: Provides `LiveGenerativeModel.ConnectAsync()` which returns a `LiveSession` for bidirectional streaming. Supports text and audio response modalities, function calling via `Tool` declarations, and safety settings
+- **Shipped v1:** 3,542 lines of C#/UXML/USS across 6 phases, 17 plans
+- **Rebuilt from**: The Persona C++ library at `/home/cachy/workspaces/projects/persona`
+- **Firebase AI Logic SDK**: Provides `LiveGenerativeModel.ConnectAsync()` for Gemini Live bidirectional streaming
 - **Target Unity version**: 6000.3.7f1 (Unity 6)
 - **Audio formats**: Capture at 16kHz mono PCM (Gemini input), playback at 24kHz mono PCM (Chirp output) or Gemini native audio format
-- **Original Persona pipeline**: Microphone → PCM → Gemini Live (WebSocket) → text/audio response → PacketAssembler (sync text + audio + emotes) → AudioSource playback + animation events
+- **Known issues**: Firebase VertexAI backend bug (using GoogleAI backend), Gemini audio sample rate assumed 24kHz (unverified), scene file wiring gaps on disk
 
 ## Constraints
 
@@ -62,14 +61,20 @@ Developers can drop an AI character into their Unity scene and have it talking �
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| UPM package, not Asset Store asset | Clean dependency management, proper versioning, devs can update via git | — Pending |
-| Firebase AI Logic for Gemini Live | Already imported in project, Google-supported SDK, handles WebSocket protocol | — Pending |
-| ScriptableObjects for persona config | Unity-native, Inspector-editable, no custom editor needed for basic use | — Pending |
-| C# delegates for function handlers | More flexible than UnityEvents, devs write typed handlers, composable | — Pending |
-| Separate Chirp TTS client (not Firebase) | Firebase AI Logic doesn't include TTS — need direct HTTP to Cloud TTS API | — Pending |
-| Unity Microphone API for audio capture | Cross-platform, sufficient quality, no native plugin complexity for v1 | — Pending |
-| AudioSource for playback | Devs can spatialize, apply effects, mix — standard Unity audio pipeline | — Pending |
-| Per-persona voice config (not runtime toggle) | Simpler architecture, voice backend set at session creation time | — Pending |
+| UPM package, not Asset Store asset | Clean dependency management, proper versioning, devs can update via git | Good |
+| Firebase AI Logic for Gemini Live | Already imported in project, Google-supported SDK, handles WebSocket protocol | Good |
+| ScriptableObjects for persona config | Unity-native, Inspector-editable, no custom editor needed for basic use | Good |
+| C# delegates for function handlers | More flexible than UnityEvents, devs write typed handlers, composable | Good |
+| Separate Chirp TTS client (not Firebase) | Firebase AI Logic doesn't include TTS — need direct HTTP to Cloud TTS API | Good |
+| Unity Microphone API for audio capture | Cross-platform, sufficient quality, no native plugin complexity for v1 | Good |
+| AudioSource for playback | Devs can spatialize, apply effects, mix — standard Unity audio pipeline | Good |
+| Per-persona voice config (not runtime toggle) | Simpler architecture, voice backend set at session creation time | Good |
+| Lock-free SPSC ring buffer for audio | Zero allocations in OnAudioFilterRead, absorbs network jitter | Good |
+| Outer while loop for ReceiveAsync | Solves single-turn trap in Gemini Live receive loop | Good |
+| async void for MonoBehaviour entry points | Connect/SendText/Disconnect as async entry points with full try-catch | Good |
+| MiniJSON for Chirp TTS serialization | Already available via Firebase SDK (Google.MiniJson.dll) | Good |
+| ISyncDriver interface for timing control | Extension point for Chirp TTS timing, face animation, future drivers | Good |
+| Mid-session goal update via role system | Avoids reconnect; fallback to disconnect/reconnect if rejected | Pending — needs runtime verification |
 
 ---
-*Last updated: 2026-02-05 after initialization*
+*Last updated: 2026-02-13 after v1 milestone*
