@@ -33,8 +33,8 @@
 - [x] **MIG-01**: PersonaSession.Connect() uses GeminiLiveClient instead of Firebase LiveSession
 - [x] **MIG-02**: PersonaSession preserves all existing public events (OnTextReceived, OnTurnComplete, OnStateChanged, etc.)
 - [x] **MIG-03**: PersonaSession preserves all existing public methods (Connect, Disconnect, SendText, StartListening, StopListening)
-- [ ] **MIG-04**: Function calling works via WebSocket-native tool declarations and function call/response messages
-- [ ] **MIG-05**: Conversational goals and mid-session system instruction updates work via WebSocket messages
+- [x] **MIG-04**: Function calling works via WebSocket-native tool declarations and function call/response messages
+- [x] **MIG-05**: Conversational goals and mid-session system instruction updates work via WebSocket messages
 - [x] **MIG-06**: AIEmbodimentSettings.Instance.ApiKey provides the API key for connection (replaces Firebase project config)
 
 ### Dependency Removal
@@ -96,8 +96,8 @@
 | MIG-01 | Phase 8 | Complete |
 | MIG-02 | Phase 8 | Complete |
 | MIG-03 | Phase 8 | Complete |
-| MIG-04 | Phase 10 | Pending |
-| MIG-05 | Phase 10 | Pending |
+| MIG-04 | Phase 10 | Complete |
+| MIG-05 | Phase 10 | Complete |
 | MIG-06 | Phase 8 | Complete |
 | DEP-01 | Phase 8 | Complete |
 | DEP-02 | Phase 8 | Complete |
@@ -113,4 +113,4 @@
 
 ---
 *Requirements defined: 2026-02-13*
-*Last updated: 2026-02-13 after Phase 9 completion*
+*Last updated: 2026-02-13 after Phase 10 completion*

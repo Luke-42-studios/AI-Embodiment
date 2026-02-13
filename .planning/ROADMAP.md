@@ -26,7 +26,7 @@
 - [x] **Phase 7: WebSocket Transport and Audio Parsing** - GeminiLiveClient with full Gemini Live protocol support
 - [x] **Phase 8: PersonaSession Migration and Dependency Removal** - Rewire PersonaSession to GeminiLiveClient, remove Firebase
 - [x] **Phase 9: TTS Abstraction** - ITTSProvider interface and ChirpTTSClient adaptation
-- [ ] **Phase 10: Function Calling and Goals Migration** - WebSocket-native tool declarations and mid-session instruction updates
+- [x] **Phase 10: Function Calling and Goals Migration** - WebSocket-native tool declarations and mid-session instruction updates
 - [ ] **Phase 11: Integration Verification** - Sample scene and PacketAssembler validation with new transport
 
 ## Phase Details
@@ -88,8 +88,8 @@ Plans:
 **Plans:** 2 plans
 
 Plans:
-- [ ] 10-01-PLAN.md -- Function calling infrastructure: FunctionDeclaration builder, FunctionRegistry declaration support with dual-path output, GeminiEvent FunctionId, GeminiLiveConfig ToolsJson, GeminiLiveClient tools in setup + SendToolResponse + toolCallCancellation parsing
-- [ ] 10-02-PLAN.md -- PersonaSession wiring: RegisterFunction with declaration, function call ID flow, toolResponse sending, prompt-based fallback parsing, FunctionCallCancellation handling, SendGoalUpdate finalization
+- [x] 10-01-PLAN.md -- Function calling infrastructure: FunctionDeclaration builder, FunctionRegistry declaration support with dual-path output, GeminiEvent FunctionId, GeminiLiveConfig ToolsJson, GeminiLiveClient tools in setup + SendToolResponse + toolCallCancellation parsing
+- [x] 10-02-PLAN.md -- PersonaSession wiring: RegisterFunction with declaration, function call ID flow, toolResponse sending, prompt-based fallback parsing, FunctionCallCancellation handling, SendGoalUpdate finalization
 
 ### Phase 11: Integration Verification
 **Goal**: The complete v0.8 package works end-to-end in the sample scene with both voice backends
@@ -118,5 +118,5 @@ Plans:
 | 7. WebSocket Transport and Audio Parsing | v0.8 | 2/2 | Complete | 2026-02-13 |
 | 8. PersonaSession Migration and Dependency Removal | v0.8 | 2/2 | Complete | 2026-02-13 |
 | 9. TTS Abstraction | v0.8 | 2/2 | Complete | 2026-02-13 |
-| 10. Function Calling and Goals Migration | v0.8 | 0/2 | Not started | - |
+| 10. Function Calling and Goals Migration | v0.8 | 2/2 | Complete | 2026-02-13 |
 | 11. Integration Verification | v0.8 | 0/1 | Not started | - |
