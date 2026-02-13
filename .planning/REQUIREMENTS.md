@@ -30,19 +30,19 @@
 
 ### PersonaSession Migration
 
-- [ ] **MIG-01**: PersonaSession.Connect() uses GeminiLiveClient instead of Firebase LiveSession
-- [ ] **MIG-02**: PersonaSession preserves all existing public events (OnTextReceived, OnTurnComplete, OnStateChanged, etc.)
-- [ ] **MIG-03**: PersonaSession preserves all existing public methods (Connect, Disconnect, SendText, StartListening, StopListening)
+- [x] **MIG-01**: PersonaSession.Connect() uses GeminiLiveClient instead of Firebase LiveSession
+- [x] **MIG-02**: PersonaSession preserves all existing public events (OnTextReceived, OnTurnComplete, OnStateChanged, etc.)
+- [x] **MIG-03**: PersonaSession preserves all existing public methods (Connect, Disconnect, SendText, StartListening, StopListening)
 - [ ] **MIG-04**: Function calling works via WebSocket-native tool declarations and function call/response messages
 - [ ] **MIG-05**: Conversational goals and mid-session system instruction updates work via WebSocket messages
-- [ ] **MIG-06**: AIEmbodimentSettings.Instance.ApiKey provides the API key for connection (replaces Firebase project config)
+- [x] **MIG-06**: AIEmbodimentSettings.Instance.ApiKey provides the API key for connection (replaces Firebase project config)
 
 ### Dependency Removal
 
-- [ ] **DEP-01**: Firebase.AI assembly reference removed from runtime asmdef
-- [ ] **DEP-02**: All Firebase.AI type references (LiveSession, LiveGenerativeModel, ModelContent, etc.) replaced
-- [ ] **DEP-03**: Newtonsoft.Json added as dependency (com.unity.nuget.newtonsoft-json)
-- [ ] **DEP-04**: MainThreadDispatcher pattern preserved (or replaced by GeminiLiveClient's ConcurrentQueue approach)
+- [x] **DEP-01**: Firebase.AI assembly reference removed from runtime asmdef
+- [x] **DEP-02**: All Firebase.AI type references (LiveSession, LiveGenerativeModel, ModelContent, etc.) replaced
+- [x] **DEP-03**: Newtonsoft.Json added as dependency (com.unity.nuget.newtonsoft-json)
+- [x] **DEP-04**: MainThreadDispatcher pattern preserved (or replaced by GeminiLiveClient's ConcurrentQueue approach)
 
 ### Integration
 
@@ -93,16 +93,16 @@
 | TTS-02 | Phase 9 | Pending |
 | TTS-03 | Phase 9 | Pending |
 | TTS-04 | Phase 9 | Pending |
-| MIG-01 | Phase 8 | Pending |
-| MIG-02 | Phase 8 | Pending |
-| MIG-03 | Phase 8 | Pending |
+| MIG-01 | Phase 8 | Complete |
+| MIG-02 | Phase 8 | Complete |
+| MIG-03 | Phase 8 | Complete |
 | MIG-04 | Phase 10 | Pending |
 | MIG-05 | Phase 10 | Pending |
-| MIG-06 | Phase 8 | Pending |
-| DEP-01 | Phase 8 | Pending |
-| DEP-02 | Phase 8 | Pending |
-| DEP-03 | Phase 8 | Pending |
-| DEP-04 | Phase 8 | Pending |
+| MIG-06 | Phase 8 | Complete |
+| DEP-01 | Phase 8 | Complete |
+| DEP-02 | Phase 8 | Complete |
+| DEP-03 | Phase 8 | Complete |
+| DEP-04 | Phase 8 | Complete |
 | INT-01 | Phase 11 | Pending |
 | INT-02 | Phase 11 | Pending |
 
@@ -113,4 +113,4 @@
 
 ---
 *Requirements defined: 2026-02-13*
-*Last updated: 2026-02-13 after Phase 7 completion*
+*Last updated: 2026-02-13 after Phase 8 completion*
