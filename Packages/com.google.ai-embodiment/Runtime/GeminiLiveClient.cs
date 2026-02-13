@@ -49,7 +49,7 @@ namespace AIEmbodiment
 
             await SendSetupMessage();
 
-            // Fire-and-forget receive loop (stub -- Plan 02 fills this in)
+            // Fire-and-forget receive loop
             _ = ReceiveLoop(_cts.Token);
         }
 
@@ -296,7 +296,161 @@ namespace AIEmbodiment
         /// </summary>
         private void HandleJsonMessage(string json)
         {
-            // Stub -- Task 2 fills this in
+            JObject msg;
+            try
+            {
+                msg = JObject.Parse(json);
+            }
+            catch (JsonException ex)
+            {
+                Enqueue(new GeminiEvent { Type = GeminiEventType.Error, Text = "JSON parse error: " + ex.Message });
+                return;
+            }
+
+            // setupComplete -> Connected
+            if (msg["setupComplete"] != null)
+            {
+                _setupComplete = true;
+                Enqueue(new GeminiEvent { Type = GeminiEventType.Connected, Text = "Session started" });
+                return;
+            }
+
+            // serverContent
+            var serverContent = msg["serverContent"] as JObject;
+            if (serverContent != null)
+            {
+                // modelTurn.parts[] -- audio and text
+                var modelTurn = serverContent["modelTurn"] as JObject;
+                if (modelTurn != null)
+                {
+                    var parts = modelTurn["parts"] as JArray;
+                    if (parts != null)
+                    {
+                        foreach (var part in parts)
+                        {
+                            // inlineData -> Audio event (base64 -> bytes -> float[])
+                            var inlineData = part["inlineData"] as JObject;
+                            if (inlineData != null)
+                            {
+                                var b64 = inlineData["data"]?.ToString();
+                                if (!string.IsNullOrEmpty(b64))
+                                {
+                                    var audioBytes = Convert.FromBase64String(b64);
+
+                                    // Convert 16-bit PCM bytes to float[] (Pitfall 2)
+                                    int sampleCount = audioBytes.Length / 2;
+                                    float[] floats = new float[sampleCount];
+                                    for (int i = 0; i < sampleCount; i++)
+                                    {
+                                        short sample = (short)(audioBytes[i * 2] | (audioBytes[i * 2 + 1] << 8));
+                                        floats[i] = sample / 32768f;
+                                    }
+
+                                    Enqueue(new GeminiEvent
+                                    {
+                                        Type = GeminiEventType.Audio,
+                                        AudioData = floats,
+                                        AudioSampleRate = 24000
+                                    });
+                                }
+                            }
+
+                            // text part -> OutputTranscription (rare in AUDIO modality, but surface it)
+                            var textToken = part["text"];
+                            if (textToken != null)
+                            {
+                                var t = textToken.ToString();
+                                if (!string.IsNullOrEmpty(t))
+                                {
+                                    Enqueue(new GeminiEvent
+                                    {
+                                        Type = GeminiEventType.OutputTranscription,
+                                        Text = t
+                                    });
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // turnComplete
+                var turnComplete = serverContent["turnComplete"];
+                if (turnComplete != null && turnComplete.Value<bool>())
+                {
+                    Enqueue(new GeminiEvent { Type = GeminiEventType.TurnComplete });
+                }
+
+                // interrupted
+                var interrupted = serverContent["interrupted"];
+                if (interrupted != null && interrupted.Value<bool>())
+                {
+                    Enqueue(new GeminiEvent { Type = GeminiEventType.Interrupted });
+                }
+
+                // outputTranscription (AI speech text -- AUD-04, inside serverContent)
+                var outputTranscription = serverContent["outputTranscription"] as JObject;
+                if (outputTranscription != null)
+                {
+                    var t = outputTranscription["text"]?.ToString();
+                    if (!string.IsNullOrEmpty(t))
+                    {
+                        Enqueue(new GeminiEvent
+                        {
+                            Type = GeminiEventType.OutputTranscription,
+                            Text = t
+                        });
+                    }
+                }
+
+                // inputTranscription (user STT -- AUD-03, inside serverContent)
+                var inputTranscription = serverContent["inputTranscription"] as JObject;
+                if (inputTranscription != null)
+                {
+                    var t = inputTranscription["text"]?.ToString();
+                    if (!string.IsNullOrEmpty(t))
+                    {
+                        Enqueue(new GeminiEvent
+                        {
+                            Type = GeminiEventType.InputTranscription,
+                            Text = t
+                        });
+                    }
+                }
+            }
+
+            // toolCall (top-level, alternative to serverContent)
+            var toolCall = msg["toolCall"] as JObject;
+            if (toolCall != null)
+            {
+                var functionCalls = toolCall["functionCalls"] as JArray;
+                if (functionCalls != null)
+                {
+                    foreach (var fc in functionCalls)
+                    {
+                        var name = fc["name"]?.ToString();
+                        var args = fc["args"]?.ToString(Formatting.None) ?? "{}";
+
+                        Enqueue(new GeminiEvent
+                        {
+                            Type = GeminiEventType.FunctionCall,
+                            FunctionName = name,
+                            FunctionArgsJson = args
+                        });
+                    }
+                }
+            }
+
+            // toolCallCancellation -- Phase 10 will add full handling; skip for now
+
+            // goAway -- informational: session ending soon
+            if (msg["goAway"] != null)
+            {
+                Enqueue(new GeminiEvent
+                {
+                    Type = GeminiEventType.Error,
+                    Text = "Server sent goAway -- session ending soon"
+                });
+            }
         }
     }
 }
