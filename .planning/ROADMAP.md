@@ -25,7 +25,7 @@
 
 - [x] **Phase 7: WebSocket Transport and Audio Parsing** - GeminiLiveClient with full Gemini Live protocol support
 - [x] **Phase 8: PersonaSession Migration and Dependency Removal** - Rewire PersonaSession to GeminiLiveClient, remove Firebase
-- [ ] **Phase 9: TTS Abstraction** - ITTSProvider interface and ChirpTTSClient adaptation
+- [x] **Phase 9: TTS Abstraction** - ITTSProvider interface and ChirpTTSClient adaptation
 - [ ] **Phase 10: Function Calling and Goals Migration** - WebSocket-native tool declarations and mid-session instruction updates
 - [ ] **Phase 11: Integration Verification** - Sample scene and PacketAssembler validation with new transport
 
@@ -75,7 +75,7 @@ Plans:
 
 Plans:
 - [x] 09-01-PLAN.md -- ITTSProvider interface + TTSResult struct + TTSSynthesisMode enum, VoiceBackend.Custom, ChirpTTSClient implements ITTSProvider, PersonaConfig field renames
-- [ ] 09-02-PLAN.md -- PersonaSession provider-agnostic TTS routing, SetTTSProvider API, PersonaConfigEditor Custom backend UI
+- [x] 09-02-PLAN.md -- PersonaSession provider-agnostic TTS routing, SetTTSProvider API, PersonaConfigEditor Custom backend UI
 
 ### Phase 10: Function Calling and Goals Migration
 **Goal**: AI-triggered function calls and conversational goals work over the WebSocket transport with the same developer-facing API
@@ -117,6 +117,6 @@ Plans:
 | 6. Sample Scene and Integration | v1 | 3/3 | Complete | 2026-02-05 |
 | 7. WebSocket Transport and Audio Parsing | v0.8 | 2/2 | Complete | 2026-02-13 |
 | 8. PersonaSession Migration and Dependency Removal | v0.8 | 2/2 | Complete | 2026-02-13 |
-| 9. TTS Abstraction | v0.8 | 1/2 | In progress | - |
+| 9. TTS Abstraction | v0.8 | 2/2 | Complete | 2026-02-13 |
 | 10. Function Calling and Goals Migration | v0.8 | 0/2 | Not started | - |
 | 11. Integration Verification | v0.8 | 0/1 | Not started | - |
