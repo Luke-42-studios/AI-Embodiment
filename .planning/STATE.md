@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-13)
 ## Current Position
 
 Phase: 10 of 11 (Function Calling and Goals Migration)
-Plan: 0 of 2 in current phase
-Status: Ready to plan
-Last activity: 2026-02-13 -- Phase 9 complete and verified
+Plan: 1 of 2 in current phase
+Status: In progress
+Last activity: 2026-02-13 -- Completed 10-01-PLAN.md
 
-Progress: [##################░░] 88% (23/26 total plans -- 17 v1 complete, 6 v0.8 complete, 3 v0.8 pending)
+Progress: [##################░░] 92% (24/26 total plans -- 17 v1 complete, 7 v0.8 complete, 2 v0.8 pending)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 23
-- Average duration: 1.7 min
-- Total execution time: 0.72 hours
+- Total plans completed: 24
+- Average duration: 1.8 min
+- Total execution time: 0.79 hours
 
 ## Accumulated Context
 
@@ -43,10 +43,13 @@ Recent decisions affecting current work:
 - 07-01: realtimeInput.audio (non-deprecated) replaces mediaChunks from reference implementation
 - 07-02: Audio PCM-to-float conversion done in HandleJsonMessage for direct AudioPlayback compatibility
 - 07-02: JSON detection via first-byte check (Gemini sends all as Binary WebSocket frames)
-- 08-01: FunctionRegistry.Register takes (name, handler) only -- declaration deferred to Phase 10
 - 08-02: Connected state set by HandleGeminiEvent on setupComplete, not in Connect()
 - 08-02: Disconnect() and SendText() are synchronous (not async void)
-- 08-02: FunctionCall events pass null callId -- Phase 10 adds FunctionId to GeminiEvent
+- 10-01: FunctionDeclaration fluent builder with inner ParameterDef class (flat primitives only)
+- 10-01: FunctionRegistry.Register takes (name, declaration, handler) -- declaration is required
+- 10-01: BuildToolsJson/BuildPromptInstructions return null when no registrations
+- 10-01: GeminiEvent.FunctionId captures call ID for response correlation
+- 10-01: SendToolResponse uses IDictionary<string,object> converted via JObject.FromObject
 
 ### Pending Todos
 
@@ -60,5 +63,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-13
-Stopped at: Phase 9 complete and verified. Ready to plan Phase 10.
+Stopped at: Completed 10-01-PLAN.md (Function Calling Infrastructure). Ready for 10-02.
 Resume file: None
