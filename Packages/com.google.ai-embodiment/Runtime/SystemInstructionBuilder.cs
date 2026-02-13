@@ -1,36 +1,34 @@
 using System;
 using System.Text;
-using Firebase.AI;
 
 namespace AIEmbodiment
 {
     /// <summary>
-    /// Composes PersonaConfig fields into a Gemini system instruction.
-    /// This is the single Firebase-touching boundary in the config layer.
+    /// Composes PersonaConfig fields into a Gemini system instruction string.
     /// </summary>
     public static class SystemInstructionBuilder
     {
         /// <summary>
-        /// Builds a <see cref="ModelContent"/> system instruction from the given persona configuration.
+        /// Builds a system instruction string from the given persona configuration.
         /// </summary>
         /// <param name="config">The persona configuration to convert.</param>
-        /// <returns>A <see cref="ModelContent"/> containing the formatted system instruction text.</returns>
+        /// <returns>The formatted system instruction text.</returns>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="config"/> is null.</exception>
-        public static ModelContent Build(PersonaConfig config)
+        public static string Build(PersonaConfig config)
         {
-            return ModelContent.Text(BuildInstructionText(config));
+            return BuildInstructionText(config);
         }
 
         /// <summary>
-        /// Builds a system instruction <see cref="ModelContent"/> including conversational goals.
+        /// Builds a system instruction string including conversational goals.
         /// </summary>
         /// <param name="config">The persona configuration to convert.</param>
         /// <param name="goalManager">The goal manager containing active conversational goals.</param>
-        /// <returns>A <see cref="ModelContent"/> containing the formatted system instruction text with goal framing.</returns>
+        /// <returns>The formatted system instruction text with goal framing.</returns>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="config"/> is null.</exception>
-        public static ModelContent Build(PersonaConfig config, GoalManager goalManager)
+        public static string Build(PersonaConfig config, GoalManager goalManager)
         {
-            return ModelContent.Text(BuildInstructionText(config, goalManager));
+            return BuildInstructionText(config, goalManager);
         }
 
         /// <summary>

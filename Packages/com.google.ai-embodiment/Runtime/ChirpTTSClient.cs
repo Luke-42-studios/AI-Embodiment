@@ -1,7 +1,7 @@
 using System;
-using System.Collections.Generic;
 using System.Text;
-using Google.MiniJSON;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -36,7 +36,7 @@ namespace AIEmbodiment
 
         /// <summary>
         /// Creates a new ChirpTTSClient with the given API key.
-        /// Caller obtains the key via <c>Firebase.FirebaseApp.DefaultInstance.Options.ApiKey</c>.
+        /// Caller obtains the key via <c>AIEmbodimentSettings.Instance.ApiKey</c>.
         /// </summary>
         /// <param name="apiKey">Google Cloud API key with Cloud TTS enabled.</param>
         public ChirpTTSClient(string apiKey)
@@ -119,7 +119,7 @@ namespace AIEmbodiment
 
         /// <summary>
         /// Builds the JSON request body for Cloud TTS synthesis.
-        /// Uses MiniJSON for safe serialization.
+        /// Uses Newtonsoft.Json for safe serialization.
         /// </summary>
         private static string BuildRequestJson(
             string text,
@@ -130,7 +130,7 @@ namespace AIEmbodiment
             bool isCustomVoice = !string.IsNullOrEmpty(voiceCloningKey);
 
             // Build input: SSML for standard voices, plain text for custom
-            var input = new Dictionary<string, object>();
+            var input = new JObject();
             if (isCustomVoice)
             {
                 input["text"] = text;
@@ -141,12 +141,12 @@ namespace AIEmbodiment
             }
 
             // Build voice configuration
-            var voice = new Dictionary<string, object>();
+            var voice = new JObject();
             voice["languageCode"] = languageCode;
 
             if (isCustomVoice)
             {
-                var voiceClone = new Dictionary<string, object>();
+                var voiceClone = new JObject();
                 voiceClone["voiceCloningKey"] = voiceCloningKey;
                 voice["voiceClone"] = voiceClone;
             }
@@ -156,17 +156,17 @@ namespace AIEmbodiment
             }
 
             // Build audio config: LINEAR16 at 24kHz (matches existing playback pipeline)
-            var audioConfig = new Dictionary<string, object>();
+            var audioConfig = new JObject();
             audioConfig["audioEncoding"] = "LINEAR16";
             audioConfig["sampleRateHertz"] = SAMPLE_RATE;
 
             // Assemble top-level request
-            var requestBody = new Dictionary<string, object>();
-            requestBody["input"] = input;
-            requestBody["voice"] = voice;
-            requestBody["audioConfig"] = audioConfig;
+            var obj = new JObject();
+            obj["input"] = input;
+            obj["voice"] = voice;
+            obj["audioConfig"] = audioConfig;
 
-            return Json.Serialize(requestBody);
+            return obj.ToString(Formatting.None);
         }
 
         /// <summary>
@@ -174,14 +174,8 @@ namespace AIEmbodiment
         /// </summary>
         private static string ExtractAudioContent(string responseJson)
         {
-            if (Json.Deserialize(responseJson) is Dictionary<string, object> response
-                && response.TryGetValue("audioContent", out object audioObj)
-                && audioObj is string audioBase64)
-            {
-                return audioBase64;
-            }
-
-            return null;
+            var response = JObject.Parse(responseJson);
+            return response["audioContent"]?.ToString();
         }
 
         /// <summary>

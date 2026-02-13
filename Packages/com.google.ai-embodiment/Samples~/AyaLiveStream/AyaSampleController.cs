@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using Firebase.AI;
 using AIEmbodiment;
 
 namespace AIEmbodiment.Samples
@@ -38,35 +37,10 @@ namespace AIEmbodiment.Samples
 
         private void RegisterFunctions()
         {
-            // emote(animation_name) -- FUNC-04 reference implementation
-            _session.RegisterFunction("emote",
-                new FunctionDeclaration("emote",
-                    "Express an emotion or action visually. Call this to animate yourself.",
-                    new Dictionary<string, Schema>
-                    {
-                        { "animation_name", Schema.Enum(
-                            new[] { "idle", "wave", "think", "talk", "laugh", "shrug",
-                                    "fidgets", "nods_emphatically", "leans_forward",
-                                    "takes_deep_breath", "groans", "holds_up_hands",
-                                    "covers_face", "rolls_eyes", "stretches", "beams",
-                                    "puts_hand_over_heart" },
-                            "The animation to play") }
-                    }),
-                HandleEmote);
-
-            // start_movie() -- no parameters
-            _session.RegisterFunction("start_movie",
-                new FunctionDeclaration("start_movie",
-                    "Cut away to show the movie scene. Use when telling a story that should be shown visually.",
-                    new Dictionary<string, Schema>()),
-                HandleStartMovie);
-
-            // start_drawing() -- no parameters
-            _session.RegisterFunction("start_drawing",
-                new FunctionDeclaration("start_drawing",
-                    "Return to drawing on stream. Use when going back to creating art or when idle.",
-                    new Dictionary<string, Schema>()),
-                HandleStartDrawing);
+            // Register handlers only (declarations deferred to Phase 10)
+            _session.RegisterFunction("emote", HandleEmote);
+            _session.RegisterFunction("start_movie", HandleStartMovie);
+            _session.RegisterFunction("start_drawing", HandleStartDrawing);
         }
 
         private IDictionary<string, object> HandleEmote(FunctionCallContext ctx)

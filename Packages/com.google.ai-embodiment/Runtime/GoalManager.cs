@@ -6,8 +6,8 @@ namespace AIEmbodiment
 {
     /// <summary>
     /// Manages active conversational goals and composes urgency-framed instruction text
-    /// for injection into the AI's system instruction. Plain C# class with no Unity or
-    /// Firebase dependencies.
+    /// for injection into the AI's system instruction. Plain C# class with no Unity
+    /// dependencies.
     /// </summary>
     public class GoalManager
     {
