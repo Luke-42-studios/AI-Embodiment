@@ -74,7 +74,7 @@ Plans:
 **Plans:** 2 plans
 
 Plans:
-- [ ] 09-01-PLAN.md -- ITTSProvider interface + TTSResult struct + TTSSynthesisMode enum, VoiceBackend.Custom, ChirpTTSClient implements ITTSProvider, PersonaConfig field renames
+- [x] 09-01-PLAN.md -- ITTSProvider interface + TTSResult struct + TTSSynthesisMode enum, VoiceBackend.Custom, ChirpTTSClient implements ITTSProvider, PersonaConfig field renames
 - [ ] 09-02-PLAN.md -- PersonaSession provider-agnostic TTS routing, SetTTSProvider API, PersonaConfigEditor Custom backend UI
 
 ### Phase 10: Function Calling and Goals Migration
@@ -117,6 +117,6 @@ Plans:
 | 6. Sample Scene and Integration | v1 | 3/3 | Complete | 2026-02-05 |
 | 7. WebSocket Transport and Audio Parsing | v0.8 | 2/2 | Complete | 2026-02-13 |
 | 8. PersonaSession Migration and Dependency Removal | v0.8 | 2/2 | Complete | 2026-02-13 |
-| 9. TTS Abstraction | v0.8 | 0/2 | Not started | - |
+| 9. TTS Abstraction | v0.8 | 1/2 | In progress | - |
 | 10. Function Calling and Goals Migration | v0.8 | 0/2 | Not started | - |
 | 11. Integration Verification | v0.8 | 0/1 | Not started | - |

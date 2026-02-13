@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-13)
 ## Current Position
 
 Phase: 9 of 11 (TTS Abstraction)
-Plan: 0 of 2 in current phase
-Status: Ready to plan
-Last activity: 2026-02-13 -- Phase 8 complete and verified
+Plan: 1 of 2 in current phase
+Status: In progress
+Last activity: 2026-02-13 -- Completed 09-01-PLAN.md
 
-Progress: [##################░░] 90% (21/28 total plans -- 17 v1 complete, 4 v0.8 complete, 7 v0.8 pending)
+Progress: [##################░░] 93% (22/28 total plans -- 17 v1 complete, 5 v0.8 complete, 6 v0.8 pending)
 
 ## Performance Metrics
 
@@ -35,6 +35,9 @@ Recent decisions affecting current work:
 - v0.8: Audio-only Gemini models (gemini-2.5-flash-native-audio) as successor to 2.0-flash
 - v0.8: API key in AIEmbodimentSettings ScriptableObject (Resources.Load singleton)
 - v0.8: ITTSProvider interface for TTS backend abstraction
+- 09-01: voiceCloningKey moved from SynthesizeAsync to ChirpTTSClient constructor
+- 09-01: OnError event removed from ChirpTTSClient -- exceptions are the error mechanism
+- 09-01: onAudioChunk callback parameter is forward-compatible slot (ignored by REST providers)
 - 07-01: realtimeInput.audio (non-deprecated) replaces mediaChunks from reference implementation
 - 07-02: Audio PCM-to-float conversion done in HandleJsonMessage for direct AudioPlayback compatibility
 - 07-02: JSON detection via first-byte check (Gemini sends all as Binary WebSocket frames)
@@ -55,5 +58,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-13
-Stopped at: Phase 8 complete and verified. Ready to plan Phase 9.
+Stopped at: Completed 09-01-PLAN.md
 Resume file: None
