@@ -55,7 +55,7 @@ Plans:
   1. PersonaSession.Connect() establishes a session via GeminiLiveClient and transitions through Connecting -> Connected states
   2. All existing public events (OnTextReceived, OnTurnComplete, OnStateChanged, OnInputTranscription, OnOutputTranscription, OnInterrupted, OnAISpeakingStarted/Stopped, OnUserSpeakingStarted/Stopped, OnError, OnSyncPacket) fire with correct data
   3. SendText, StartListening, StopListening, Disconnect all work as before
-  4. PersonaConfig.apiKey field exists and is used for connection (no Firebase project config)
+  4. AIEmbodimentSettings.Instance.ApiKey provides the API key for connection (no Firebase project config)
   5. The project compiles with zero Firebase.AI references in runtime asmdef and source files
 **Plans:** 2 plans
 

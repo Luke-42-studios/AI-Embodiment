@@ -35,7 +35,7 @@
 - [ ] **MIG-03**: PersonaSession preserves all existing public methods (Connect, Disconnect, SendText, StartListening, StopListening)
 - [ ] **MIG-04**: Function calling works via WebSocket-native tool declarations and function call/response messages
 - [ ] **MIG-05**: Conversational goals and mid-session system instruction updates work via WebSocket messages
-- [ ] **MIG-06**: PersonaConfig gains apiKey field (replaces Firebase project config)
+- [ ] **MIG-06**: AIEmbodimentSettings.Instance.ApiKey provides the API key for connection (replaces Firebase project config)
 
 ### Dependency Removal
 
