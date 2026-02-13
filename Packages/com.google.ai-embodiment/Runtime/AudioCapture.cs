@@ -14,7 +14,7 @@ namespace AIEmbodiment
     ///
     /// Usage: Attach to a GameObject, subscribe to <see cref="OnAudioCaptured"/>,
     /// then call <see cref="StartCapture"/>. PersonaSession wires the callback to
-    /// LiveSession.SendAudioAsync in Plan 02-03.
+    /// GeminiLiveClient.SendAudio via HandleAudioCaptured.
     /// </summary>
     public class AudioCapture : MonoBehaviour
     {

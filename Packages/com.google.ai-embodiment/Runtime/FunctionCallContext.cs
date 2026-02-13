@@ -6,8 +6,8 @@ namespace AIEmbodiment
     /// <summary>
     /// Provides typed access to function call arguments from the AI.
     /// Wraps the raw <see cref="IReadOnlyDictionary{TKey, TValue}"/> from
-    /// <c>FunctionCallPart.Args</c> with accessor methods that handle
-    /// MiniJSON type coercion (e.g., all numbers deserialize as <c>double</c>).
+    /// function call arguments with accessor methods that handle
+    /// JSON type coercion (e.g., all numbers deserialize as <c>double</c>).
     /// </summary>
     public class FunctionCallContext
     {
@@ -22,7 +22,7 @@ namespace AIEmbodiment
 
         /// <summary>
         /// Raw argument dictionary for advanced use cases not covered by the typed accessors.
-        /// Values are MiniJSON-deserialized types: <c>string</c>, <c>double</c>, <c>bool</c>,
+        /// Values are JSON-deserialized types: <c>string</c>, <c>double</c>, <c>bool</c>,
         /// <c>Dictionary&lt;string, object&gt;</c>, or <c>List&lt;object&gt;</c>.
         /// </summary>
         public IReadOnlyDictionary<string, object> RawArgs { get; }
@@ -64,7 +64,7 @@ namespace AIEmbodiment
         /// <summary>
         /// Returns the argument value as an <c>int</c>, or <paramref name="defaultValue"/>
         /// if the key is missing, null, or not convertible.
-        /// MiniJSON deserializes all numbers as <c>double</c>, so this uses
+        /// JSON deserializes all numbers as <c>double</c>, so this uses
         /// <see cref="Convert.ToInt32(object)"/> for safe coercion.
         /// </summary>
         /// <param name="key">The argument key.</param>
@@ -87,7 +87,7 @@ namespace AIEmbodiment
         /// <summary>
         /// Returns the argument value as a <c>float</c>, or <paramref name="defaultValue"/>
         /// if the key is missing, null, or not convertible.
-        /// MiniJSON deserializes all numbers as <c>double</c>, so this uses
+        /// JSON deserializes all numbers as <c>double</c>, so this uses
         /// <see cref="Convert.ToSingle(object)"/> for safe coercion.
         /// </summary>
         /// <param name="key">The argument key.</param>
@@ -110,7 +110,7 @@ namespace AIEmbodiment
         /// <summary>
         /// Returns the argument value as a <c>bool</c>, or <paramref name="defaultValue"/>
         /// if the key is missing, null, or not convertible.
-        /// MiniJSON deserializes booleans directly as <c>bool</c>.
+        /// JSON deserializes booleans directly as <c>bool</c>.
         /// </summary>
         /// <param name="key">The argument key.</param>
         /// <param name="defaultValue">Value returned when the key is missing or null.</param>
@@ -132,7 +132,7 @@ namespace AIEmbodiment
         /// <summary>
         /// Returns the argument value as a nested dictionary, or <c>null</c>
         /// if the key is missing or the value is not a dictionary.
-        /// MiniJSON deserializes JSON objects as <c>Dictionary&lt;string, object&gt;</c>.
+        /// JSON deserializes objects as <c>Dictionary&lt;string, object&gt;</c>.
         /// </summary>
         /// <param name="key">The argument key.</param>
         /// <returns>The nested dictionary, or <c>null</c>.</returns>
@@ -154,7 +154,7 @@ namespace AIEmbodiment
         /// <summary>
         /// Returns the argument value as a list, or <c>null</c>
         /// if the key is missing or the value is not a list.
-        /// MiniJSON deserializes JSON arrays as <c>List&lt;object&gt;</c>.
+        /// JSON deserializes arrays as <c>List&lt;object&gt;</c>.
         /// </summary>
         /// <param name="key">The argument key.</param>
         /// <returns>The list, or <c>null</c>.</returns>
