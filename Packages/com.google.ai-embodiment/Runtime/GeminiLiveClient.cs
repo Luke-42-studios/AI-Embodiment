@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.IO;
 using System.Net.WebSockets;
 using System.Text;
@@ -128,6 +129,33 @@ namespace AIEmbodiment
             _ = SendJsonAsync(payload);
         }
 
+        /// <summary>Send a tool response back to Gemini for function call correlation.</summary>
+        /// <param name="callId">The function call ID from the original toolCall event.</param>
+        /// <param name="functionName">The function name matching the original call.</param>
+        /// <param name="response">The response dictionary, or null for an empty response.</param>
+        public void SendToolResponse(string callId, string functionName, IDictionary<string, object> response)
+        {
+            if (!IsConnected || string.IsNullOrEmpty(callId)) return;
+
+            var responseObj = response != null ? JObject.FromObject(response) : new JObject();
+            var payload = new JObject
+            {
+                ["toolResponse"] = new JObject
+                {
+                    ["functionResponses"] = new JArray
+                    {
+                        new JObject
+                        {
+                            ["id"] = callId,
+                            ["name"] = functionName,
+                            ["response"] = responseObj
+                        }
+                    }
+                }
+            };
+            _ = SendJsonAsync(payload);
+        }
+
         /// <summary>Drain the event queue and invoke OnEvent for each. Call from Update().</summary>
         public void ProcessEvents()
         {
@@ -182,6 +210,12 @@ namespace AIEmbodiment
                 {
                     ["parts"] = new JArray { new JObject { ["text"] = _config.SystemInstruction } }
                 };
+            }
+
+            // Tools (function declarations for native function calling)
+            if (_config.ToolsJson != null && _config.ToolsJson.Count > 0)
+            {
+                setupInner["tools"] = _config.ToolsJson;
             }
 
             var setup = new JObject { ["setup"] = setupInner };
@@ -434,13 +468,30 @@ namespace AIEmbodiment
                         {
                             Type = GeminiEventType.FunctionCall,
                             FunctionName = name,
-                            FunctionArgsJson = args
+                            FunctionArgsJson = args,
+                            FunctionId = fc["id"]?.ToString()
                         });
                     }
                 }
             }
 
-            // toolCallCancellation -- Phase 10 will add full handling; skip for now
+            // toolCallCancellation -- cancel pending function calls (user interruption)
+            var toolCallCancellation = msg["toolCallCancellation"] as JObject;
+            if (toolCallCancellation != null)
+            {
+                var ids = toolCallCancellation["ids"] as JArray;
+                if (ids != null)
+                {
+                    foreach (var id in ids)
+                    {
+                        Enqueue(new GeminiEvent
+                        {
+                            Type = GeminiEventType.FunctionCallCancellation,
+                            FunctionId = id.ToString()
+                        });
+                    }
+                }
+            }
 
             // goAway -- informational: session ending soon
             if (msg["goAway"] != null)

@@ -9,6 +9,7 @@ namespace AIEmbodiment
         TurnComplete,
         Interrupted,
         FunctionCall,
+        FunctionCallCancellation,
         Connected,
         Disconnected,
         Error
@@ -23,5 +24,6 @@ namespace AIEmbodiment
         public int AudioSampleRate;
         public string FunctionName;
         public string FunctionArgsJson;
+        public string FunctionId;
     }
 }

@@ -37,10 +37,18 @@ namespace AIEmbodiment.Samples
 
         private void RegisterFunctions()
         {
-            // Register handlers only (declarations deferred to Phase 10)
-            _session.RegisterFunction("emote", HandleEmote);
-            _session.RegisterFunction("start_movie", HandleStartMovie);
-            _session.RegisterFunction("start_drawing", HandleStartDrawing);
+            _session.RegisterFunction("emote",
+                new FunctionDeclaration("emote", "Play a character animation or emote")
+                    .AddString("animation_name", "Name of the animation to play"),
+                HandleEmote);
+
+            _session.RegisterFunction("start_movie",
+                new FunctionDeclaration("start_movie", "Switch to movie viewing mode"),
+                HandleStartMovie);
+
+            _session.RegisterFunction("start_drawing",
+                new FunctionDeclaration("start_drawing", "Switch to drawing mode"),
+                HandleStartDrawing);
         }
 
         private IDictionary<string, object> HandleEmote(FunctionCallContext ctx)

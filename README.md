@@ -107,16 +107,10 @@ public class MyGame : MonoBehaviour
 ### 4. Add Function Calling
 
 ```csharp
-using Firebase.AI;
-
 // Register before Connect()
 session.RegisterFunction("emote",
-    new FunctionDeclaration("emote",
-        "Express an emotion visually",
-        new Dictionary<string, Schema>
-        {
-            { "animation", Schema.Enum(new[] { "wave", "laugh", "think" }, "Animation to play") }
-        }),
+    new FunctionDeclaration("emote", "Express an emotion visually")
+        .AddEnum("animation", "Animation to play", new[] { "wave", "laugh", "think" }),
     ctx => {
         string anim = ctx.GetString("animation", "idle");
         myAnimator.Play(anim);

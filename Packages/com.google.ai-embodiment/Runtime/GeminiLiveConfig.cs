@@ -1,3 +1,5 @@
+using Newtonsoft.Json.Linq;
+
 namespace AIEmbodiment
 {
     /// <summary>Configuration for a GeminiLiveClient connection.</summary>
@@ -9,5 +11,11 @@ namespace AIEmbodiment
         public string VoiceName = "Puck";
         public int AudioInputSampleRate = 16000;
         public int AudioOutputSampleRate = 24000;
+
+        /// <summary>
+        /// Tool declarations for native function calling. Set by PersonaSession from
+        /// <see cref="FunctionRegistry.BuildToolsJson()"/>. Null means no tools.
+        /// </summary>
+        public JArray ToolsJson;
     }
 }
