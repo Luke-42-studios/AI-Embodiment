@@ -79,38 +79,38 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| WS-01 | Pending | Pending |
-| WS-02 | Pending | Pending |
-| WS-03 | Pending | Pending |
-| WS-04 | Pending | Pending |
-| WS-05 | Pending | Pending |
-| AUD-01 | Pending | Pending |
-| AUD-02 | Pending | Pending |
-| AUD-03 | Pending | Pending |
-| AUD-04 | Pending | Pending |
-| AUD-05 | Pending | Pending |
-| TTS-01 | Pending | Pending |
-| TTS-02 | Pending | Pending |
-| TTS-03 | Pending | Pending |
-| TTS-04 | Pending | Pending |
-| MIG-01 | Pending | Pending |
-| MIG-02 | Pending | Pending |
-| MIG-03 | Pending | Pending |
-| MIG-04 | Pending | Pending |
-| MIG-05 | Pending | Pending |
-| MIG-06 | Pending | Pending |
-| DEP-01 | Pending | Pending |
-| DEP-02 | Pending | Pending |
-| DEP-03 | Pending | Pending |
-| DEP-04 | Pending | Pending |
-| INT-01 | Pending | Pending |
-| INT-02 | Pending | Pending |
+| WS-01 | Phase 7 | Pending |
+| WS-02 | Phase 7 | Pending |
+| WS-03 | Phase 7 | Pending |
+| WS-04 | Phase 7 | Pending |
+| WS-05 | Phase 7 | Pending |
+| AUD-01 | Phase 7 | Pending |
+| AUD-02 | Phase 7 | Pending |
+| AUD-03 | Phase 7 | Pending |
+| AUD-04 | Phase 7 | Pending |
+| AUD-05 | Phase 7 | Pending |
+| TTS-01 | Phase 9 | Pending |
+| TTS-02 | Phase 9 | Pending |
+| TTS-03 | Phase 9 | Pending |
+| TTS-04 | Phase 9 | Pending |
+| MIG-01 | Phase 8 | Pending |
+| MIG-02 | Phase 8 | Pending |
+| MIG-03 | Phase 8 | Pending |
+| MIG-04 | Phase 10 | Pending |
+| MIG-05 | Phase 10 | Pending |
+| MIG-06 | Phase 8 | Pending |
+| DEP-01 | Phase 8 | Pending |
+| DEP-02 | Phase 8 | Pending |
+| DEP-03 | Phase 8 | Pending |
+| DEP-04 | Phase 8 | Pending |
+| INT-01 | Phase 11 | Pending |
+| INT-02 | Phase 11 | Pending |
 
 **Coverage:**
 - v0.8 requirements: 26 total
-- Mapped to phases: 0
-- Unmapped: 26
+- Mapped to phases: 26
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-13*
-*Last updated: 2026-02-13 after initial definition*
+*Last updated: 2026-02-13 after v0.8 roadmap creation*
