@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using UnityEngine;
 using Newtonsoft.Json.Linq;
@@ -23,6 +24,14 @@ namespace AIEmbodiment
         [SerializeField] private PersonaConfig _config;
         [SerializeField] private AudioCapture _audioCapture;   // optional
         [SerializeField] private AudioPlayback _audioPlayback;  // optional
+
+        /// <summary>
+        /// When true, function declarations are sent as native Gemini tool JSON in the setup handshake.
+        /// When false, function instructions are injected into the system prompt and the AI outputs
+        /// [CALL: name {"arg": "val"}] tags parsed from transcription.
+        /// Default: true (native path). Set to false if native tool calling is unreliable with audio-only models.
+        /// </summary>
+        public static bool UseNativeFunctionCalling = true;
 
         /// <summary>Current session lifecycle state.</summary>
         public SessionState State { get; private set; } = SessionState.Disconnected;
@@ -88,6 +97,10 @@ namespace AIEmbodiment
 
         private ITTSProvider _ttsProvider;
         private readonly StringBuilder _ttsTextBuffer = new StringBuilder();
+        private readonly StringBuilder _functionCallBuffer = new StringBuilder();
+
+        private static readonly Regex FunctionCallPattern =
+            new Regex(@"\[CALL:\s*(\w+)\s*(\{[^}]*\})\]", RegexOptions.Compiled);
 
         private void SetState(SessionState newState)
         {
@@ -149,6 +162,16 @@ namespace AIEmbodiment
 
                 var systemInstruction = SystemInstructionBuilder.Build(_config, _goalManager);
 
+                // Prompt-based function calling: append function instructions to system prompt
+                if (_functionRegistry.HasRegistrations && !UseNativeFunctionCalling)
+                {
+                    var functionInstructions = _functionRegistry.BuildPromptInstructions();
+                    if (!string.IsNullOrEmpty(functionInstructions))
+                    {
+                        systemInstruction += "\n\n" + functionInstructions;
+                    }
+                }
+
                 var liveConfig = new GeminiLiveConfig
                 {
                     ApiKey = settings.ApiKey,
@@ -156,6 +179,16 @@ namespace AIEmbodiment
                     SystemInstruction = systemInstruction,
                     VoiceName = _config.geminiVoiceName
                 };
+
+                // Function calling: build tool declarations for setup handshake
+                if (_functionRegistry.HasRegistrations)
+                {
+                    _functionRegistry.Freeze();
+                    if (UseNativeFunctionCalling)
+                    {
+                        liveConfig.ToolsJson = _functionRegistry.BuildToolsJson();
+                    }
+                }
 
                 _client = new GeminiLiveClient(liveConfig);
                 _client.OnEvent += HandleGeminiEvent;
@@ -409,6 +442,10 @@ namespace AIEmbodiment
                     HandleFunctionCallEvent(ev);
                     break;
 
+                case GeminiEventType.FunctionCallCancellation:
+                    _functionRegistry.MarkCancelled(ev.FunctionId);
+                    break;
+
                 case GeminiEventType.Disconnected:
                     if (State == SessionState.Connected || State == SessionState.Connecting)
                         SetState(SessionState.Disconnected);
@@ -482,6 +519,66 @@ namespace AIEmbodiment
             {
                 _ttsTextBuffer.Append(text);
             }
+
+            // Prompt-based function calling: buffer text and scan for [CALL: ...] tags
+            if (!UseNativeFunctionCalling && _functionRegistry.HasRegistrations)
+            {
+                _functionCallBuffer.Append(text);
+                ParsePromptFunctionCalls();
+            }
+        }
+
+        /// <summary>
+        /// Scans the function call buffer for complete [CALL: name {...}] patterns
+        /// and dispatches them as function calls. Handles transcription fragmentation
+        /// by accumulating text and scanning the buffer after each append.
+        /// </summary>
+        private void ParsePromptFunctionCalls()
+        {
+            string buffer = _functionCallBuffer.ToString();
+            var match = FunctionCallPattern.Match(buffer);
+
+            while (match.Success)
+            {
+                string funcName = match.Groups[1].Value;
+                string argsJson = match.Groups[2].Value;
+
+                var args = new Dictionary<string, object>();
+                try
+                {
+                    args = JObject.Parse(argsJson).ToObject<Dictionary<string, object>>()
+                        ?? new Dictionary<string, object>();
+                }
+                catch
+                {
+                    // Garbled JSON from transcription -- use empty args
+                }
+
+                // Dispatch through PacketAssembler like native function calls
+                // Prompt-based calls have no server-assigned ID, so callId is null (fire-and-forget only)
+                _packetAssembler?.AddFunctionCall(funcName, args, null);
+
+                match = match.NextMatch();
+            }
+
+            // Clear matched patterns from buffer, keep any trailing unmatched text
+            var lastMatch = FunctionCallPattern.Match(buffer);
+            int lastEnd = 0;
+            while (lastMatch.Success)
+            {
+                lastEnd = lastMatch.Index + lastMatch.Length;
+                lastMatch = lastMatch.NextMatch();
+            }
+            if (lastEnd > 0)
+            {
+                _functionCallBuffer.Remove(0, lastEnd);
+            }
+
+            // Prevent unbounded growth: if buffer exceeds 1000 chars with no match, trim from front
+            if (_functionCallBuffer.Length > 1000)
+            {
+                _functionCallBuffer.Remove(0, _functionCallBuffer.Length - 500);
+            }
         }
 
         /// <summary>
@@ -509,6 +606,8 @@ namespace AIEmbodiment
                 _ttsTextBuffer.Clear();
                 SynthesizeAndEnqueue(fullText);
             }
+
+            _functionCallBuffer.Clear();
         }
 
         /// <summary>
@@ -529,6 +628,7 @@ namespace AIEmbodiment
             _turnStarted = false;
             _packetAssembler?.CancelTurn();
             _ttsTextBuffer.Clear();
+            _functionCallBuffer.Clear();
         }
 
         /// <summary>
@@ -541,9 +641,7 @@ namespace AIEmbodiment
                 ? new Dictionary<string, object>()
                 : JObject.Parse(ev.FunctionArgsJson).ToObject<Dictionary<string, object>>();
 
-            // Note: GeminiEvent does not currently carry a function call ID.
-            // Phase 10 will add FunctionId to GeminiEvent and capture it from the API response.
-            _packetAssembler?.AddFunctionCall(ev.FunctionName, args, null);
+            _packetAssembler?.AddFunctionCall(ev.FunctionName, args, ev.FunctionId);
         }
 
         // =====================================================================
@@ -657,12 +755,15 @@ namespace AIEmbodiment
         /// <summary>
         /// Sends a function response back to Gemini via the live session.
         /// </summary>
-        // TODO: Phase 10 -- implement function response sending via WebSocket toolResponse
         private void SendFunctionResponse(string name, IDictionary<string, object> result, string callId)
         {
-            Debug.LogWarning(
-                $"PersonaSession: Function response for '{name}' not sent -- " +
-                "WebSocket toolResponse not yet implemented (Phase 10).");
+            if (_client == null || !_client.IsConnected) return;
+            if (string.IsNullOrEmpty(callId))
+            {
+                Debug.LogWarning($"PersonaSession: Cannot send function response for '{name}' -- no call ID.");
+                return;
+            }
+            _client.SendToolResponse(callId, name, result);
         }
 
         /// <summary>
@@ -673,10 +774,11 @@ namespace AIEmbodiment
             if (_client == null || !_client.IsConnected || State != SessionState.Connected)
                 return;
 
-            // TODO: Phase 10 will implement mid-session instruction updates via WebSocket clientContent
-            Debug.LogWarning(
-                "PersonaSession: Goal update sent but mid-session instruction updates are not yet implemented (Phase 10). " +
-                "Goals will take effect on next connection.");
+            // Gemini Live API does not support mid-session system instruction updates.
+            // Goals accumulate locally and will be applied at next Connect().
+            Debug.Log(
+                "PersonaSession: Goal updated. Mid-session system instruction updates are not supported " +
+                "by the Gemini Live API. Goals will take effect on next connection.");
         }
 
         // =====================================================================
@@ -719,6 +821,7 @@ namespace AIEmbodiment
                     _ttsProvider = null;
                 }
                 _ttsTextBuffer.Clear();
+                _functionCallBuffer.Clear();
 
                 if (_client != null)
                 {
