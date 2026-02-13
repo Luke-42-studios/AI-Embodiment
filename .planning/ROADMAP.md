@@ -78,18 +78,18 @@ Plans:
 - [x] 09-02-PLAN.md -- PersonaSession provider-agnostic TTS routing, SetTTSProvider API, PersonaConfigEditor Custom backend UI
 
 ### Phase 10: Function Calling and Goals Migration
-**Goal**: AI-triggered function calls and conversational goals work over the WebSocket transport with the same developer-facing API
+**Goal**: AI-triggered function calls and conversational goals work over the WebSocket transport with the same developer-facing API, including both native toolCall and prompt-based fallback paths
 **Depends on**: Phase 8
 **Requirements**: MIG-04, MIG-05
 **Success Criteria** (what must be TRUE):
   1. RegisterFunction declarations are sent as WebSocket-native tool JSON in the setup handshake, and AI-triggered function calls dispatch to registered handlers with correct arguments
   2. Function responses are sent back via WebSocket toolResponse messages and the AI continues the conversation
-  3. AddGoal/RemoveGoal/ReprioritizeGoal send updated system instructions via WebSocket and the AI adjusts its behavior mid-session
-**Plans**: TBD
+  3. AddGoal/RemoveGoal/ReprioritizeGoal accumulate goals locally, applied at Connect() time; mid-session updates log informational message about API limitation
+**Plans:** 2 plans
 
 Plans:
-- [ ] 10-01: WebSocket-native function calling (tool declarations in setup, function call parsing, tool response sending, cancellation handling)
-- [ ] 10-02: Goal system migration (mid-session system instruction updates via WebSocket clientContent)
+- [ ] 10-01-PLAN.md -- Function calling infrastructure: FunctionDeclaration builder, FunctionRegistry declaration support with dual-path output, GeminiEvent FunctionId, GeminiLiveConfig ToolsJson, GeminiLiveClient tools in setup + SendToolResponse + toolCallCancellation parsing
+- [ ] 10-02-PLAN.md -- PersonaSession wiring: RegisterFunction with declaration, function call ID flow, toolResponse sending, prompt-based fallback parsing, FunctionCallCancellation handling, SendGoalUpdate finalization
 
 ### Phase 11: Integration Verification
 **Goal**: The complete v0.8 package works end-to-end in the sample scene with both voice backends
