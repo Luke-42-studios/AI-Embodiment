@@ -2,8 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using UnityEngine;
+using Newtonsoft.Json.Linq;
 
 namespace AIEmbodiment
 {
@@ -11,6 +11,12 @@ namespace AIEmbodiment
     /// Core MonoBehaviour managing the Gemini Live session lifecycle.
     /// Attach to a GameObject, assign a <see cref="PersonaConfig"/> in the Inspector,
     /// and call <see cref="Connect"/> to establish a bidirectional AI conversation.
+    ///
+    /// <para>
+    /// Architecture: GeminiLiveClient uses a ConcurrentQueue drained by ProcessEvents()
+    /// in Update(). All events arrive on the main thread naturally -- no thread dispatch
+    /// wrapping needed for session event routing.
+    /// </para>
     /// </summary>
     public class PersonaSession : MonoBehaviour
     {
@@ -92,12 +98,108 @@ namespace AIEmbodiment
         }
 
         /// <summary>
+        /// Converts float[-1..1] audio samples to 16-bit PCM little-endian byte array.
+        /// Used by HandleAudioCaptured to convert AudioCapture output for GeminiLiveClient.SendAudio.
+        /// </summary>
+        private static byte[] FloatToPcm16(float[] samples)
+        {
+            byte[] pcm = new byte[samples.Length * 2];
+            for (int i = 0; i < samples.Length; i++)
+            {
+                short s = (short)(Mathf.Clamp(samples[i], -1f, 1f) * 32767f);
+                pcm[i * 2] = (byte)(s & 0xFF);
+                pcm[i * 2 + 1] = (byte)((s >> 8) & 0xFF);
+            }
+            return pcm;
+        }
+
+        /// <summary>
         /// Establishes a Gemini Live session using the assigned <see cref="PersonaConfig"/>.
-        /// Fires <see cref="OnStateChanged"/> with Connecting then Connected (or Error on failure).
+        /// Fires <see cref="OnStateChanged"/> with Connecting. Connected state is set when
+        /// GeminiLiveClient receives setupComplete from the server (via HandleGeminiEvent).
         /// </summary>
         public async void Connect()
         {
-            // TODO: Plan 08-02 will fully rewrite this method to use GeminiLiveClient
+            if (State != SessionState.Disconnected)
+            {
+                Debug.LogWarning("PersonaSession: Connect called while not disconnected. Current state: " + State);
+                return;
+            }
+
+            if (_config == null)
+            {
+                Debug.LogError("PersonaSession: No PersonaConfig assigned. Assign one in the Inspector.");
+                return;
+            }
+
+            var settings = AIEmbodimentSettings.Instance;
+            if (settings == null || string.IsNullOrEmpty(settings.ApiKey))
+            {
+                Debug.LogError(
+                    "PersonaSession: No API key configured. " +
+                    "Create an AIEmbodimentSettings asset: Assets > Create > AI Embodiment > Settings, " +
+                    "place it in a Resources folder, and set the API key.");
+                return;
+            }
+
+            SetState(SessionState.Connecting);
+
+            try
+            {
+                _sessionCts = new CancellationTokenSource();
+
+                var systemInstruction = SystemInstructionBuilder.Build(_config, _goalManager);
+
+                var liveConfig = new GeminiLiveConfig
+                {
+                    ApiKey = settings.ApiKey,
+                    Model = _config.modelName,
+                    SystemInstruction = systemInstruction,
+                    VoiceName = _config.geminiVoiceName
+                };
+
+                _client = new GeminiLiveClient(liveConfig);
+                _client.OnEvent += HandleGeminiEvent;
+
+                await _client.ConnectAsync();
+
+                // Initialize PacketAssembler
+                _packetAssembler = new PacketAssembler();
+                _packetAssembler.SetPacketCallback(HandleSyncPacket);
+
+                // Initialize AudioPlayback if assigned
+                if (_audioPlayback != null)
+                {
+                    _audioPlayback.Initialize();
+                }
+
+                // Initialize Chirp TTS if backend is ChirpTTS
+                if (_config.voiceBackend == VoiceBackend.ChirpTTS)
+                {
+                    _chirpClient = new ChirpTTSClient(settings.ApiKey);
+                    _chirpClient.OnError += HandleChirpError;
+                }
+
+                // NOTE: SetState(Connected) is NOT called here.
+                // It happens in HandleGeminiEvent when GeminiEventType.Connected arrives
+                // (setupComplete acknowledged by the server).
+            }
+            catch (Exception ex)
+            {
+                SetState(SessionState.Error);
+                OnError?.Invoke(ex);
+                Debug.LogError($"PersonaSession: Connection failed: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Drains the GeminiLiveClient event queue on the main thread every frame.
+        /// This is the fundamental architectural change from the old background-thread push model
+        /// to GeminiLiveClient's main-thread poll model.
+        /// </summary>
+        private void Update()
+        {
+            _client?.ProcessEvents();
         }
 
         /// <summary>
@@ -105,9 +207,17 @@ namespace AIEmbodiment
         /// <see cref="OnTextReceived"/> and <see cref="OnTurnComplete"/> events.
         /// </summary>
         /// <param name="message">The text message to send.</param>
-        public async void SendText(string message)
+        public void SendText(string message)
         {
-            // TODO: Plan 08-02 will fully rewrite this method
+            if (_client == null || !_client.IsConnected || State != SessionState.Connected)
+            {
+                Debug.LogWarning("PersonaSession: Cannot send text -- session is not connected.");
+                return;
+            }
+
+            if (string.IsNullOrEmpty(message)) return;
+
+            _client.SendText(message);
         }
 
         /// <summary>
@@ -216,11 +326,205 @@ namespace AIEmbodiment
         /// <summary>
         /// Handles audio chunks from AudioCapture and forwards them to Gemini Live.
         /// Tracks user speaking state and fires corresponding events.
+        /// Converts float[] to PCM16 bytes for GeminiLiveClient.SendAudio.
         /// </summary>
         private void HandleAudioCaptured(float[] chunk)
         {
-            // TODO: Plan 08-02 will fully rewrite this method
+            if (_client == null || !_client.IsConnected || State != SessionState.Connected)
+                return;
+
+            // Track user speaking state
+            if (!_userSpeaking)
+            {
+                _userSpeaking = true;
+                OnUserSpeakingStarted?.Invoke();
+            }
+
+            // Convert float[] to PCM16 bytes and send
+            byte[] pcmBytes = FloatToPcm16(chunk);
+            _client.SendAudio(pcmBytes);
         }
+
+        // =====================================================================
+        // Event Handling (HandleGeminiEvent and sub-handlers -- Task 2)
+        // =====================================================================
+
+        /// <summary>
+        /// Central event router for all GeminiLiveClient events.
+        /// Called from ProcessEvents() in Update() -- already on the main thread.
+        /// </summary>
+        private void HandleGeminiEvent(GeminiEvent ev)
+        {
+            switch (ev.Type)
+            {
+                case GeminiEventType.Connected:
+                    SetState(SessionState.Connected);
+                    break;
+
+                case GeminiEventType.Audio:
+                    HandleAudioEvent(ev);
+                    break;
+
+                case GeminiEventType.OutputTranscription:
+                    HandleOutputTranscription(ev.Text);
+                    break;
+
+                case GeminiEventType.InputTranscription:
+                    OnInputTranscription?.Invoke(ev.Text);
+                    break;
+
+                case GeminiEventType.TurnComplete:
+                    HandleTurnCompleteEvent();
+                    break;
+
+                case GeminiEventType.Interrupted:
+                    HandleInterruptedEvent();
+                    break;
+
+                case GeminiEventType.FunctionCall:
+                    HandleFunctionCallEvent(ev);
+                    break;
+
+                case GeminiEventType.Disconnected:
+                    if (State == SessionState.Connected || State == SessionState.Connecting)
+                        SetState(SessionState.Disconnected);
+                    break;
+
+                case GeminiEventType.Error:
+                    OnError?.Invoke(new Exception(ev.Text));
+                    SetState(SessionState.Error);
+                    Debug.LogError($"PersonaSession: GeminiLiveClient error: {ev.Text}");
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// Handles audio data events from GeminiLiveClient.
+        /// Routes audio to AudioPlayback and PacketAssembler based on voice backend.
+        /// </summary>
+        private void HandleAudioEvent(GeminiEvent ev)
+        {
+            if (ev.AudioData == null || ev.AudioData.Length == 0) return;
+
+            // Track turn start
+            if (!_turnStarted)
+            {
+                _turnStarted = true;
+                _packetAssembler?.StartTurn();
+            }
+
+            if (_config.voiceBackend == VoiceBackend.GeminiNative)
+            {
+                // Enqueue audio for playback
+                _audioPlayback?.EnqueueAudio(ev.AudioData);
+
+                // Track AI speaking state
+                if (!_aiSpeaking)
+                {
+                    _aiSpeaking = true;
+                    OnAISpeakingStarted?.Invoke();
+                }
+
+                // Route to PacketAssembler for sync packet correlation
+                _packetAssembler?.AddAudio(ev.AudioData);
+            }
+            // If voiceBackend is ChirpTTS: discard Gemini audio (Chirp TTS handles playback)
+        }
+
+        /// <summary>
+        /// Handles output transcription events from GeminiLiveClient.
+        /// Fires both OnOutputTranscription and OnTextReceived, routes to PacketAssembler,
+        /// and accumulates text for Chirp TTS if applicable.
+        /// </summary>
+        private void HandleOutputTranscription(string text)
+        {
+            if (string.IsNullOrEmpty(text)) return;
+
+            OnOutputTranscription?.Invoke(text);
+            OnTextReceived?.Invoke(text);
+
+            // Track turn start
+            if (!_turnStarted)
+            {
+                _turnStarted = true;
+                _packetAssembler?.StartTurn();
+            }
+
+            // Route to PacketAssembler for sync packet correlation
+            _packetAssembler?.AddTranscription(text);
+
+            // Chirp TTS text accumulation
+            if (_config.voiceBackend == VoiceBackend.ChirpTTS)
+            {
+                _chirpTextBuffer.Append(text);
+            }
+        }
+
+        /// <summary>
+        /// Handles turn complete events from GeminiLiveClient.
+        /// Stops AI speaking, fires events, and triggers Chirp TTS full-response synthesis.
+        /// </summary>
+        private void HandleTurnCompleteEvent()
+        {
+            if (_aiSpeaking)
+            {
+                _aiSpeaking = false;
+                OnAISpeakingStopped?.Invoke();
+            }
+
+            OnTurnComplete?.Invoke();
+            _turnStarted = false;
+            _packetAssembler?.FinishTurn();
+
+            // Chirp full-response mode: synthesize accumulated text on turn complete
+            if (_config.voiceBackend == VoiceBackend.ChirpTTS
+                && _config.chirpSynthesisMode == ChirpSynthesisMode.FullResponse
+                && _chirpTextBuffer.Length > 0)
+            {
+                string fullText = _chirpTextBuffer.ToString();
+                _chirpTextBuffer.Clear();
+                SynthesizeAndEnqueue(fullText);
+            }
+        }
+
+        /// <summary>
+        /// Handles interruption events from GeminiLiveClient.
+        /// Clears audio buffers, stops AI speaking, and cancels the current turn.
+        /// </summary>
+        private void HandleInterruptedEvent()
+        {
+            _audioPlayback?.ClearBuffer();
+
+            if (_aiSpeaking)
+            {
+                _aiSpeaking = false;
+                OnAISpeakingStopped?.Invoke();
+            }
+
+            OnInterrupted?.Invoke();
+            _turnStarted = false;
+            _packetAssembler?.CancelTurn();
+            _chirpTextBuffer.Clear();
+        }
+
+        /// <summary>
+        /// Handles function call events from GeminiLiveClient.
+        /// Parses JSON arguments and routes to PacketAssembler for sync packet dispatch.
+        /// </summary>
+        private void HandleFunctionCallEvent(GeminiEvent ev)
+        {
+            var args = string.IsNullOrEmpty(ev.FunctionArgsJson)
+                ? new Dictionary<string, object>()
+                : JObject.Parse(ev.FunctionArgsJson).ToObject<Dictionary<string, object>>();
+
+            // Note: GeminiEvent does not currently carry a function call ID.
+            // Phase 10 will add FunctionId to GeminiEvent and capture it from the API response.
+            _packetAssembler?.AddFunctionCall(ev.FunctionName, args, null);
+        }
+
+        // =====================================================================
+        // SyncPacket, Function Dispatch, Chirp TTS
+        // =====================================================================
 
         /// <summary>
         /// Routes SyncPackets to function dispatch when applicable, then forwards to subscribers.
@@ -336,31 +640,45 @@ namespace AIEmbodiment
             // If handler returned a value, send it back to Gemini
             if (result != null && packet.FunctionId != null)
             {
-                _ = SendFunctionResponseAsync(packet.FunctionName, result, packet.FunctionId);
+                SendFunctionResponse(packet.FunctionName, result, packet.FunctionId);
             }
         }
 
         /// <summary>
         /// Sends a function response back to Gemini via the live session.
         /// </summary>
-        private async Task SendFunctionResponseAsync(string name, IDictionary<string, object> result, string callId)
+        // TODO: Phase 10 -- implement function response sending via WebSocket toolResponse
+        private void SendFunctionResponse(string name, IDictionary<string, object> result, string callId)
         {
-            // TODO: Plan 08-02 will fully rewrite this method
+            Debug.LogWarning(
+                $"PersonaSession: Function response for '{name}' not sent -- " +
+                "WebSocket toolResponse not yet implemented (Phase 10).");
         }
 
         /// <summary>
         /// Sends an updated system instruction (persona + goals) to the live session.
         /// </summary>
-        private async void SendGoalUpdate()
+        private void SendGoalUpdate()
         {
-            // TODO: Plan 08-02 will fully rewrite this method
+            if (_client == null || !_client.IsConnected || State != SessionState.Connected)
+                return;
+
+            // TODO: Phase 10 will implement mid-session instruction updates via WebSocket clientContent
+            Debug.LogWarning(
+                "PersonaSession: Goal update sent but mid-session instruction updates are not yet implemented (Phase 10). " +
+                "Goals will take effect on next connection.");
         }
 
+        // =====================================================================
+        // Lifecycle Teardown
+        // =====================================================================
+
         /// <summary>
-        /// Cleanly disconnects the session: cancels the receive loop,
-        /// awaits the WebSocket close handshake, and disposes resources.
+        /// Cleanly disconnects the session: cancels operations, closes the WebSocket,
+        /// and disposes resources. This method is synchronous -- GeminiLiveClient.Disconnect()
+        /// blocks up to 2 seconds for the close handshake.
         /// </summary>
-        public async void Disconnect()
+        public void Disconnect()
         {
             try
             {
@@ -371,7 +689,7 @@ namespace AIEmbodiment
 
                 _sessionCts?.Cancel();
 
-                // Stop audio components (CONTEXT.md: "PersonaSession auto-stops on disconnect")
+                // Stop audio components
                 if (_isListening)
                 {
                     StopListening();
@@ -392,11 +710,13 @@ namespace AIEmbodiment
                     _chirpClient = null;
                 }
                 _chirpTextBuffer.Clear();
-                _aiSpeaking = false;
 
-                _client?.Disconnect();
-                _client?.Dispose();
-                _client = null;
+                if (_client != null)
+                {
+                    _client.OnEvent -= HandleGeminiEvent;
+                    _client.Disconnect();
+                    _client = null;
+                }
 
                 _sessionCts?.Dispose();
                 _sessionCts = null;
@@ -411,7 +731,7 @@ namespace AIEmbodiment
 
         /// <summary>
         /// Synchronous safety net for scene transitions. Cancels the CTS and disposes
-        /// the live session without awaiting the close handshake.
+        /// the client without awaiting the close handshake.
         /// </summary>
         private void OnDestroy()
         {
@@ -424,13 +744,23 @@ namespace AIEmbodiment
 
             _packetAssembler?.Reset();
 
-            _chirpClient?.Dispose();
-            _chirpClient = null;
+            if (_chirpClient != null)
+            {
+                _chirpClient.OnError -= HandleChirpError;
+                _chirpClient.Dispose();
+                _chirpClient = null;
+            }
 
             _sessionCts?.Cancel();
-            _client?.Dispose();
+
+            if (_client != null)
+            {
+                _client.OnEvent -= HandleGeminiEvent;
+                _client.Dispose();
+                _client = null;
+            }
+
             _sessionCts?.Dispose();
-            _client = null;
             _sessionCts = null;
         }
     }
