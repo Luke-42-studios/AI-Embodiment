@@ -23,7 +23,7 @@
 
 **Milestone Goal:** Replace Firebase AI Logic SDK with direct WebSocket client, support audio-only Gemini models, and introduce ITTSProvider abstraction for custom voice cloning. Same public API surface, zero Firebase dependency.
 
-- [ ] **Phase 7: WebSocket Transport and Audio Parsing** - GeminiLiveClient with full Gemini Live protocol support
+- [x] **Phase 7: WebSocket Transport and Audio Parsing** - GeminiLiveClient with full Gemini Live protocol support
 - [ ] **Phase 8: PersonaSession Migration and Dependency Removal** - Rewire PersonaSession to GeminiLiveClient, remove Firebase
 - [ ] **Phase 9: TTS Abstraction** - ITTSProvider interface and ChirpTTSClient adaptation
 - [ ] **Phase 10: Function Calling and Goals Migration** - WebSocket-native tool declarations and mid-session instruction updates
@@ -45,7 +45,7 @@
 
 Plans:
 - [x] 07-01-PLAN.md -- GeminiLiveClient core: data types (GeminiEvent, GeminiLiveConfig), WebSocket connect, setup handshake, send methods (SendAudio, SendText), disconnect, ConcurrentQueue event infrastructure, Newtonsoft.Json dependency
-- [ ] 07-02-PLAN.md -- Receive loop and event dispatch: multi-frame message accumulation, JSON type dispatch, audio decoding (base64 -> PCM -> float[]), transcription extraction, turn lifecycle events, function call event parsing
+- [x] 07-02-PLAN.md -- Receive loop and event dispatch: multi-frame message accumulation, JSON type dispatch, audio decoding (base64 -> PCM -> float[]), transcription extraction, turn lifecycle events, function call event parsing
 
 ### Phase 8: PersonaSession Migration and Dependency Removal
 **Goal**: PersonaSession uses GeminiLiveClient instead of Firebase LiveSession, all Firebase references are removed, and existing public API (events, methods, properties) works identically
@@ -116,7 +116,7 @@ Plans:
 | 4. Function Calling and Conversational Goals | v1 | 3/3 | Complete | 2026-02-05 |
 | 5. Chirp TTS Voice Backend | v1 | 3/3 | Complete | 2026-02-05 |
 | 6. Sample Scene and Integration | v1 | 3/3 | Complete | 2026-02-05 |
-| 7. WebSocket Transport and Audio Parsing | v0.8 | 1/2 | In progress | - |
+| 7. WebSocket Transport and Audio Parsing | v0.8 | 2/2 | Complete | 2026-02-13 |
 | 8. PersonaSession Migration and Dependency Removal | v0.8 | 0/3 | Not started | - |
 | 9. TTS Abstraction | v0.8 | 0/2 | Not started | - |
 | 10. Function Calling and Goals Migration | v0.8 | 0/2 | Not started | - |

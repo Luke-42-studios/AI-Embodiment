@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-13)
 
 **Core value:** Developers can drop an AI character into their Unity scene and have it talking -- with synchronized voice, text, and animation events -- in minutes, not weeks.
-**Current focus:** v0.8 WebSocket Migration -- Phase 8: Session and Config Migration
+**Current focus:** v0.8 WebSocket Migration -- Phase 8: PersonaSession Migration and Dependency Removal
 
 ## Current Position
 
-Phase: 7 of 11 (WebSocket Transport and Audio Parsing)
-Plan: 2 of 2 in current phase
-Status: Phase complete
-Last activity: 2026-02-13 -- Completed 07-02-PLAN.md
+Phase: 8 of 11 (PersonaSession Migration and Dependency Removal)
+Plan: 0 of 3 in current phase
+Status: Ready to plan
+Last activity: 2026-02-13 -- Phase 7 complete and verified
 
 Progress: [################░░░░] 82% (19/28 total plans -- 17 v1 complete, 2 v0.8 complete, 9 v0.8 pending)
 
@@ -51,5 +51,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-13
-Stopped at: Completed 07-02-PLAN.md (Phase 7 complete)
+Stopped at: Phase 7 complete and verified. Ready to plan Phase 8.
 Resume file: None

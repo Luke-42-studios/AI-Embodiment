@@ -7,19 +7,19 @@
 
 ### WebSocket Transport
 
-- [ ] **WS-01**: GeminiLiveClient connects to Gemini Live via direct WebSocket (`wss://generativelanguage.googleapis.com`)
-- [ ] **WS-02**: WebSocket setup handshake sends model config, generation config, system instruction, and tools
-- [ ] **WS-03**: Background receive loop parses JSON text frames and binary audio frames
-- [ ] **WS-04**: ConcurrentQueue-based event dispatching from WebSocket thread to Unity main thread
-- [ ] **WS-05**: Clean disconnect with WebSocket close handshake and CancellationToken propagation
+- [x] **WS-01**: GeminiLiveClient connects to Gemini Live via direct WebSocket (`wss://generativelanguage.googleapis.com`)
+- [x] **WS-02**: WebSocket setup handshake sends model config, generation config, system instruction, and tools
+- [x] **WS-03**: Background receive loop parses JSON text frames and binary audio frames
+- [x] **WS-04**: ConcurrentQueue-based event dispatching from WebSocket thread to Unity main thread
+- [x] **WS-05**: Clean disconnect with WebSocket close handshake and CancellationToken propagation
 
 ### Audio Model Support
 
-- [ ] **AUD-01**: AUDIO response modality requested in generation config (not TEXT)
-- [ ] **AUD-02**: Gemini native audio (24kHz PCM) decoded from base64 inlineData and routed to AudioPlayback
-- [ ] **AUD-03**: Input transcription (user STT) extracted from `inputTranscription` field and exposed via event
-- [ ] **AUD-04**: Output transcription (AI speech text) extracted from `outputTranscription` field and exposed via event
-- [ ] **AUD-05**: Turn lifecycle events (turnComplete, interrupted) parsed from serverContent
+- [x] **AUD-01**: AUDIO response modality requested in generation config (not TEXT)
+- [x] **AUD-02**: Gemini native audio (24kHz PCM) decoded from base64 inlineData and routed to AudioPlayback
+- [x] **AUD-03**: Input transcription (user STT) extracted from `inputTranscription` field and exposed via event
+- [x] **AUD-04**: Output transcription (AI speech text) extracted from `outputTranscription` field and exposed via event
+- [x] **AUD-05**: Turn lifecycle events (turnComplete, interrupted) parsed from serverContent
 
 ### TTS Abstraction
 
@@ -79,16 +79,16 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| WS-01 | Phase 7 | Pending |
-| WS-02 | Phase 7 | Pending |
-| WS-03 | Phase 7 | Pending |
-| WS-04 | Phase 7 | Pending |
-| WS-05 | Phase 7 | Pending |
-| AUD-01 | Phase 7 | Pending |
-| AUD-02 | Phase 7 | Pending |
-| AUD-03 | Phase 7 | Pending |
-| AUD-04 | Phase 7 | Pending |
-| AUD-05 | Phase 7 | Pending |
+| WS-01 | Phase 7 | Complete |
+| WS-02 | Phase 7 | Complete |
+| WS-03 | Phase 7 | Complete |
+| WS-04 | Phase 7 | Complete |
+| WS-05 | Phase 7 | Complete |
+| AUD-01 | Phase 7 | Complete |
+| AUD-02 | Phase 7 | Complete |
+| AUD-03 | Phase 7 | Complete |
+| AUD-04 | Phase 7 | Complete |
+| AUD-05 | Phase 7 | Complete |
 | TTS-01 | Phase 9 | Pending |
 | TTS-02 | Phase 9 | Pending |
 | TTS-03 | Phase 9 | Pending |
@@ -113,4 +113,4 @@
 
 ---
 *Requirements defined: 2026-02-13*
-*Last updated: 2026-02-13 after v0.8 roadmap creation*
+*Last updated: 2026-02-13 after Phase 7 completion*
