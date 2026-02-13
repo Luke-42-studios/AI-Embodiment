@@ -30,7 +30,7 @@ namespace AIEmbodiment.Editor
         SerializedProperty _chirpLanguageCode;
         SerializedProperty _chirpVoiceShortName;
         SerializedProperty _chirpVoiceName;
-        SerializedProperty _chirpSynthesisMode;
+        SerializedProperty _synthesisMode;
         SerializedProperty _customVoiceName;
         SerializedProperty _voiceCloningKey;
 
@@ -51,7 +51,7 @@ namespace AIEmbodiment.Editor
             _chirpLanguageCode = serializedObject.FindProperty("chirpLanguageCode");
             _chirpVoiceShortName = serializedObject.FindProperty("chirpVoiceShortName");
             _chirpVoiceName = serializedObject.FindProperty("chirpVoiceName");
-            _chirpSynthesisMode = serializedObject.FindProperty("chirpSynthesisMode");
+            _synthesisMode = serializedObject.FindProperty("synthesisMode");
             _customVoiceName = serializedObject.FindProperty("customVoiceName");
             _voiceCloningKey = serializedObject.FindProperty("voiceCloningKey");
         }
@@ -185,17 +185,17 @@ namespace AIEmbodiment.Editor
             }
 
             // --- Synthesis mode ---
-            EditorGUILayout.PropertyField(_chirpSynthesisMode,
+            EditorGUILayout.PropertyField(_synthesisMode,
                 new GUIContent("Synthesis Mode", "How text is sent to Chirp TTS for audio generation"));
 
-            var mode = (ChirpSynthesisMode)_chirpSynthesisMode.enumValueIndex;
-            if (mode == ChirpSynthesisMode.SentenceBySentence)
+            var mode = (TTSSynthesisMode)_synthesisMode.enumValueIndex;
+            if (mode == TTSSynthesisMode.SentenceBySentence)
             {
                 EditorGUILayout.HelpBox(
                     "Each sentence synthesized as it arrives. ~200-500ms latency per sentence.",
                     MessageType.Info);
             }
-            else if (mode == ChirpSynthesisMode.FullResponse)
+            else if (mode == TTSSynthesisMode.FullResponse)
             {
                 EditorGUILayout.HelpBox(
                     "Entire response synthesized at once. Higher latency but single request.",

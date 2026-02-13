@@ -36,24 +36,20 @@ namespace AIEmbodiment
         public string chirpLanguageCode = "en-US";
         public string chirpVoiceShortName = "Achernar";
         public string chirpVoiceName = "en-US-Chirp3-HD-Achernar";
-        public ChirpSynthesisMode chirpSynthesisMode = ChirpSynthesisMode.SentenceBySentence;
+        public TTSSynthesisMode synthesisMode = TTSSynthesisMode.SentenceBySentence;
         public string customVoiceName = "";
         public string voiceCloningKey = "";
 
         /// <summary>True when Chirp backend with a custom (cloned) voice is configured.</summary>
         public bool IsCustomChirpVoice => voiceBackend == VoiceBackend.ChirpTTS
             && chirpVoiceShortName == ChirpVoiceList.CustomVoice;
-    }
 
-    /// <summary>
-    /// Controls how Chirp TTS synthesizes audio from AI text output.
-    /// </summary>
-    public enum ChirpSynthesisMode
-    {
-        /// <summary>Synthesize each sentence as PacketAssembler emits it. Lower latency to first audio.</summary>
-        SentenceBySentence,
+        [SerializeField] private MonoBehaviour _customTTSProvider;
 
-        /// <summary>Wait for complete AI response, synthesize once. Higher quality, higher latency.</summary>
-        FullResponse
+        /// <summary>
+        /// Returns the custom TTS provider if assigned and valid (implements ITTSProvider).
+        /// Null otherwise.
+        /// </summary>
+        public ITTSProvider CustomTTSProvider => _customTTSProvider as ITTSProvider;
     }
 }

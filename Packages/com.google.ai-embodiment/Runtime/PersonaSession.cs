@@ -177,7 +177,6 @@ namespace AIEmbodiment
                 if (_config.voiceBackend == VoiceBackend.ChirpTTS)
                 {
                     _chirpClient = new ChirpTTSClient(settings.ApiKey);
-                    _chirpClient.OnError += HandleChirpError;
                 }
 
                 // NOTE: SetState(Connected) is NOT called here.
@@ -478,7 +477,7 @@ namespace AIEmbodiment
 
             // Chirp full-response mode: synthesize accumulated text on turn complete
             if (_config.voiceBackend == VoiceBackend.ChirpTTS
-                && _config.chirpSynthesisMode == ChirpSynthesisMode.FullResponse
+                && _config.synthesisMode == TTSSynthesisMode.FullResponse
                 && _chirpTextBuffer.Length > 0)
             {
                 string fullText = _chirpTextBuffer.ToString();
@@ -533,7 +532,7 @@ namespace AIEmbodiment
         {
             // Chirp sentence-by-sentence synthesis: synthesize text from each SyncPacket
             if (_config.voiceBackend == VoiceBackend.ChirpTTS
-                && _config.chirpSynthesisMode == ChirpSynthesisMode.SentenceBySentence
+                && _config.synthesisMode == TTSSynthesisMode.SentenceBySentence
                 && packet.Type == SyncPacketType.TextAudio
                 && !string.IsNullOrEmpty(packet.Text))
             {
@@ -591,19 +590,6 @@ namespace AIEmbodiment
                 OnError?.Invoke(ex);
                 Debug.LogWarning($"PersonaSession: Chirp TTS synthesis failed (text still displayed): {ex.Message}");
             }
-        }
-
-        /// <summary>
-        /// Handles errors from the ChirpTTSClient's OnError event.
-        /// Routes to main thread for safe Unity API access.
-        /// </summary>
-        private void HandleChirpError(Exception ex)
-        {
-            MainThreadDispatcher.Enqueue(() =>
-            {
-                OnError?.Invoke(ex);
-                Debug.LogWarning($"PersonaSession: Chirp TTS error: {ex.Message}");
-            });
         }
 
         /// <summary>
@@ -705,7 +691,6 @@ namespace AIEmbodiment
 
                 if (_chirpClient != null)
                 {
-                    _chirpClient.OnError -= HandleChirpError;
                     _chirpClient.Dispose();
                     _chirpClient = null;
                 }
@@ -746,7 +731,6 @@ namespace AIEmbodiment
 
             if (_chirpClient != null)
             {
-                _chirpClient.OnError -= HandleChirpError;
                 _chirpClient.Dispose();
                 _chirpClient = null;
             }

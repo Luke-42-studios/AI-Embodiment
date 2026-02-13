@@ -9,41 +9,39 @@ namespace AIEmbodiment
 {
     /// <summary>
     /// HTTP client for Google Cloud Text-to-Speech (Chirp 3 HD) synthesis.
-    /// Sends text to the Cloud TTS REST API and returns PCM float[] audio at 24kHz.
+    /// Implements <see cref="ITTSProvider"/> for use with any TTS-routed voice backend.
+    /// Sends text to the Cloud TTS REST API and returns a <see cref="TTSResult"/> at 24kHz mono.
     ///
     /// Plain C# class (not MonoBehaviour) -- follows the same pattern as
     /// <see cref="PacketAssembler"/>. Only Unity dependency is <see cref="UnityWebRequest"/>
     /// which must run on the main thread.
     ///
     /// Handles both standard Chirp 3 HD voices (with SSML wrapping) and custom/cloned
-    /// voices (plain text with <c>voiceCloningKey</c>).
+    /// voices (plain text with voice cloning key passed at construction).
     /// </summary>
-    public class ChirpTTSClient : IDisposable
+    public class ChirpTTSClient : IDisposable, ITTSProvider
     {
         private const string TTS_ENDPOINT = "https://texttospeech.googleapis.com/v1/text:synthesize";
         private const int SAMPLE_RATE = 24000;
         private const int WAV_HEADER_SIZE = 44;
 
         private readonly string _apiKey;
+        private readonly string _voiceCloningKey;
         private bool _disposed;
 
         /// <summary>
-        /// Fired when a TTS request fails. The caller (PersonaSession) subscribes
-        /// to this for non-throwing error reporting so the conversation can continue
-        /// even if a single synthesis fails.
-        /// </summary>
-        public event Action<Exception> OnError;
-
-        /// <summary>
-        /// Creates a new ChirpTTSClient with the given API key.
-        /// Caller obtains the key via <c>AIEmbodimentSettings.Instance.ApiKey</c>.
+        /// Creates a new ChirpTTSClient with the given API key and optional voice cloning key.
+        /// Caller obtains the API key via <c>AIEmbodimentSettings.Instance.ApiKey</c>.
         /// </summary>
         /// <param name="apiKey">Google Cloud API key with Cloud TTS enabled.</param>
-        public ChirpTTSClient(string apiKey)
+        /// <param name="voiceCloningKey">Optional cloning key for custom voices. When provided,
+        /// requests use <c>voiceClone</c> instead of a named voice.</param>
+        public ChirpTTSClient(string apiKey, string voiceCloningKey = null)
         {
             if (string.IsNullOrEmpty(apiKey))
                 throw new ArgumentException("API key must not be null or empty.", nameof(apiKey));
             _apiKey = apiKey;
+            _voiceCloningKey = voiceCloningKey;
         }
 
         /// <summary>
@@ -54,25 +52,28 @@ namespace AIEmbodiment
         ///
         /// Standard voices use SSML wrapping; custom voices use plain text
         /// (custom/cloned voices do not support SSML -- Research Pitfall 7).
+        ///
+        /// The <paramref name="onAudioChunk"/> parameter is accepted for interface
+        /// compatibility but is not used. Cloud TTS REST is non-streaming; the full
+        /// result is always returned at completion.
         /// </summary>
         /// <param name="text">Text to synthesize.</param>
         /// <param name="voiceName">Full Cloud TTS voice name (e.g., "en-US-Chirp3-HD-Achernar").</param>
         /// <param name="languageCode">BCP-47 language code (e.g., "en-US").</param>
-        /// <param name="voiceCloningKey">Optional cloning key for custom voices. When provided,
-        /// <paramref name="voiceName"/> is ignored and the request uses <c>voiceClone</c> instead.</param>
-        /// <returns>PCM float array at 24kHz mono, or null if disposed.</returns>
+        /// <param name="onAudioChunk">Ignored -- REST-based provider returns full result only.</param>
+        /// <returns>TTSResult at 24kHz mono, or default if disposed during request.</returns>
         /// <exception cref="ObjectDisposedException">If the client has been disposed.</exception>
         /// <exception cref="Exception">If the HTTP request fails.</exception>
-        public async Awaitable<float[]> SynthesizeAsync(
+        public async Awaitable<TTSResult> SynthesizeAsync(
             string text,
             string voiceName,
             string languageCode,
-            string voiceCloningKey = null)
+            Action<TTSResult> onAudioChunk = null)
         {
             if (_disposed)
                 throw new ObjectDisposedException(nameof(ChirpTTSClient));
 
-            string json = BuildRequestJson(text, voiceName, languageCode, voiceCloningKey);
+            string json = BuildRequestJson(text, voiceName, languageCode, _voiceCloningKey);
             byte[] bodyBytes = Encoding.UTF8.GetBytes(json);
 
             using var request = new UnityWebRequest(TTS_ENDPOINT, "POST");
@@ -84,17 +85,15 @@ namespace AIEmbodiment
             await request.SendWebRequest();
 
             if (_disposed)
-                return null;
+                return default;
 
             if (request.result != UnityWebRequest.Result.Success)
             {
-                var ex = new Exception(
+                throw new Exception(
                     $"Cloud TTS request failed: {request.error}\n" +
                     $"Response: {request.downloadHandler?.text ?? "(no body)"}\n" +
                     "If you see 403: ensure Cloud Text-to-Speech API is enabled in " +
                     "Google Cloud Console and the API key is not restricted.");
-                OnError?.Invoke(ex);
-                throw ex;
             }
 
             // Parse response JSON to extract base64 audioContent
@@ -103,18 +102,16 @@ namespace AIEmbodiment
 
             if (string.IsNullOrEmpty(audioBase64))
             {
-                var ex = new Exception(
+                throw new Exception(
                     "Cloud TTS response missing audioContent field.\n" +
                     $"Response: {responseJson}");
-                OnError?.Invoke(ex);
-                throw ex;
             }
 
             // Decode base64 to raw bytes
             byte[] audioBytes = Convert.FromBase64String(audioBase64);
 
             // Strip WAV header and convert LINEAR16 to float[]
-            return ConvertLinear16ToFloat(audioBytes);
+            return new TTSResult(ConvertLinear16ToFloat(audioBytes), SAMPLE_RATE, 1);
         }
 
         /// <summary>
