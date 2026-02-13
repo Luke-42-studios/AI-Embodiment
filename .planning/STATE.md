@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-13)
 
 **Core value:** Developers can drop an AI character into their Unity scene and have it talking -- with synchronized voice, text, and animation events -- in minutes, not weeks.
-**Current focus:** v0.8 WebSocket Migration -- Phase 10: Function Calling and Goals Migration
+**Current focus:** v0.8 WebSocket Migration -- Phase 10 complete. Ready for Phase 11.
 
 ## Current Position
 
 Phase: 10 of 11 (Function Calling and Goals Migration)
-Plan: 1 of 2 in current phase
-Status: In progress
-Last activity: 2026-02-13 -- Completed 10-01-PLAN.md
+Plan: 2 of 2 in current phase
+Status: Phase complete
+Last activity: 2026-02-13 -- Completed 10-02-PLAN.md
 
-Progress: [##################░░] 92% (24/26 total plans -- 17 v1 complete, 7 v0.8 complete, 2 v0.8 pending)
+Progress: [###################░] 96% (25/26 total plans -- 17 v1 complete, 8 v0.8 complete, 1 v0.8 pending)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 24
+- Total plans completed: 25
 - Average duration: 1.8 min
-- Total execution time: 0.79 hours
+- Total execution time: 0.82 hours
 
 ## Accumulated Context
 
@@ -50,6 +50,11 @@ Recent decisions affecting current work:
 - 10-01: BuildToolsJson/BuildPromptInstructions return null when no registrations
 - 10-01: GeminiEvent.FunctionId captures call ID for response correlation
 - 10-01: SendToolResponse uses IDictionary<string,object> converted via JObject.FromObject
+- 10-02: UseNativeFunctionCalling is public static (global toggle, not per-session)
+- 10-02: Prompt-based [CALL:] tags left in transcription events (stripping breaks incremental stream)
+- 10-02: Prompt-based calls fire-and-forget only (no server-assigned ID)
+- 10-02: SendGoalUpdate uses Debug.Log not LogWarning (expected behavior, not a warning)
+- 10-02: SystemInstructionBuilder 3-param overload centralizes all instruction composition
 
 ### Pending Todos
 
@@ -63,5 +68,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-13
-Stopped at: Completed 10-01-PLAN.md (Function Calling Infrastructure). Ready for 10-02.
+Stopped at: Completed 10-02-PLAN.md (Function Calling Session Wiring). Phase 10 complete. Ready for Phase 11.
 Resume file: None
