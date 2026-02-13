@@ -57,12 +57,11 @@ Plans:
   3. SendText, StartListening, StopListening, Disconnect all work as before
   4. PersonaConfig.apiKey field exists and is used for connection (no Firebase project config)
   5. The project compiles with zero Firebase.AI references in runtime asmdef and source files
-**Plans**: TBD
+**Plans:** 2 plans
 
 Plans:
-- [ ] 08-01: Dependency swap (remove Firebase.AI from asmdef, add Newtonsoft.Json, replace Firebase type references)
-- [ ] 08-02: PersonaSession rewire (Connect using GeminiLiveClient, event routing from GeminiEvent to public events, audio routing)
-- [ ] 08-03: SystemInstructionBuilder and FunctionRegistry migration (remove ModelContent/FunctionDeclaration Firebase types, use plain strings and JObjects)
+- [ ] 08-01-PLAN.md -- Firebase purge and dependency swap: delete Firebase/ExternalDependencyManager directories, create AIEmbodimentSettings ScriptableObject with password-masked editor, clean all asmdef files, migrate SystemInstructionBuilder to return string, stub FunctionRegistry without Firebase types, migrate ChirpTTSClient from MiniJSON to Newtonsoft.Json, stub sample scene
+- [ ] 08-02-PLAN.md -- PersonaSession rewire: replace LiveSession with GeminiLiveClient, rewrite Connect/Disconnect/SendText/HandleAudioCaptured, implement HandleGeminiEvent event bridge with complete GeminiEventType-to-public-event mapping, add FloatToPcm16 audio conversion, ProcessEvents polling in Update
 
 ### Phase 9: TTS Abstraction
 **Goal**: Developers can choose between Gemini native audio and custom TTS backends via a clean ITTSProvider interface, with ChirpTTSClient as the shipped implementation
@@ -117,7 +116,7 @@ Plans:
 | 5. Chirp TTS Voice Backend | v1 | 3/3 | Complete | 2026-02-05 |
 | 6. Sample Scene and Integration | v1 | 3/3 | Complete | 2026-02-05 |
 | 7. WebSocket Transport and Audio Parsing | v0.8 | 2/2 | Complete | 2026-02-13 |
-| 8. PersonaSession Migration and Dependency Removal | v0.8 | 0/3 | Not started | - |
+| 8. PersonaSession Migration and Dependency Removal | v0.8 | 0/2 | Not started | - |
 | 9. TTS Abstraction | v0.8 | 0/2 | Not started | - |
 | 10. Function Calling and Goals Migration | v0.8 | 0/2 | Not started | - |
 | 11. Integration Verification | v0.8 | 0/1 | Not started | - |
