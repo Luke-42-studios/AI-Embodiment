@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Concurrent;
+using System.IO;
 using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace AIEmbodiment
@@ -212,10 +214,89 @@ namespace AIEmbodiment
             _eventQueue.Enqueue(ev);
         }
 
-        /// <summary>Receive loop stub -- Plan 02 replaces this with the full implementation.</summary>
+        /// <summary>
+        /// Background receive loop. Reads WebSocket frames, accumulates multi-frame
+        /// messages via MemoryStream, detects JSON via first-byte check, and dispatches
+        /// to HandleJsonMessage. Handles Close frames, cancellation, and errors.
+        /// </summary>
         private async Task ReceiveLoop(CancellationToken ct)
         {
-            await Task.CompletedTask;
+            var buffer = new byte[64 * 1024];
+
+            try
+            {
+                while (!ct.IsCancellationRequested && _ws?.State == WebSocketState.Open)
+                {
+                    // Accumulate multi-frame message
+                    var ms = new MemoryStream();
+                    WebSocketReceiveResult result;
+                    do
+                    {
+                        result = await _ws.ReceiveAsync(new ArraySegment<byte>(buffer), ct);
+                        if (result.MessageType == WebSocketMessageType.Close)
+                        {
+                            _connected = false;
+                            _setupComplete = false;
+                            Enqueue(new GeminiEvent
+                            {
+                                Type = GeminiEventType.Disconnected,
+                                Text = "Server closed connection"
+                            });
+                            return;
+                        }
+                        ms.Write(buffer, 0, result.Count);
+                    }
+                    while (!result.EndOfMessage);
+
+                    var bytes = ms.ToArray();
+
+                    // Gemini sends ALL messages (including JSON) as Binary frames (Pitfall 3).
+                    // Detect JSON by checking the first byte rather than relying on MessageType.
+                    bool isJson = bytes.Length > 0 && (bytes[0] == '{' || bytes[0] == '[');
+
+                    if (!isJson)
+                    {
+                        // Defensive: raw binary audio (Gemini typically wraps audio in JSON,
+                        // but handle raw binary gracefully if it ever occurs)
+                        Enqueue(new GeminiEvent
+                        {
+                            Type = GeminiEventType.Audio,
+                            AudioData = new float[0],
+                            AudioSampleRate = 24000
+                        });
+                        continue;
+                    }
+
+                    var text = Encoding.UTF8.GetString(bytes);
+                    HandleJsonMessage(text);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // Normal shutdown -- do nothing
+            }
+            catch (WebSocketException ex)
+            {
+                _connected = false;
+                _setupComplete = false;
+                Enqueue(new GeminiEvent { Type = GeminiEventType.Error, Text = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _connected = false;
+                _setupComplete = false;
+                Enqueue(new GeminiEvent { Type = GeminiEventType.Error, Text = ex.ToString() });
+            }
+        }
+
+        /// <summary>
+        /// Parse a JSON message from the Gemini Live API and dispatch typed events.
+        /// Handles: setupComplete, serverContent (audio, transcriptions, turn lifecycle),
+        /// toolCall (function calls), toolCallCancellation, and goAway.
+        /// </summary>
+        private void HandleJsonMessage(string json)
+        {
+            // Stub -- Task 2 fills this in
         }
     }
 }
