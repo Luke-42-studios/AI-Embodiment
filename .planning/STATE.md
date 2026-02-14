@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-13)
 
 **Core value:** Developers can drop an AI character into their Unity scene and have it talking -- with synchronized voice, text, and animation events -- in minutes, not weeks.
-**Current focus:** v0.8 WebSocket Migration -- Phase 11 in progress. Infrastructure fixes complete, end-to-end verification next.
+**Current focus:** v0.8 WebSocket Migration complete. All 11 phases finished.
 
 ## Current Position
 
 Phase: 11 of 11 (Integration Verification)
-Plan: 1 of 2 in current phase
-Status: In progress
-Last activity: 2026-02-13 -- Completed 11-01-PLAN.md (infrastructure fixes)
+Plan: 2 of 2 in current phase
+Status: Phase complete
+Last activity: 2026-02-13 -- Completed 11-02-PLAN.md (AyaSampleController + end-to-end verification)
 
-Progress: [###################░] 100% (26/27 total plans -- 17 v1 complete, 9 v0.8 complete, 1 v0.8 pending)
+Progress: [####################] 100% (27/27 total plans -- 17 v1 complete, 10 v0.8 complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 26
-- Average duration: 1.8 min
-- Total execution time: 0.84 hours
+- Total plans completed: 27
+- Average duration: 1.8 min (excluding human verification time)
+- Total execution time: ~0.9 hours
 
 ## Accumulated Context
 
@@ -58,6 +58,12 @@ Recent decisions affecting current work:
 - 11-01: AIEmbodimentSettings.cs.meta GUID cc5e07aa... cross-referenced in .asset m_Script
 - 11-01: 2-line .meta format (no MonoImporter block) matches existing package convention
 - 11-01: NativeFormatImporter for .asset.meta, DefaultImporter with folderAsset for folder .meta
+- 11-02: audioStreamEnd signal on StopListening flushes server VAD
+- 11-02: Mic audio suppressed during AI speech to prevent feedback loop
+- 11-02: Ring buffer 2s to 30s to prevent overflow on long responses
+- 11-02: Initial watermark 300ms for better first-word buffering
+- 11-02: Re-buffering on underrun removed for smoother streaming
+- 11-02: UseNativeFunctionCalling=false is the production default (prompt-based function calling)
 
 ### Pending Todos
 
@@ -65,11 +71,10 @@ None.
 
 ### Blockers/Concerns
 
-- Gemini output audio sample rate assumed 24kHz -- verify with actual API response
-- Scene file wiring gaps on disk -- RESOLVED in 11-01 (AudioPlayback._audioSource wired, PlayOnAwake disabled)
+- Gemini output audio sample rate assumed 24kHz -- verified working in practice during 11-02 human verification
 
 ## Session Continuity
 
 Last session: 2026-02-13
-Stopped at: Completed 11-01-PLAN.md (infrastructure fixes). Ready for 11-02.
+Stopped at: Completed 11-02-PLAN.md. Phase 11 and all v0.8 migration phases are complete.
 Resume file: None
