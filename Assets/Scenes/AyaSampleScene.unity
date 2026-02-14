@@ -303,7 +303,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b4ab2db297c0a86f19772e35a4fb7d17, type: 3}
   m_Name: 
   m_EditorClassIdentifier: com.google.ai-embodiment::AIEmbodiment.AudioPlayback
-  _audioSource: {fileID: 0}
+  _audioSource: {fileID: 406905700}
 --- !u!114 &406905699
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -328,7 +328,7 @@ AudioSource:
   OutputAudioMixerGroup: {fileID: 0}
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 0}
-  m_PlayOnAwake: 1
+  m_PlayOnAwake: 0
   m_Volume: 1
   m_Pitch: 1
   Loop: 0
