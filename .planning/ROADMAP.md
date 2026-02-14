@@ -28,6 +28,7 @@
 - [x] **Phase 9: TTS Abstraction** - ITTSProvider interface and ChirpTTSClient adaptation
 - [x] **Phase 10: Function Calling and Goals Migration** - WebSocket-native tool declarations and mid-session instruction updates
 - [x] **Phase 11: Integration Verification** - Sample scene and PacketAssembler validation with new transport
+- [ ] **Phase 11.1: Queued Response Sample** - Push-to-talk transcript approval UX with pre-fetched AI response playback (INSERTED)
 
 ## Phase Details
 
@@ -104,9 +105,24 @@ Plans:
 - [x] 11-01-PLAN.md -- Infrastructure fixes: create missing .meta files for v0.8 source files, create AIEmbodimentSettings asset in Resources, fix scene YAML (AudioPlayback._audioSource wiring, PlayOnAwake)
 - [x] 11-02-PLAN.md -- AyaSampleController status feedback and SyncPacket validation logging, Samples~ sync, end-to-end human verification
 
+### Phase 11.1: Queued Response Sample (INSERTED)
+**Goal**: A new sample scene demonstrating a push-to-talk transcript-approve-then-play UX where the user holds spacebar to speak, sees their transcript, approves with Enter, and the AI response (pre-fetched in background) plays back immediately
+**Depends on**: Phase 11
+**Success Criteria** (what must be TRUE):
+  1. User holds spacebar to record, releases to stop -- their input transcript appears on screen in real time
+  2. AI response audio is fetched and queued in the background while the user reviews their transcript
+  3. User presses Enter to approve their message -- the queued AI response begins playback immediately (near-zero latency)
+  4. The AI response transcript displays alongside audio playback
+  5. The flow loops: after AI response completes, user can hold spacebar again for next turn
+**Plans:** 2 plans
+
+Plans:
+- [ ] 11.1-01-PLAN.md -- Project structure, UI assets (UXML/USS), QueuedResponseController state machine with audio buffering, QueuedResponseUI with state-driven display
+- [ ] 11.1-02-PLAN.md -- Samples~ sync and end-to-end human verification of the queued response UX
+
 ## Progress
 
-**Execution Order:** 7 -> 8 -> 9 -> 10 -> 11 (Phases 9 and 10 can run in parallel after Phase 8)
+**Execution Order:** 7 -> 8 -> 9 -> 10 -> 11 -> 11.1 (Phases 9 and 10 can run in parallel after Phase 8)
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -121,3 +137,4 @@ Plans:
 | 9. TTS Abstraction | v0.8 | 2/2 | Complete | 2026-02-13 |
 | 10. Function Calling and Goals Migration | v0.8 | 2/2 | Complete | 2026-02-13 |
 | 11. Integration Verification | v0.8 | 2/2 | Complete | 2026-02-13 |
+| 11.1. Queued Response Sample | v0.8 | 0/2 | Planned | - |
