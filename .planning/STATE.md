@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-13)
 
 **Core value:** Developers can drop an AI character into their Unity scene and have it talking -- with synchronized voice, text, and animation events -- in minutes, not weeks.
-**Current focus:** v0.8 WebSocket Migration -- Phase 10 complete and verified. Ready for Phase 11.
+**Current focus:** v0.8 WebSocket Migration -- Phase 11 in progress. Infrastructure fixes complete, end-to-end verification next.
 
 ## Current Position
 
-Phase: 10 of 11 (Function Calling and Goals Migration)
-Plan: 2 of 2 in current phase
-Status: Phase complete and verified
-Last activity: 2026-02-13 -- Phase 10 verified (10/10 must-haves passed)
+Phase: 11 of 11 (Integration Verification)
+Plan: 1 of 2 in current phase
+Status: In progress
+Last activity: 2026-02-13 -- Completed 11-01-PLAN.md (infrastructure fixes)
 
-Progress: [###################░] 96% (25/26 total plans -- 17 v1 complete, 8 v0.8 complete, 1 v0.8 pending)
+Progress: [###################░] 100% (26/27 total plans -- 17 v1 complete, 9 v0.8 complete, 1 v0.8 pending)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 25
+- Total plans completed: 26
 - Average duration: 1.8 min
-- Total execution time: 0.82 hours
+- Total execution time: 0.84 hours
 
 ## Accumulated Context
 
@@ -55,6 +55,9 @@ Recent decisions affecting current work:
 - 10-02: Prompt-based calls fire-and-forget only (no server-assigned ID)
 - 10-02: SendGoalUpdate uses Debug.Log not LogWarning (expected behavior, not a warning)
 - 10-02: SystemInstructionBuilder 3-param overload centralizes all instruction composition
+- 11-01: AIEmbodimentSettings.cs.meta GUID cc5e07aa... cross-referenced in .asset m_Script
+- 11-01: 2-line .meta format (no MonoImporter block) matches existing package convention
+- 11-01: NativeFormatImporter for .asset.meta, DefaultImporter with folderAsset for folder .meta
 
 ### Pending Todos
 
@@ -63,10 +66,10 @@ None.
 ### Blockers/Concerns
 
 - Gemini output audio sample rate assumed 24kHz -- verify with actual API response
-- Scene file wiring gaps on disk (Editor state not saved from v1)
+- Scene file wiring gaps on disk -- RESOLVED in 11-01 (AudioPlayback._audioSource wired, PlayOnAwake disabled)
 
 ## Session Continuity
 
 Last session: 2026-02-13
-Stopped at: Phase 10 complete and verified. Ready to plan Phase 11.
+Stopped at: Completed 11-01-PLAN.md (infrastructure fixes). Ready for 11-02.
 Resume file: None
