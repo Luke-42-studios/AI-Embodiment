@@ -31,6 +31,8 @@ namespace AIEmbodiment.Samples
 
             _session.OnTurnComplete += HandleTurnComplete;
             _session.OnFunctionError += HandleFunctionError;
+            _session.OnStateChanged += HandleStateChanged;
+            _session.OnSyncPacket += HandleSyncPacket;
 
             StartCoroutine(PlayIntroThenGoLive());
         }
@@ -125,12 +127,35 @@ namespace AIEmbodiment.Samples
             }
         }
 
+        private void HandleStateChanged(SessionState state)
+        {
+            _chatUI.SetStatus(state switch
+            {
+                SessionState.Connecting => "Connecting to Gemini...",
+                SessionState.Connected => "Live! Hold SPACE to talk.",
+                SessionState.Disconnecting => "Disconnecting...",
+                SessionState.Disconnected => "Disconnected.",
+                SessionState.Error => "Connection error.",
+                _ => state.ToString()
+            });
+        }
+
+        private void HandleSyncPacket(SyncPacket packet)
+        {
+            Debug.Log($"[SyncPacket] Turn={packet.TurnId} Seq={packet.Sequence} " +
+                      $"Type={packet.Type} Text=\"{packet.Text}\" " +
+                      $"Audio={packet.Audio?.Length ?? 0} samples " +
+                      $"IsTurnEnd={packet.IsTurnEnd}");
+        }
+
         private void OnDestroy()
         {
             if (_session != null)
             {
                 _session.OnTurnComplete -= HandleTurnComplete;
                 _session.OnFunctionError -= HandleFunctionError;
+                _session.OnStateChanged -= HandleStateChanged;
+                _session.OnSyncPacket -= HandleSyncPacket;
             }
         }
     }
