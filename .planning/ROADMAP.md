@@ -3,7 +3,7 @@
 ## Milestones
 
 - **v1 MVP** -- Phases 1-6 (shipped 2026-02-13)
-- **v0.8 WebSocket Migration** -- Phases 7-11 (in progress)
+- **v0.8 WebSocket Migration** -- Phases 7-11 (shipped 2026-02-13)
 
 ## Phases
 
@@ -27,7 +27,7 @@
 - [x] **Phase 8: PersonaSession Migration and Dependency Removal** - Rewire PersonaSession to GeminiLiveClient, remove Firebase
 - [x] **Phase 9: TTS Abstraction** - ITTSProvider interface and ChirpTTSClient adaptation
 - [x] **Phase 10: Function Calling and Goals Migration** - WebSocket-native tool declarations and mid-session instruction updates
-- [ ] **Phase 11: Integration Verification** - Sample scene and PacketAssembler validation with new transport
+- [x] **Phase 11: Integration Verification** - Sample scene and PacketAssembler validation with new transport
 
 ## Phase Details
 
@@ -101,8 +101,8 @@ Plans:
 **Plans:** 2 plans
 
 Plans:
-- [ ] 11-01-PLAN.md -- Infrastructure fixes: create missing .meta files for v0.8 source files, create AIEmbodimentSettings asset in Resources, fix scene YAML (AudioPlayback._audioSource wiring, PlayOnAwake)
-- [ ] 11-02-PLAN.md -- AyaSampleController status feedback and SyncPacket validation logging, Samples~ sync, end-to-end human verification
+- [x] 11-01-PLAN.md -- Infrastructure fixes: create missing .meta files for v0.8 source files, create AIEmbodimentSettings asset in Resources, fix scene YAML (AudioPlayback._audioSource wiring, PlayOnAwake)
+- [x] 11-02-PLAN.md -- AyaSampleController status feedback and SyncPacket validation logging, Samples~ sync, end-to-end human verification
 
 ## Progress
 
@@ -120,4 +120,4 @@ Plans:
 | 8. PersonaSession Migration and Dependency Removal | v0.8 | 2/2 | Complete | 2026-02-13 |
 | 9. TTS Abstraction | v0.8 | 2/2 | Complete | 2026-02-13 |
 | 10. Function Calling and Goals Migration | v0.8 | 2/2 | Complete | 2026-02-13 |
-| 11. Integration Verification | v0.8 | 0/2 | Not started | - |
+| 11. Integration Verification | v0.8 | 2/2 | Complete | 2026-02-13 |

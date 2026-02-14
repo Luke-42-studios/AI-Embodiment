@@ -46,8 +46,8 @@
 
 ### Integration
 
-- [ ] **INT-01**: Sample scene (AyaLiveStream) works with new WebSocket transport
-- [ ] **INT-02**: PacketAssembler works with new transcription streams for Chirp TTS subtitle sync
+- [x] **INT-01**: Sample scene (AyaLiveStream) works with new WebSocket transport
+- [x] **INT-02**: PacketAssembler works with new transcription streams for Chirp TTS subtitle sync
 
 ## v1.0 Requirements (Deferred)
 
