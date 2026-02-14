@@ -98,10 +98,11 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. AyaLiveStream sample scene connects, sends/receives audio, and displays transcription text using the WebSocket transport
   2. PacketAssembler produces correct SyncPackets from the new transcription streams for both Gemini native audio and Chirp TTS paths
-**Plans**: TBD
+**Plans:** 2 plans
 
 Plans:
-- [ ] 11-01: Sample scene update and end-to-end verification (AyaSampleController wiring, PacketAssembler stream validation, both voice backends)
+- [ ] 11-01-PLAN.md -- Infrastructure fixes: create missing .meta files for v0.8 source files, create AIEmbodimentSettings asset in Resources, fix scene YAML (AudioPlayback._audioSource wiring, PlayOnAwake)
+- [ ] 11-02-PLAN.md -- AyaSampleController status feedback and SyncPacket validation logging, Samples~ sync, end-to-end human verification
 
 ## Progress
 
@@ -119,4 +120,4 @@ Plans:
 | 8. PersonaSession Migration and Dependency Removal | v0.8 | 2/2 | Complete | 2026-02-13 |
 | 9. TTS Abstraction | v0.8 | 2/2 | Complete | 2026-02-13 |
 | 10. Function Calling and Goals Migration | v0.8 | 2/2 | Complete | 2026-02-13 |
-| 11. Integration Verification | v0.8 | 0/1 | Not started | - |
+| 11. Integration Verification | v0.8 | 0/2 | Not started | - |
