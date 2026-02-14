@@ -106,6 +106,25 @@ namespace AIEmbodiment
             _ = SendJsonAsync(payload);
         }
 
+        /// <summary>
+        /// Signal end of audio stream to flush cached audio on the server.
+        /// Call when the microphone is muted or push-to-talk is released so the
+        /// server's VAD processes the buffered audio and generates a response.
+        /// </summary>
+        public void SendAudioStreamEnd()
+        {
+            if (!IsConnected) return;
+
+            var payload = new JObject
+            {
+                ["realtimeInput"] = new JObject
+                {
+                    ["audioStreamEnd"] = true
+                }
+            };
+            _ = SendJsonAsync(payload);
+        }
+
         /// <summary>Send a text message as clientContent with turnComplete.</summary>
         public void SendText(string message)
         {
@@ -274,7 +293,7 @@ namespace AIEmbodiment
                             Enqueue(new GeminiEvent
                             {
                                 Type = GeminiEventType.Disconnected,
-                                Text = "Server closed connection"
+                                Text = $"Server closed: {result.CloseStatus} - {result.CloseStatusDescription}"
                             });
                             return;
                         }

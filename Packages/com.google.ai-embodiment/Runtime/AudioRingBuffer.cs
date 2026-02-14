@@ -36,13 +36,17 @@ namespace AIEmbodiment
         /// <summary>
         /// Writes samples into the ring buffer. Called from main thread only.
         /// No allocations. Wraps around using modulo arithmetic.
-        /// If more samples are written than free space, oldest unread data is overwritten.
+        /// Clamps to available free space to prevent overwriting unread data.
         /// </summary>
         /// <param name="data">Source array containing audio samples.</param>
         /// <param name="offset">Start index in the source array.</param>
         /// <param name="count">Number of samples to write.</param>
         public void Write(float[] data, int offset, int count)
         {
+            int freeSpace = _capacity - 1 - Available;
+            if (count > freeSpace)
+                count = freeSpace;
+
             for (int i = 0; i < count; i++)
             {
                 _buffer[(_writePos + i) % _capacity] = data[offset + i];

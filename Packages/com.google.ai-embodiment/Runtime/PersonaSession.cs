@@ -31,7 +31,7 @@ namespace AIEmbodiment
         /// [CALL: name {"arg": "val"}] tags parsed from transcription.
         /// Default: true (native path). Set to false if native tool calling is unreliable with audio-only models.
         /// </summary>
-        public static bool UseNativeFunctionCalling = true;
+        public static bool UseNativeFunctionCalling = false;
 
         /// <summary>Current session lifecycle state.</summary>
         public SessionState State { get; private set; } = SessionState.Disconnected;
@@ -225,7 +225,7 @@ namespace AIEmbodiment
             {
                 SetState(SessionState.Error);
                 OnError?.Invoke(ex);
-                Debug.LogError($"PersonaSession: Connection failed: {ex.Message}");
+                Debug.LogError($"PersonaSession: Connection failed: {ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
             }
         }
 
@@ -292,6 +292,10 @@ namespace AIEmbodiment
             _isListening = false;
             _audioCapture.StopCapture();
             _audioCapture.OnAudioCaptured -= HandleAudioCaptured;
+
+            // Signal Gemini to flush cached audio and process the user's speech.
+            // Without this, the audio stream just stops and the VAD may keep waiting.
+            _client?.SendAudioStreamEnd();
 
             if (_userSpeaking)
             {
@@ -383,6 +387,11 @@ namespace AIEmbodiment
         private void HandleAudioCaptured(float[] chunk)
         {
             if (_client == null || !_client.IsConnected || State != SessionState.Connected)
+                return;
+
+            // Suppress mic audio while the AI is speaking to prevent a feedback loop:
+            // speaker audio → mic → Gemini → "interrupted" → buffer cleared → only last word heard.
+            if (_aiSpeaking)
                 return;
 
             // Track user speaking state

@@ -20,8 +20,8 @@ namespace AIEmbodiment
         private AudioRingBuffer _ringBuffer;
 
         private const int GEMINI_SAMPLE_RATE = 24000;
-        private const int BUFFER_SECONDS = 2;
-        private const float WATERMARK_SECONDS = 0.15f;
+        private const int BUFFER_SECONDS = 30;
+        private const float WATERMARK_SECONDS = 0.3f;
 
         private int _watermarkSamples;
         private double _resampleRatio;
@@ -174,11 +174,12 @@ namespace AIEmbodiment
             // Read source samples from ring buffer into pre-allocated resample buffer
             int actualRead = _ringBuffer.Read(_resampleBuffer, 0, sourceSamplesNeeded);
 
-            // Underrun: no data available at all -- enter buffering state
+            // Underrun: no data available -- output silence but DON'T re-enter buffering.
+            // Re-buffering would add a 150ms watermark delay every time the network
+            // briefly falls behind, causing audible gaps between words.
+            // Instead, output silence and resume immediately when data arrives.
             if (actualRead == 0)
             {
-                _isBuffering = true;
-                _resamplePosition = 0.0;
                 Array.Clear(data, 0, data.Length);
                 return;
             }
