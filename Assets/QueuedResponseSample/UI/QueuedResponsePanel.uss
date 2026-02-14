@@ -1,0 +1,91 @@
+.root {
+    flex-grow: 1;
+    background-color: rgb(24, 24, 32);
+    padding: 12px;
+}
+
+.header {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 6px;
+    background-color: rgb(80, 80, 80);
+    margin-right: 8px;
+    transition-property: background-color, border-color;
+    transition-duration: 0.3s;
+}
+
+.indicator--speaking {
+    background-color: rgb(100, 255, 100);
+    border-width: 2px;
+    border-color: rgb(100, 255, 100);
+}
+
+.recording {
+    background-color: rgb(255, 80, 80);
+    border-width: 2px;
+    border-color: rgb(255, 80, 80);
+}
+
+.response-ready {
+    background-color: rgb(80, 220, 80);
+    border-width: 2px;
+    border-color: rgb(80, 220, 80);
+}
+
+.status {
+    color: rgb(140, 140, 160);
+    font-size: 12px;
+}
+
+.section-header {
+    color: rgb(100, 100, 120);
+    font-size: 11px;
+    margin-bottom: 4px;
+}
+
+.transcript-area {
+    flex-grow: 1;
+    background-color: rgb(16, 16, 24);
+    border-radius: 8px;
+    padding: 8px;
+    margin-bottom: 8px;
+}
+
+.response-area {
+    flex-grow: 1;
+    background-color: rgb(16, 16, 24);
+    border-radius: 8px;
+    padding: 8px;
+    margin-bottom: 8px;
+}
+
+.transcript {
+    white-space: normal;
+    margin-bottom: 4px;
+}
+
+.user-text {
+    color: rgb(170, 220, 255);
+}
+
+.ai-text {
+    color: rgb(200, 170, 255);
+}
+
+.footer {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+}
+
+.key-hints {
+    color: rgb(100, 100, 120);
+    font-size: 12px;
+    -unity-text-align: middle-center;
+}

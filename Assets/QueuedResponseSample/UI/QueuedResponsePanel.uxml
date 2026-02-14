@@ -1,0 +1,22 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <ui:VisualElement name="root-container" class="root">
+        <ui:VisualElement name="header" class="header">
+            <ui:VisualElement name="state-indicator" class="indicator" />
+            <ui:Label name="status-label" text="Connecting..." class="status" />
+        </ui:VisualElement>
+
+        <ui:VisualElement name="transcript-area" class="transcript-area">
+            <ui:Label text="You:" class="section-header" />
+            <ui:Label name="user-transcript" text="" class="transcript user-text" />
+        </ui:VisualElement>
+
+        <ui:VisualElement name="response-area" class="response-area">
+            <ui:Label text="AI:" class="section-header" />
+            <ui:Label name="ai-response" text="" class="transcript ai-text" />
+        </ui:VisualElement>
+
+        <ui:VisualElement name="footer" class="footer">
+            <ui:Label name="key-hints" text="" class="key-hints" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>
