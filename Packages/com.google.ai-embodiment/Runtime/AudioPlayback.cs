@@ -31,16 +31,14 @@ namespace AIEmbodiment
         private bool _initialized;
 
         /// <summary>
-        /// Returns true if the ring buffer has audio data available or is actively
-        /// playing (not in buffering state). Useful for PersonaSession to detect
-        /// when AI audio has finished draining after a turn completes.
+        /// Returns true if the ring buffer has audio data remaining to play.
         /// </summary>
         public bool IsPlaying
         {
             get
             {
                 if (_ringBuffer == null) return false;
-                return _ringBuffer.Available > 0 || !_isBuffering;
+                return _ringBuffer.Available > 0;
             }
         }
 
