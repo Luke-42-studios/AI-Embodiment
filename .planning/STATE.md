@@ -5,21 +5,21 @@
 See: .planning/PROJECT.md (updated 2026-02-13)
 
 **Core value:** Developers can drop an AI character into their Unity scene and have it talking -- with synchronized voice, text, and animation events -- in minutes, not weeks.
-**Current focus:** v0.8 WebSocket Migration complete. All 11 phases finished.
+**Current focus:** Phase 11.1 -- Queued Response Sample (push-to-talk transcript approval UX)
 
 ## Current Position
 
-Phase: 11 of 11 (Integration Verification)
-Plan: 2 of 2 in current phase
+Phase: 11.1 (Queued Response Sample) -- INSERTED
+Plan: 1 of 1 in current phase
 Status: Phase complete
-Last activity: 2026-02-13 -- Completed 11-02-PLAN.md (AyaSampleController + end-to-end verification)
+Last activity: 2026-02-13 -- Completed 11.1-01-PLAN.md
 
-Progress: [####################] 100% (27/27 total plans -- 17 v1 complete, 10 v0.8 complete)
+Progress: [####################] 100% (28/28 total plans -- 17 v1 complete, 10 v0.8 complete, 1 v11.1 complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 27
+- Total plans completed: 28
 - Average duration: 1.8 min (excluding human verification time)
 - Total execution time: ~0.9 hours
 
@@ -64,10 +64,19 @@ Recent decisions affecting current work:
 - 11-02: Initial watermark 300ms for better first-word buffering
 - 11-02: Re-buffering on underrun removed for smoother streaming
 - 11-02: UseNativeFunctionCalling=false is the production default (prompt-based function calling)
+- 11.1-01: QueuedState enum co-located in QueuedResponseController.cs (same namespace)
+- 11.1-01: Lazy AudioPlayback initialization via EnsurePlaybackInitialized guard
+- 11.1-01: Playback completion via _turnComplete && !_audioPlayback.IsPlaying (not OnAISpeakingStopped)
+- 11.1-01: Audio buffered in List<float[]> during Reviewing, bulk fed to AudioPlayback on Enter
+- 11.1-01: indicator--speaking reused from Aya USS; recording (red) and response-ready (green) classes added
 
 ### Pending Todos
 
 None.
+
+### Roadmap Evolution
+
+- Phase 11.1 inserted after Phase 11: Queued Response Sample -- push-to-talk transcript approval UX with pre-fetched AI response playback (URGENT)
 
 ### Blockers/Concerns
 
@@ -76,5 +85,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-13
-Stopped at: Completed 11-02-PLAN.md. Phase 11 and all v0.8 migration phases are complete.
+Stopped at: Completed 11.1-01-PLAN.md. Phase 11.1 (Queued Response Sample) is complete.
 Resume file: None
