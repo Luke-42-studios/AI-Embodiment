@@ -71,11 +71,11 @@
 }
 
 .user-text {
-    color: rgb(220, 220, 220);
+    color: rgb(255, 255, 255);
 }
 
 .ai-text {
-    color: rgb(180, 180, 180);
+    color: rgb(255, 255, 255);
 }
 
 .footer {
