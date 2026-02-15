@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Text;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using AIEmbodiment;
@@ -37,7 +36,7 @@ namespace AIEmbodiment.Samples
 
         private QueuedState _state = QueuedState.Connecting;
         private readonly List<float[]> _audioBuffer = new List<float[]>();
-        private readonly StringBuilder _aiTranscript = new StringBuilder();
+        private string _aiTranscript = "";
         private bool _turnComplete;
         private bool _playbackInitialized;
 
@@ -86,7 +85,7 @@ namespace AIEmbodiment.Samples
         {
             _state = QueuedState.Recording;
             _audioBuffer.Clear();
-            _aiTranscript.Clear();
+            _aiTranscript = "";
             _turnComplete = false;
             _audioPlayback?.ClearBuffer();
             _session.StartListening();
@@ -113,7 +112,7 @@ namespace AIEmbodiment.Samples
             _audioBuffer.Clear();
 
             _ui.SetState(QueuedState.Playing);
-            _ui.SetAITranscript(_aiTranscript.ToString());
+            _ui.SetAITranscript(_aiTranscript);
         }
 
         private void EnterIdle()
@@ -125,7 +124,7 @@ namespace AIEmbodiment.Samples
         private void DiscardAndReturnToIdle()
         {
             _audioBuffer.Clear();
-            _aiTranscript.Clear();
+            _aiTranscript = "";
             _turnComplete = false;
             _audioPlayback?.ClearBuffer();
             _state = QueuedState.Idle;
@@ -163,9 +162,9 @@ namespace AIEmbodiment.Samples
         {
             if (_state == QueuedState.Reviewing || _state == QueuedState.Playing)
             {
-                _aiTranscript.Append(text);
+                _aiTranscript = text;
                 if (_state == QueuedState.Playing)
-                    _ui.SetAITranscript(_aiTranscript.ToString());
+                    _ui.SetAITranscript(text);
             }
         }
 
