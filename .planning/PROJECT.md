@@ -8,6 +8,19 @@ A Unity UPM package that lets game developers add AI-powered characters to their
 
 Developers can drop an AI character into their Unity scene and have it talking — with synchronized voice, text, and animation events — in minutes, not weeks.
 
+## Current Milestone: v1.0 Livestream Experience
+
+**Goal:** Build a livestream sample scene where Aya hosts an intimate art stream, drives a narrative about her characters through conversational goals, interacts with configurable chat bot personas, and responds to user push-to-talk input — culminating in a Unity-rendered movie clip reveal.
+
+**Target features:**
+- Livestream sample scene with Aya as the AI streamer host
+- Configurable chat bot system (scripted messages + Gemini structured output for dynamic responses)
+- Aya narrative flow — drives conversation about her art/characters toward a movie clip goal
+- User push-to-talk interaction (builds on QueuedResponse pattern) with finish-first priority
+- Animation function calls for pre-authored animations (waves, chair spins, drawing gestures)
+- Goal-triggered scene loading for Unity-rendered movie clip
+- Time-based and user-driven goal steering (Aya steers naturally, chat bots nudge, user questions can accelerate)
+
 ## Current State
 
 **Shipped:** v0.8 WebSocket Migration (2026-02-17)
@@ -51,28 +64,39 @@ Two milestones shipped. The package provides:
 
 ### Active
 
-(None — next milestone not yet defined)
+- [ ] Livestream sample scene with Aya as AI streamer host
+- [ ] Configurable chat bot system with scripted and Gemini-powered responses
+- [ ] Chat bot personas defined via ScriptableObject (name, personality, scripted lines)
+- [ ] Gemini structured output for dynamic chat bot responses to user input
+- [ ] Aya narrative flow driven by conversational goals toward movie clip reveal
+- [ ] User push-to-talk with finish-first priority (Aya completes current response before addressing user)
+- [ ] Animation function calls (wave, spin, draw gestures) hooked to pre-authored animations
+- [ ] Goal-triggered Unity scene loading for movie clip playback
+- [ ] Time-based steering (Aya naturally guides conversation over time)
+- [ ] Chat bot nudging (bots ask questions that help steer Aya toward the goal)
+- [ ] Livestream UI (chat feed, user push-to-talk, Aya's transcript, stream status)
 
 ### Out of Scope
 
 - Runtime voice switching mid-session — voice is set per-persona at connect time
 - Persistent conversation memory/SQLite — defer to future version
 - Platform-specific native audio plugins — Unity Microphone API is sufficient
-- Visual UI components (chat window, text input) — headless library, devs build their own UI
 - Mobile-specific optimizations — desktop-first
 - ElevenLabs TTS implementation — ITTSProvider interface enables it, but only ChirpTTSClient ships
+- Actual animation authoring — function calls fire, another developer hooks in the animations
+- Real streaming platform integration (Twitch/YouTube) — this is a simulated livestream experience
+- Multiplayer networking — single user interacting with AI personas
 
 ## Context
 
 - **Shipped v1:** 3,542 lines of C#/UXML/USS across 6 phases, 17 plans (Firebase AI Logic SDK)
 - **Shipped v0.8:** 4,296 lines of C# runtime, 7 phases, 14 plans (direct WebSocket, zero Firebase)
 - **Total codebase:** ~7,800 lines across runtime, editor, and samples
+- **Existing infrastructure:** QueuedResponse pattern (5-state controller, audio buffering), ConversationalGoals (priority steering, add/remove/reprioritize), function calling (dual-path), animation tags via SyncPackets
 - **Reference implementation**: Persona Unity library at `/home/cachy/workspaces/projects/persona/unity/Persona`
-- **Google 2.0-flash sunset**: Gemini 2.0 flash models deprecated; audio-only models (gemini-2.5-flash-native-audio) are the successor
-- **Custom voice cloning**: Chirp 3 HD custom voices via voiceCloningKey and OAuth2 service account bearer tokens on v1beta1 endpoint
 - **Target Unity version**: 6000.3.7f1 (Unity 6)
 - **Audio formats**: Capture at 16kHz mono PCM, Gemini native output at 24kHz mono PCM
-- **Sample scenes**: AyaLiveStream (standard) and QueuedResponseSample (push-to-talk with transcript approval)
+- **Sample scenes**: AyaLiveStream (standard), QueuedResponseSample (push-to-talk with transcript approval)
 
 ## Constraints
 
@@ -83,6 +107,7 @@ Two milestones shipped. The package provides:
 - **Package format**: UPM (Unity Package Manager) — installable via git URL or local path
 - **JSON library**: Newtonsoft.Json (available in Unity 6 via com.unity.nuget.newtonsoft-json)
 - **Public API**: v1 public surface (PersonaSession events/methods, PersonaConfig fields, component names) must be preserved
+- **Animation boundary**: This milestone wires function calls for animations — actual animation assets and hookup are a separate developer's responsibility
 
 ## Key Decisions
 
@@ -106,6 +131,8 @@ Two milestones shipped. The package provides:
 | PersonaSession owns auth lifetime | Caller-owns pattern for GoogleServiceAccountAuth, clean dispose | Good |
 | Prompt-based function calling as default | UseNativeFunctionCalling=false, more reliable than native toolCall | Good |
 | 5-state QueuedResponse controller | Clean state machine for push-to-talk UX, decoupled from PersonaSession audio | Good |
+| Hybrid chat bots (scripted + Gemini structured output) | Low latency for ambient chat, dynamic for user interactions, cost-efficient | — Pending |
+| Finish-first priority for user input | Aya completes current response before addressing user — natural stream behavior | — Pending |
 
 ---
-*Last updated: 2026-02-17 after v0.8 milestone completion*
+*Last updated: 2026-02-17 after v1.0 milestone start*
