@@ -38,7 +38,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans:** 3 plans
 
 Plans:
-- [ ] 12-01-PLAN.md -- GeminiTextClient REST wrapper with structured output
+- [x] 12-01-PLAN.md -- GeminiTextClient REST wrapper with structured output
 - [ ] 12-02-PLAN.md -- ChatBotConfig ScriptableObject, ChatMessage data model, and character migration
 - [ ] 12-03-PLAN.md -- LivestreamUI shell (UXML/USS layout, ListView chat feed, transcript panel, stream status)
 
@@ -114,7 +114,7 @@ Phases execute in numeric order: 12 -> 13 -> 14 -> 15 -> 16
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 12. Foundation & Data Model | 0/3 | Planned | - |
+| 12. Foundation & Data Model | 1/3 | In progress | - |
 | 13. Chat Bot System | 0/3 | Not started | - |
 | 14. Narrative Director & User Interaction | 0/4 | Not started | - |
 | 15. Scene Transition & Animation | 0/2 | Not started | - |
