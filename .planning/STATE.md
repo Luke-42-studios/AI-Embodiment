@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-17)
 ## Current Position
 
 Phase: 14 of 16 (Narrative Director & User Interaction)
-Plan: 2 of 4 in current phase
+Plan: 4 of 4 in current phase
 Status: In progress
-Last activity: 2026-02-17 -- Completed 14-02-PLAN.md
+Last activity: 2026-02-17 -- Completed 14-04-PLAN.md
 
-Progress: [████████░░░░░░░] 8/15 plans (53%)
+Progress: [██████████░░░░░] 10/15 plans (67%)
 
 ## Performance Metrics
 
 **Velocity:**
 - v1 MVP: 17 plans in ~1 day
 - v0.8 WebSocket Migration: 14 plans in ~5 days
-- Total plans completed: 39
+- Total plans completed: 41
 - v1.0 Livestream Experience: 15 plans planned
 
 **By Phase:**
@@ -58,6 +58,9 @@ Full decision log in PROJECT.md Key Decisions table.
 - Pending beat queue: director notes queued for OnTurnComplete when Aya is speaking (Pitfall 3 guard)
 - Event-based NarrativeDirector coordination: IsAyaSpeaking, OnBeatTransition (never direct field manipulation)
 - ChatBotManager pacing: 2x min lull, 1.5x max, half bots when Aya speaks; 5s pause at beat transitions
+- WaitingForAya PTT sub-state defers mic until Aya finishes (prevents Gemini audio interruption)
+- Idempotent SubmitTranscript guard prevents Enter + auto-submit timer race (Pitfall 6)
+- ChatBotManager NOT paused during PTT (only Aya pauses, chat keeps flowing)
 
 ### Pending Todos
 
@@ -72,6 +75,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-17T23:47:25Z
-Stopped at: Completed 14-02-PLAN.md (NarrativeDirector Core)
+Last session: 2026-02-17T23:52:02Z
+Stopped at: Completed 14-04-PLAN.md (Push-to-Talk Controller)
 Resume file: None
