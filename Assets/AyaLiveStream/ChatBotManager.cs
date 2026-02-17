@@ -31,6 +31,9 @@ namespace AIEmbodiment.Samples
         [SerializeField] private PersonaSession _session;
         [SerializeField] private ChatBotConfig[] _bots;
 
+        [Header("Narrative Pacing")]
+        [SerializeField] private NarrativeDirector _narrativeDirector;
+
         [Header("Burst Timing")]
         [SerializeField] private float _burstIntervalMin = 8f;
         [SerializeField] private float _burstIntervalMax = 18f;
@@ -41,6 +44,7 @@ namespace AIEmbodiment.Samples
         private readonly List<TrackedChatMessage> _trackedMessages = new();
         private readonly Dictionary<ChatBotConfig, List<int>> _usedMessageIndices = new();
         private bool _running;
+        private bool _pausedForTransition;
 
         // Dynamic response state
         private GeminiTextClient _textClient;
@@ -103,6 +107,12 @@ namespace AIEmbodiment.Samples
                 _session.OnUserSpeakingStopped += HandleUserSpeakingStopped;
             }
 
+            // Subscribe to narrative director beat transitions for pacing
+            if (_narrativeDirector != null)
+            {
+                _narrativeDirector.OnBeatTransition += HandleBeatTransition;
+            }
+
             _ = ScriptedBurstLoop();
         }
 
@@ -114,6 +124,7 @@ namespace AIEmbodiment.Samples
         public void StopBursts()
         {
             _running = false;
+            UnsubscribeNarrativeDirector();
             UnsubscribeEvents();
             DisposeTextClient();
         }
@@ -121,6 +132,7 @@ namespace AIEmbodiment.Samples
         private void OnDestroy()
         {
             _running = false;
+            UnsubscribeNarrativeDirector();
             UnsubscribeEvents();
             DisposeTextClient();
         }
@@ -147,6 +159,64 @@ namespace AIEmbodiment.Samples
             _textClient = null;
         }
 
+        /// <summary>
+        /// Unsubscribes from NarrativeDirector beat transition events.
+        /// </summary>
+        private void UnsubscribeNarrativeDirector()
+        {
+            if (_narrativeDirector != null)
+            {
+                _narrativeDirector.OnBeatTransition -= HandleBeatTransition;
+            }
+        }
+
+        /// <summary>
+        /// Pauses the burst loop during beat transitions to prevent stale-context
+        /// chat messages (Pitfall 7). Resumes after a brief delay to let the
+        /// director note response settle.
+        /// </summary>
+        private void HandleBeatTransition()
+        {
+            _pausedForTransition = true;
+            _ = ResumeAfterTransition();
+        }
+
+        /// <summary>
+        /// Waits for the director note to trigger Aya's response and complete
+        /// before resuming the burst loop.
+        /// </summary>
+        private async Awaitable ResumeAfterTransition()
+        {
+            try
+            {
+                await Awaitable.WaitForSecondsAsync(5f, destroyCancellationToken);
+                _pausedForTransition = false;
+            }
+            catch (OperationCanceledException) { }
+        }
+
+        /// <summary>
+        /// Returns the burst lull duration, doubled when Aya is speaking
+        /// (per CONTEXT.md: "chat bursts slow down when Aya is talking").
+        /// </summary>
+        private float GetBurstLullDuration()
+        {
+            bool ayaSpeaking = _narrativeDirector != null && _narrativeDirector.IsAyaSpeaking;
+            float min = ayaSpeaking ? _burstIntervalMin * 2f : _burstIntervalMin;
+            float max = ayaSpeaking ? _burstIntervalMax * 1.5f : _burstIntervalMax;
+            return UnityEngine.Random.Range(min, max);
+        }
+
+        /// <summary>
+        /// Returns the maximum number of bots per burst, halved when Aya is
+        /// speaking to reduce chat noise during her dialogue.
+        /// </summary>
+        private int GetMaxBotsForBurst()
+        {
+            bool ayaSpeaking = _narrativeDirector != null && _narrativeDirector.IsAyaSpeaking;
+            return ayaSpeaking ? Mathf.Max(1, _maxBotsPerBurst / 2) : _maxBotsPerBurst;
+        }
+
         #region Scripted Burst Loop
 
         /// <summary>
@@ -159,14 +229,20 @@ namespace AIEmbodiment.Samples
             {
                 while (_running)
                 {
-                    // Lull period between bursts
-                    float lullDuration = UnityEngine.Random.Range(_burstIntervalMin, _burstIntervalMax);
+                    // Lull period between bursts (pacing-aware: longer when Aya speaks)
+                    float lullDuration = GetBurstLullDuration();
                     await Awaitable.WaitForSecondsAsync(lullDuration, destroyCancellationToken);
 
                     if (!_running) break;
 
-                    // Select 1 to maxBotsPerBurst bots for this burst
-                    int botCount = UnityEngine.Random.Range(1, Mathf.Min(_maxBotsPerBurst, _bots.Length) + 1);
+                    // Pause during beat transitions (Pitfall 7: stale-context bursts)
+                    while (_pausedForTransition)
+                    {
+                        await Awaitable.WaitForSecondsAsync(0.5f, destroyCancellationToken);
+                    }
+
+                    // Select 1 to maxBotsPerBurst bots (fewer when Aya speaks)
+                    int botCount = UnityEngine.Random.Range(1, Mathf.Min(GetMaxBotsForBurst(), _bots.Length) + 1);
                     var shuffledBots = ShuffleCopy(_bots);
 
                     // Post messages with staggered delays
