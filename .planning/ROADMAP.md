@@ -18,7 +18,7 @@ Build a livestream sample scene where Aya hosts an intimate art stream, interact
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 12: Foundation & Data Model** - REST client, UI shell, ChatBotConfig ScriptableObject, and migrated character data
+- [x] **Phase 12: Foundation & Data Model** - REST client, UI shell, ChatBotConfig ScriptableObject, and migrated character data
 - [ ] **Phase 13: Chat Bot System** - Scripted and dynamic chat bots with burst timing, personality, and tracked messages
 - [ ] **Phase 14: Narrative Director & User Interaction** - Beat/scene structure, dual-queue orchestration, push-to-talk finish-first, and narrative steering
 - [ ] **Phase 15: Scene Transition & Animation** - Animation function calls, additive movie clip loading, and pre-load strategy
@@ -39,8 +39,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 Plans:
 - [x] 12-01-PLAN.md -- GeminiTextClient REST wrapper with structured output
-- [ ] 12-02-PLAN.md -- ChatBotConfig ScriptableObject, ChatMessage data model, and character migration
-- [ ] 12-03-PLAN.md -- LivestreamUI shell (UXML/USS layout, ListView chat feed, transcript panel, stream status)
+- [x] 12-02-PLAN.md -- ChatBotConfig ScriptableObject, ChatMessage data model, and character migration
+- [x] 12-03-PLAN.md -- LivestreamUI shell (UXML/USS layout, ListView chat feed, transcript panel, stream status)
 
 ### Phase 13: Chat Bot System
 **Goal**: Chat bots post messages in the livestream chat with organic timing, per-bot personality, and optional dynamic responses to user input -- creating the illusion of a small live audience
@@ -114,7 +114,7 @@ Phases execute in numeric order: 12 -> 13 -> 14 -> 15 -> 16
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 12. Foundation & Data Model | 2/3 | In progress | - |
+| 12. Foundation & Data Model | 3/3 | Complete | 2026-02-17 |
 | 13. Chat Bot System | 0/3 | Not started | - |
 | 14. Narrative Director & User Interaction | 0/4 | Not started | - |
 | 15. Scene Transition & Animation | 0/2 | Not started | - |
