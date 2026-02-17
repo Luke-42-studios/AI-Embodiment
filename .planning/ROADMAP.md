@@ -35,12 +35,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. Livestream UI shell renders in Play Mode with a scrollable ListView chat feed, an Aya transcript panel, a push-to-talk indicator area, and stream status indicators (LIVE badge, viewer count, duration timer)
   3. ChatBotConfig ScriptableObjects exist for all migrated nevatars characters (names, colors, personalities preserved) and are editable in the Inspector
   4. Chat messages can be programmatically added to the ListView feed and display with correct bot name, color, and timestamp
-**Plans**: TBD
+**Plans:** 3 plans
 
 Plans:
-- [ ] 12-01: GeminiTextClient REST wrapper with structured output
-- [ ] 12-02: LivestreamUI shell (UXML/USS layout, ListView chat feed, transcript panel, stream status)
-- [ ] 12-03: ChatBotConfig ScriptableObject and nevatars character migration
+- [ ] 12-01-PLAN.md -- GeminiTextClient REST wrapper with structured output
+- [ ] 12-02-PLAN.md -- ChatBotConfig ScriptableObject, ChatMessage data model, and character migration
+- [ ] 12-03-PLAN.md -- LivestreamUI shell (UXML/USS layout, ListView chat feed, transcript panel, stream status)
 
 ### Phase 13: Chat Bot System
 **Goal**: Chat bots post messages in the livestream chat with organic timing, per-bot personality, and optional dynamic responses to user input -- creating the illusion of a small live audience
@@ -114,7 +114,7 @@ Phases execute in numeric order: 12 -> 13 -> 14 -> 15 -> 16
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 12. Foundation & Data Model | 0/3 | Not started | - |
+| 12. Foundation & Data Model | 0/3 | Planned | - |
 | 13. Chat Bot System | 0/3 | Not started | - |
 | 14. Narrative Director & User Interaction | 0/4 | Not started | - |
 | 15. Scene Transition & Animation | 0/2 | Not started | - |
