@@ -12,9 +12,9 @@ See: .planning/PROJECT.md (updated 2026-02-17)
 Phase: 13 of 16 (Chat Bot System)
 Plan: 3 of 3 in current phase
 Status: In progress
-Last activity: 2026-02-17 -- Completed 13-03-PLAN.md
+Last activity: 2026-02-17 -- Completed 13-02-PLAN.md
 
-Progress: [█████░░░░░░░░░░] 5/15 plans (33%)
+Progress: [██████░░░░░░░░░] 6/15 plans (40%)
 
 ## Performance Metrics
 
@@ -50,6 +50,9 @@ Full decision log in PROJECT.md Key Decisions table.
 - Burst loop pattern: async Awaitable with destroyCancellationToken, try/catch OperationCanceledException
 - Keyword-hit scoring for nevatars message categorization across 6 bot personalities
 - Lurker matched by message length (1-3 words), not keywords
+- Single batched Gemini call for dynamic bot reactions (not one call per bot)
+- Dynamic responses trigger ONLY from user PTT (OnUserSpeakingStopped), never from Aya or bots
+- Rapid PTT guard: _dynamicResponseInFlight with _queuedTranscript queuing
 
 ### Pending Todos
 
@@ -64,6 +67,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-17T22:42:55Z
-Stopped at: Completed 13-03-PLAN.md (MigrateResponsePatterns editor script)
+Last session: 2026-02-17T22:47:21Z
+Stopped at: Completed 13-02-PLAN.md (Dynamic Gemini responses)
 Resume file: None
