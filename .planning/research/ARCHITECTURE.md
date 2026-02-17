@@ -1,598 +1,448 @@
-# Architecture Patterns
+# Architecture Patterns: v1.0 Livestream Experience
 
-**Domain:** Unity UPM package for real-time AI conversation with game characters
-**Researched:** 2026-02-05
-**Overall confidence:** HIGH (based on direct source code reading of Firebase AI Logic SDK 13.7.0 and Unity 6 conventions)
+**Domain:** Livestream sample scene integrating chat bots, narrative steering, and scene transitions with existing AI Embodiment package
+**Researched:** 2026-02-17
+**Overall confidence:** HIGH (based on direct reading of all 26 runtime source files in the package, Gemini Live API WebSocket reference, and Gemini structured output documentation)
+
+## Executive Summary
+
+The v1.0 Livestream Experience builds a sample scene on top of the existing AI Embodiment package. The existing package components (PersonaSession, QueuedResponseController, ConversationalGoals, AudioPlayback, SyncPackets) are well-architected and should NOT be modified at the package level. All new components live in the sample scene layer (`Samples~/LivestreamSample/`), consuming the package's public API surface.
+
+The core architectural question -- "Should chat bots share Aya's PersonaSession?" -- has a clear answer: **No.** Chat bots should use separate, lightweight Gemini REST calls (`generateContent`) for structured JSON output, not the Live API WebSocket. Aya's PersonaSession remains the single Live API connection. This avoids multiplying WebSocket sessions (expensive, stateful, audio-oriented) when chat bots only need text-in/text-out.
 
 ## Recommended Architecture
 
-The system is a pipeline with five stages: **Capture**, **Transport**, **Processing**, **Assembly**, and **Presentation**. Each stage has a single owner component with well-defined inputs and outputs.
-
 ```
-                              MAIN THREAD                          BACKGROUND THREADS
-                    +---------------------------+          +---------------------------+
-                    |                           |          |                           |
-                    |  [AudioCapture]            |   PCM    |                           |
- Microphone ------->  Unity Microphone API     ----------->  LiveSession               |
-                    |  16kHz mono float[]       |  (send)  |  (WebSocket to Gemini)    |
-                    |                           |          |                           |
-                    +---------------------------+          |  [VoiceBackend]            |
-                                                           |  Gemini Audio path:       |
-                    +---------------------------+   recv   |    audio bytes from WS    |
-                    |                           | <--------|  Chirp TTS path:          |
-                    |  [MainThreadDispatcher]    |          |    text -> HTTP POST ->   |
-                    |  ConcurrentQueue<Action>  |          |    PCM bytes back         |
-                    |  drained every Update()   |          +---------------------------+
-                    |                           |
-                    +------------+--------------+
-                                 |
-                                 v
-                    +---------------------------+
-                    |  [PacketAssembler]         |
-                    |  Correlates:               |
-                    |   - text chunks            |
-                    |   - audio PCM data         |
-                    |   - function calls/emotes  |
-                    |  Emits: PersonaPacket      |
-                    +------------+--------------+
-                                 |
-                                 v
-                    +---------------------------+
-                    |  [AudioPlayback]           |
-                    |  AudioClip from PCM        |
-                    |  AudioSource.PlayOneShot   |
-                    |                           |
-                    |  [FunctionCallHandler]     |
-                    |  C# delegates invoked     |
-                    |  on main thread            |
-                    +---------------------------+
++=========================================================================+
+|                        LIVESTREAM SAMPLE SCENE                          |
+|  (Assets/LivestreamSample/ or Samples~/LivestreamSample/)              |
+|                                                                         |
+|  +------------------+     +-------------------+     +-----------------+ |
+|  | LivestreamController |  | NarrativeDirector  |  | SceneTransition | |
+|  | (main orchestrator) |  | (time-based goals) |  | (goal-triggered)| |
+|  +--------+---------+   +--------+----------+   +--------+--------+ |
+|           |                      |                        |           |
+|           |   +------------------+                        |           |
+|           |   |                                           |           |
+|           v   v                                           |           |
+|  +------------------+                                     |           |
+|  |  ChatBotManager  |     +-------------------+           |           |
+|  |  (REST Gemini)   |     |  LivestreamUI     |<----------+           |
+|  +--------+---------+     |  (chat feed, PTT) |                      |
+|           |                +-------------------+                      |
++===========|==========================================================+
+            |
++-----------v---------------------------------------------------------+
+|                    EXISTING PACKAGE (unchanged)                      |
+|                                                                      |
+|  PersonaSession  GoalManager  FunctionRegistry  AudioPlayback       |
+|  GeminiLiveClient  PacketAssembler  AudioCapture  PersonaConfig     |
+|  SyncPacket  ConversationalGoal  SystemInstructionBuilder            |
++----------------------------------------------------------------------+
 ```
 
 ### Component Boundaries
 
-| Component | Responsibility | Inputs | Outputs | Thread |
-|-----------|---------------|--------|---------|--------|
-| **PersonaConfig** | ScriptableObject holding persona definition (personality, voice, model, tools) | Developer edits in Inspector | Read by PersonaSession at connect time | N/A (data) |
-| **PersonaSession** | MonoBehaviour lifecycle owner; connects/disconnects LiveSession; owns the receive loop | PersonaConfig, GameObject with AudioSource | Events to subscribers (OnTextReceived, OnAudioReceived, OnFunctionCall, OnTurnComplete, OnError) | Main thread (MonoBehaviour) |
-| **AudioCapture** | Reads Unity Microphone into float[] chunks, converts to PCM, sends to LiveSession | Microphone device name, sample rate | float[] chunks pushed to LiveSession.SendAudioAsync | Main thread (reads Microphone in Update/Coroutine) |
-| **AudioPlayback** | Receives PCM audio, creates AudioClip, schedules playback on AudioSource | byte[] PCM data (16-bit, 24kHz), AudioSource reference | Audio heard by player; playback timing events | Main thread |
-| **ChirpTTSClient** | HTTP POST to Cloud TTS v1 API, returns PCM audio from text | Text string, voice config, API key | byte[] PCM audio | Background thread (HttpClient async) |
-| **PacketAssembler** | Correlates text, audio, and function call data from a single model turn into ordered packets | Streamed LiveSessionResponse chunks | PersonaPacket structs emitted in order | Main thread (after dispatch) |
-| **FunctionCallHandler** | Registry of C# delegates keyed by function name; dispatches LiveSessionToolCall to registered handlers | LiveSessionToolCall from Firebase SDK | FunctionResponsePart returned to LiveSession; side effects via delegates | Main thread |
-| **MainThreadDispatcher** | Marshals callbacks from background WebSocket thread to Unity main thread | Actions enqueued from any thread | Actions dequeued and invoked in Update() | Main thread (consumer), any thread (producer) |
-| **SystemInstructionBuilder** | Generates system instruction ModelContent from PersonaConfig fields | PersonaConfig (archetype, traits, backstory, speech patterns, available functions) | ModelContent with role "system" | N/A (pure function) |
+| Component | Layer | Responsibility | Communicates With | New/Existing |
+|-----------|-------|---------------|-------------------|--------------|
+| **PersonaSession** | Package | Aya's Gemini Live WebSocket session, events, audio, function calling, goals | GeminiLiveClient, GoalManager, AudioPlayback | EXISTING -- no changes |
+| **GoalManager** | Package | Stores/composes goal instructions for system prompt | PersonaSession (internal) | EXISTING -- no changes |
+| **QueuedResponseController** | Package Sample | 5-state push-to-talk audio buffering | PersonaSession, AudioPlayback, UI | EXISTING -- study for patterns |
+| **LivestreamController** | Sample | Top-level orchestrator: wires Aya session, ChatBotManager, NarrativeDirector, user input, SceneTransition | PersonaSession, ChatBotManager, NarrativeDirector, LivestreamUI, SceneTransition | **NEW** |
+| **ChatBotManager** | Sample | Manages bot personas, scripted timers, Gemini REST structured output calls for dynamic responses | LivestreamController, LivestreamUI | **NEW** |
+| **NarrativeDirector** | Sample | Time-based goal escalation, conversation progress tracking toward movie reveal | PersonaSession (AddGoal/ReprioritizeGoal), LivestreamController | **NEW** |
+| **LivestreamUI** | Sample | Chat feed (bots + Aya + user), push-to-talk controls, stream status, Aya transcript | LivestreamController, PersonaSession events | **NEW** |
+| **SceneTransition** | Sample | Loads Unity movie clip scene when goal fires via function call | PersonaSession (function handler) | **NEW** |
+| **ChatBotConfig** | Sample | ScriptableObject defining a bot persona (name, avatar color, scripted lines, personality for dynamic responses) | ChatBotManager | **NEW** |
 
-### Key Data Types
+## Key Architecture Decisions
 
-```
-PersonaConfig (ScriptableObject)
-  - displayName: string
-  - archetype: string (e.g., "merchant", "guide", "companion")
-  - personalityTraits: string[]
-  - backstory: string
-  - speechPatterns: string
-  - voiceBackend: enum { GeminiNative, ChirpTTS }
-  - geminiVoice: string (e.g., "Aoede", "Puck", "Kore", "Charon", "Fenrir")
-  - chirpVoice: string (e.g., "en-US-Chirp3-HD-Achernar")
-  - chirpApiKey: string
-  - modelName: string (default: "gemini-2.0-flash-live-001")
-  - temperature: float
-  - functionDeclarations: FunctionDeclarationConfig[]
-  - safetySettings: SafetySettingConfig[]
+### Decision 1: Chat Bots Use REST generateContent, Not Live API
 
-PersonaPacket (readonly struct)
-  - text: string (accumulated text so far)
-  - audioClip: AudioClip (nullable, populated when audio data arrives)
-  - functionCalls: FunctionCallPart[] (nullable, populated when tool calls arrive)
-  - isTurnComplete: bool
-  - isInterrupted: bool
-  - inputTranscription: string (nullable)
-  - outputTranscription: string (nullable)
+**Recommendation:** Chat bots use separate `UnityWebRequest` HTTP calls to `generateContent` (Gemini REST API) with structured JSON output, NOT the Live API WebSocket.
 
-SessionState (enum)
-  - Disconnected
-  - Connecting
-  - Connected
-  - Reconnecting
-  - Error
+**Rationale:**
+- Chat bots need text-in/text-out only. No audio, no streaming, no function calling.
+- The Live API (`BidiGenerateContent`) is stateful, holds a persistent WebSocket, and is designed for real-time bidirectional audio. Each session consumes server resources and has rate limits.
+- The REST `generateContent` endpoint with `responseMimeType: "application/json"` and a `responseSchema` gives guaranteed JSON structure for bot messages.
+- Cost: REST calls to gemini-2.5-flash are cheap ($0.15/1M input, $0.60/1M output tokens). A chat bot message is ~100 tokens round-trip -- negligible cost.
+- Latency: REST calls take 500ms-2s, which is acceptable for chat bot messages (they appear as typed text, not speech).
+- gemini-2.5-flash supports structured output (verified in official docs).
+
+**Implementation:** A new `GeminiTextClient` utility class wraps `UnityWebRequest` for `POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent`. Returns parsed JSON. Reusable across all chat bots.
+
+**Confidence:** HIGH -- verified that gemini-2.5-flash supports structured output via official documentation.
+
+### Decision 2: Goals Set at Connect Time, Escalated via Text Injection
+
+**Critical constraint:** The Gemini Live API does NOT support mid-session system instruction updates. The `SendGoalUpdate()` method in PersonaSession already documents this limitation:
+
+```csharp
+// Gemini Live API does not support mid-session system instruction updates.
+// Goals accumulate locally and will be applied at next Connect().
 ```
 
-## Data Flow
+**Workaround for narrative steering:**
 
-### Path 1: Gemini Native Audio (Preferred)
+1. **Pre-load initial goals at connect time.** Aya's PersonaSession should be connected with an initial set of goals already in the system instruction. The NarrativeDirector configures these before `Connect()` is called.
 
-This path uses Gemini's built-in voice synthesis. Audio comes directly from the WebSocket alongside text.
+2. **Use `SendText()` for mid-session steering.** PersonaSession.SendText() sends `clientContent` via the WebSocket. NarrativeDirector can inject invisible steering text as "system" messages. Example:
+   ```
+   session.SendText("[DIRECTOR NOTE: The audience is asking about your characters. " +
+       "Start transitioning toward sharing the movie clip you've been working on. " +
+       "Build excitement naturally.]");
+   ```
+   This is not a system instruction update -- it is a user-role text message that Aya's model will treat as conversational context. The system instruction at connect time should include a meta-instruction telling Aya to follow `[DIRECTOR NOTE: ...]` tags as stage directions.
 
-```
-1. AudioCapture.Update()
-   - Microphone.GetData() -> float[] samples
-   - Downsample if needed (Microphone may not support 16kHz directly)
-   - session.SendAudioAsync(float[]) [enqueues to WebSocket, async]
+3. **Session resume for major goal changes.** If a goal change is radical enough to need a new system instruction, use Gemini's session resumption: disconnect, reconnect with new goals, and the 2-hour resumption token preserves conversation context. This should be a last resort -- the `SendText()` approach handles incremental steering.
 
-2. PersonaSession receive loop (background thread via ReceiveAsync)
-   - await foreach (var response in session.ReceiveAsync(ct))
-   - For each LiveSessionResponse:
-     a. response.Message is LiveSessionContent:
-        - response.Text -> enqueue text to main thread
-        - response.AudioAsFloat -> enqueue audio float[] to main thread
-        - content.InputTranscription -> enqueue to main thread
-        - content.OutputTranscription -> enqueue to main thread
-        - content.TurnComplete -> enqueue turn-complete signal
-        - content.Interrupted -> enqueue interruption signal
-     b. response.Message is LiveSessionToolCall:
-        - enqueue function calls to main thread
-     c. response.Message is LiveSessionToolCallCancellation:
-        - enqueue cancellation to main thread
+**Confidence:** HIGH -- verified via Gemini Live API WebSocket reference that configuration cannot be updated mid-session, and that `clientContent` text can be sent during an active audio session.
 
-3. MainThreadDispatcher.Update() drains queue
-   - Calls into PacketAssembler with each chunk
+### Decision 3: Finish-First Priority via State Machine Extension
 
-4. PacketAssembler accumulates chunks into PersonaPacket
-   - Fires events: OnPacketReady(PersonaPacket)
+**How it works:** The user's push-to-talk input should be queued (not sent to Gemini immediately) while Aya is speaking. When Aya's turn completes (`OnTurnComplete`), the queued user audio is released.
 
-5. AudioPlayback receives audio data
-   - Creates AudioClip from float[] (24kHz sample rate for Gemini native)
-   - Schedules on AudioSource via PlayOneShot or streaming clip
-
-6. FunctionCallHandler receives function calls
-   - Looks up registered delegate by name
-   - Invokes delegate with args dictionary
-   - Returns FunctionResponsePart to LiveSession (marshaled back to background)
-```
-
-### Path 2: Chirp 3 HD TTS (Custom Voices)
-
-This path requests only text from Gemini, then synthesizes speech via a separate HTTP call to Cloud TTS.
+**Implementation:** LivestreamController extends the QueuedResponseController pattern with an additional state:
 
 ```
-1. AudioCapture -> same as Path 1
-
-2. PersonaSession receive loop (same background thread)
-   - LiveGenerationConfig uses ResponseModality.Text only (no Audio)
-   - response.Text -> accumulate text chunks
-   - On TurnComplete or sentence boundary:
-     a. Enqueue text to main thread for display
-     b. Send accumulated text to ChirpTTSClient
-
-3. ChirpTTSClient.SynthesizeAsync(text, voiceConfig)
-   - Background thread: HTTP POST to https://texttospeech.googleapis.com/v1/text:synthesize
-   - Request body: { input: { text }, voice: { name, languageCode }, audioConfig: { audioEncoding: LINEAR16, sampleRateHertz: 24000 } }
-   - Response: { audioContent: base64-encoded PCM }
-   - Decode base64 -> byte[]
-   - Enqueue audio to main thread
-
-4. MainThreadDispatcher.Update() -> PacketAssembler -> AudioPlayback
-   (same as Path 1 from step 4 onward)
+LivestreamState:
+  Connecting    -- waiting for PersonaSession.Connect()
+  Streaming     -- Aya is speaking autonomously or responding to bots
+  UserRecording -- user is holding push-to-talk (Aya continues current response)
+  UserQueued    -- user released push-to-talk, audio buffered, waiting for Aya to finish
+  UserPlaying   -- Aya is responding to user's input
 ```
 
-### Function Call Round-Trip
+The key difference from QueuedResponseController is that in the **Streaming** state, Aya speaks without user input (driven by chat bot questions and narrative flow). The user can press push-to-talk at any time -- audio is captured and buffered but NOT sent to Gemini until Aya's current turn completes.
+
+**Why not suppress at the PersonaSession level:** The finish-first behavior is a sample-specific UX choice, not a package feature. Other samples (like the existing AyaLiveStream) may want immediate interruption. Keep the behavior in the sample controller.
+
+**Confidence:** HIGH -- the existing QueuedResponseController code demonstrates this buffering pattern already.
+
+### Decision 4: NarrativeDirector Drives Goals via Pre-Connect + SendText
+
+The NarrativeDirector is a time-based state machine that manages the narrative arc:
 
 ```
-1. Gemini sends LiveSessionToolCall with FunctionCallPart[]
-   - Each FunctionCallPart has: Name, Args (Dictionary<string, object>), Id
-
-2. MainThreadDispatcher enqueues to main thread
-
-3. FunctionCallHandler.Dispatch(FunctionCallPart call)
-   - Looks up _handlers[call.Name]
-   - If found: invokes delegate, gets Dictionary<string, object> result
-   - If not found: returns error response
-
-4. Build FunctionResponsePart(call.Name, result, call.Id)
-
-5. Marshal back to background thread:
-   - session.SendAsync(ModelContent.FunctionResponse(name, result, id))
+NarrativePhase:
+  WarmUp         -- 0-2 min: Aya introduces herself, ambient chat bots
+  CharacterIntro -- 2-5 min: Aya talks about her characters (medium priority goal)
+  BuildUp        -- 5-8 min: Aya hints at the movie project (high priority goal)
+  Reveal         -- 8+ min: Aya reveals the movie clip (triggers start_movie function)
 ```
 
-## UPM Package Structure
+**Interaction with ConversationalGoals:**
+- At connect time: NarrativeDirector calls `session.AddGoal()` for the initial goals BEFORE `session.Connect()`. These get baked into the system instruction.
+- During the session: NarrativeDirector uses `session.SendText()` with `[DIRECTOR NOTE: ...]` tags to steer Aya through phases. These are invisible text messages injected into the conversation context.
+- The `start_movie` function call is already registered as a function (seen in existing AyaSampleController). When Aya decides it is time, she calls `start_movie`, which triggers SceneTransition.
 
-Based on Unity's custom package layout conventions (verified against Unity 6 documentation and existing UPM packages).
+**Why NarrativeDirector does not call AddGoal/ReprioritizeGoal mid-session:** Because the Gemini Live API does not support mid-session system instruction updates. The PersonaSession's `SendGoalUpdate()` explicitly logs this. Instead, use SendText() for runtime steering.
+
+### Decision 5: Chat Bot Data Flow
 
 ```
-com.google.ai-embodiment/
-  package.json                          # Package manifest (name, version, dependencies)
-  README.md                             # Package documentation shown in Package Manager
-  LICENSE.md                            # License file
-  CHANGELOG.md                          # Version history
-  Runtime/
-    com.google.ai-embodiment.asmdef  # Runtime assembly definition
-    PersonaConfig.cs                    # ScriptableObject (persona definition)
-    PersonaSession.cs                   # MonoBehaviour (session lifecycle)
-    AudioCapture.cs                     # Microphone capture component
-    AudioPlayback.cs                    # AudioSource playback component
-    ChirpTTSClient.cs                   # Cloud TTS HTTP client
-    PacketAssembler.cs                  # Correlates streamed chunks
-    FunctionCallHandler.cs              # Delegate registry for function calls
-    MainThreadDispatcher.cs             # Thread marshaling utility
-    SystemInstructionBuilder.cs         # Builds system prompt from config
-    PersonaPacket.cs                    # Data struct for assembled output
-    SessionState.cs                     # Enum for connection state
-    Internal/
-      AudioConverter.cs                 # PCM <-> float[] utilities with buffer pooling
-      SentenceBoundaryDetector.cs       # Text chunking for TTS path
-  Editor/
-    com.google.ai-embodiment.editor.asmdef  # Editor assembly definition
-    PersonaConfigEditor.cs              # Custom Inspector for PersonaConfig
-    PersonaSessionEditor.cs             # Custom Inspector with connect/test buttons
-  Tests/
-    Runtime/
-      com.google.ai-embodiment.tests.asmdef
-      PersonaConfigTests.cs
-      PacketAssemblerTests.cs
-      AudioConverterTests.cs
-      SystemInstructionBuilderTests.cs
-    Editor/
-      com.google.ai-embodiment.editor.tests.asmdef
+Timer tick or user speaks
+        |
+        v
+ChatBotManager selects bot and message type
+        |
+        +--- SCRIPTED: timer-driven, picks from ChatBotConfig.scriptedLines[]
+        |    |
+        |    v
+        |    LivestreamUI.AddChatMessage(botName, message)
+        |    |
+        |    v
+        |    PersonaSession.SendText($"[CHAT] {botName}: {message}")
+        |    (Aya sees the chat message as context and may respond to it)
+        |
+        +--- DYNAMIC: user said something interesting, bot reacts
+             |
+             v
+             GeminiTextClient.GenerateAsync(prompt, responseSchema)
+             |  (REST call to generateContent with structured output)
+             |  prompt includes: bot personality, user's message, Aya's recent transcript
+             |  responseSchema: { "message": "string", "emote": "string?" }
+             v
+             LivestreamUI.AddChatMessage(botName, response.message)
+             |
+             v
+             PersonaSession.SendText($"[CHAT] {botName}: {response.message}")
+```
+
+**Key insight:** Chat bot messages are sent to Aya via `PersonaSession.SendText()` so she sees them as conversation context and can react. The system instruction tells Aya: "You are hosting a livestream. Messages prefixed with [CHAT] are from your audience. Respond to interesting ones naturally."
+
+**Confidence:** HIGH -- `SendText()` is a proven API in the existing codebase for injecting text into the Live session.
+
+## Data Flow Diagrams
+
+### Complete Data Flow: User Push-to-Talk Through System
+
+```
+USER                   LIVESTREAM SCENE                              PACKAGE
+                       LAYER                                         LAYER
+ |                      |                                              |
+ | press spacebar       |                                              |
+ |--------------------->| LivestreamController                         |
+ |                      | state = UserRecording                        |
+ |                      |                                              |
+ |                      | If Aya is speaking:                          |
+ |                      |   buffer audio locally                       |
+ |                      |   (DO NOT call session.StartListening)       |
+ |                      |                                              |
+ | release spacebar     |                                              |
+ |--------------------->| LivestreamController                         |
+ |                      | state = UserQueued                           |
+ |                      |                                              |
+ |                      |                  OnTurnComplete               |
+ |                      |<---------------------------------------------| PersonaSession
+ |                      |                                              |
+ |                      | state = UserPlaying                          |
+ |                      | flush buffered audio:                        |
+ |                      |   session.StartListening()                   |
+ |                      |   send buffered chunks -------->             | PersonaSession
+ |                      |   session.StopListening()                    | -> GeminiLiveClient
+ |                      |                                              |    -> WebSocket
+ |                      |                                              |
+ |                      |                  OnOutputTranscription        |
+ |                      |<---------------------------------------------| PersonaSession
+ |                      | LivestreamUI.SetAyaTranscript(text)          |
+ |                      |                                              |
+ |                      |                  OnSyncPacket (audio)        |
+ |                      |<---------------------------------------------| PersonaSession
+ |                      |                                              | -> AudioPlayback
+ |                      |                                              |    -> ring buffer
+ |                      |                                              |    -> AudioSource
+```
+
+**Critical detail on buffered audio:** The existing AudioCapture produces float[] chunks that are normally sent directly to GeminiLiveClient.SendAudio() via PersonaSession.HandleAudioCaptured(). For finish-first, the LivestreamController needs to intercept this:
+
+- Option A: Use AudioCapture directly (subscribe to OnAudioCaptured), buffer chunks in a List<float[]>, then replay them via session.StartListening() when ready. Problem: StartListening() starts the mic again, it does not replay buffered audio.
+- Option B (recommended): Record via AudioCapture, buffer the float[] chunks, then after Aya finishes, convert the buffered chunks to PCM bytes and send them directly via `_session.SendText()` with a note that audio follows, or find a way to feed buffered audio. But PersonaSession does not expose direct audio sending without mic capture.
+
+**Revised approach for finish-first:** Rather than buffering raw audio, use a simpler model:
+1. User presses push-to-talk. If Aya is speaking, show "Hold on, Aya is finishing..." in the UI. Do NOT start mic capture yet.
+2. When Aya's OnTurnComplete fires, THEN start mic capture normally via session.StartListening().
+3. User speaks, releases, audio goes through the normal PersonaSession pipeline.
+
+This is simpler, avoids audio buffering complexity, and gives better UX (user knows to wait). The "finish-first" concept becomes "Aya completes, then you speak" rather than "you speak into a buffer while Aya finishes."
+
+**Alternative if true buffering is needed:** Add a `SendRawAudio(byte[] pcm)` method to PersonaSession that wraps `_client.SendAudio()`. This is a small, safe package API addition. But the simpler approach above should be tried first.
+
+### Chat Bot Reaction to User Input
+
+```
+USER speaks to Aya
+        |
+        v
+PersonaSession.OnInputTranscription
+        |
+        v
+LivestreamController receives user transcript
+        |
+        v
+ChatBotManager.OnUserSpoke(userTranscript)
+        |
+        v
+Select 0-2 bots to react (based on personality match, random chance)
+        |
+        v
+For each reacting bot:
+  GeminiTextClient.GenerateAsync(
+    systemPrompt: bot.personality + "You are a viewer in a livestream chat",
+    userPrompt: $"The viewer just said: '{userTranscript}'. React briefly.",
+    responseSchema: { message: string }
+  )
+        |
+        v (500ms-2s async)
+LivestreamUI.AddChatMessage(bot.name, response.message)
+        |
+        v
+PersonaSession.SendText($"[CHAT] {bot.name}: {response.message}")
+        |
+        v
+Aya sees the chat message and may comment on it
+```
+
+### NarrativeDirector Timeline
+
+```
+Time    NarrativePhase     Actions
+0:00    WarmUp             - Aya's system instruction includes personality + initial goals
+                           - ChatBotManager starts scripted timer (greetings every 15-30s)
+                           - No steering yet
+
+2:00    CharacterIntro     - NarrativeDirector.SendText("[DIRECTOR NOTE: Start talking
+                             about your characters and what inspires your art]")
+                           - ChatBotManager injects scripted questions:
+                             "hey aya who's that character on the left?"
+
+5:00    BuildUp            - NarrativeDirector.SendText("[DIRECTOR NOTE: You've been
+                             hinting at a special project. Start building excitement
+                             about the movie clip you've been working on]")
+                           - ChatBotManager injects: "wait are you making a MOVIE??"
+
+8:00    Reveal             - NarrativeDirector.SendText("[DIRECTOR NOTE: It's time.
+                             Announce the movie clip and call start_movie]")
+                           - Aya calls start_movie() function
+                           - SceneTransition.LoadMovieScene()
+```
+
+## Component Dependency Graph (Build Order)
+
+```
+Phase 1: Foundation
+  ChatBotConfig (ScriptableObject)          -- standalone, no dependencies
+  GeminiTextClient (REST utility)           -- depends on: UnityWebRequest, Newtonsoft.Json
+  LivestreamUI (UXML/USS + MonoBehaviour)   -- depends on: UIDocument, PersonaSession events
+
+Phase 2: Chat Bot System
+  ChatBotManager                            -- depends on: ChatBotConfig[], GeminiTextClient
+                                               LivestreamUI
+
+Phase 3: Narrative + Scene
+  NarrativeDirector                         -- depends on: PersonaSession.AddGoal/SendText
+  SceneTransition                           -- depends on: PersonaSession function calling,
+                                               UnityEngine.SceneManagement
+
+Phase 4: Orchestrator + Integration
+  LivestreamController                      -- depends on: PersonaSession, ChatBotManager,
+                                               NarrativeDirector, LivestreamUI, SceneTransition
+  Aya PersonaConfig (ScriptableObject)      -- configured with livestream-specific
+                                               system instruction, goals, functions
+```
+
+**Rationale for ordering:**
+- Phase 1 has zero dependencies on other new components. Each can be built and tested in isolation.
+- Phase 2 introduces the first inter-component communication (ChatBotManager uses GeminiTextClient and LivestreamUI).
+- Phase 3 adds narrative logic that depends on PersonaSession's existing public API.
+- Phase 4 wires everything together. The LivestreamController is built last because it depends on all other components.
+
+## Which Existing Components Need Modification
+
+### Package Runtime (com.google.ai-embodiment): NO CHANGES NEEDED
+
+The existing public API surface is sufficient for the livestream sample:
+
+| API Used | Existing? | Notes |
+|----------|-----------|-------|
+| `PersonaSession.Connect()` | Yes | Connect with goals pre-loaded |
+| `PersonaSession.StartListening()` / `StopListening()` | Yes | Push-to-talk |
+| `PersonaSession.SendText(string)` | Yes | Director notes + chat bot messages to Aya |
+| `PersonaSession.AddGoal(id, desc, priority)` | Yes | Pre-connect goal setup |
+| `PersonaSession.RegisterFunction(name, decl, handler)` | Yes | `start_movie`, `emote` |
+| `PersonaSession.OnOutputTranscription` | Yes | Aya's speech transcript |
+| `PersonaSession.OnInputTranscription` | Yes | User's speech transcript |
+| `PersonaSession.OnTurnComplete` | Yes | Finish-first signal |
+| `PersonaSession.OnSyncPacket` | Yes | Audio + text correlation |
+| `PersonaSession.OnStateChanged` | Yes | Connection lifecycle |
+| `PersonaSession.OnAISpeakingStarted/Stopped` | Yes | UI speaking indicator |
+| `PersonaSession.OnFunctionError` | Yes | Error logging |
+| `PersonaSession.Config` | Yes | Read persona display name |
+
+All new functionality lives in the sample scene layer. The package remains a clean, general-purpose library.
+
+**One potential small addition (optional):** A `SendRawAudio(byte[] pcm)` public method on PersonaSession, if true audio buffering is needed for finish-first. But the simpler "wait then speak" approach avoids this entirely.
+
+### Package Samples: EXISTING SAMPLES UNCHANGED
+
+The AyaLiveStream and QueuedResponseSample remain as-is. The LivestreamSample is a new, third sample scene.
+
+## File Structure
+
+```
+Packages/com.google.ai-embodiment/
   Samples~/
-    BasicConversation/
-      BasicConversation.unity           # Scene with one persona talking
-      SamplePersona.asset               # Example PersonaConfig
-      SampleFunctionHandler.cs          # Example function call handler
-    AnimatedCharacter/
-      AnimatedCharacter.unity           # Scene with emote-driven animations
-      EmoteHandler.cs                   # Emote function -> Animator triggers
-      SampleAnimatedPersona.asset
-  Documentation~/
-    index.md                            # Package documentation
-    getting-started.md
-    voice-configuration.md
-    function-calling.md
+    LivestreamSample/                          # NEW sample
+      LivestreamSample.unity                   # Scene file
+      LivestreamController.cs                  # Main orchestrator MonoBehaviour
+      ChatBotManager.cs                        # Bot personas + Gemini REST calls
+      ChatBotConfig.cs                         # ScriptableObject for bot definition
+      GeminiTextClient.cs                      # REST utility for generateContent
+      NarrativeDirector.cs                     # Time-based goal steering
+      SceneTransition.cs                       # Function handler for scene loading
+      LivestreamUI.cs                          # UI Toolkit controller
+      AyaLivestreamConfig.asset                # PersonaConfig for Aya (livestream)
+      ChatBots/                                # Bot persona assets
+        ChatterBot1.asset
+        ChatterBot2.asset
+        ChatterBot3.asset
+      UI/
+        LivestreamPanel.uxml                   # UI layout
+        LivestreamPanel.uss                    # UI styles
+      MovieClip/
+        MovieClipScene.unity                   # Scene loaded on goal trigger
 ```
 
-### Assembly Definition Requirements
-
-**Runtime asmdef** (`com.google.ai-embodiment.asmdef`):
-```json
-{
-  "name": "com.google.ai-embodiment",
-  "rootNamespace": "AIEmbodiment",
-  "references": [],
-  "includePlatforms": [],
-  "excludePlatforms": [],
-  "allowUnsafeCode": false,
-  "overrideReferences": false,
-  "precompiledReferences": [],
-  "autoReferenced": true,
-  "defineConstraints": [],
-  "versionDefines": []
-}
+Also mirrored in Assets/ for development:
 ```
-
-**Critical note on Firebase dependency:** The Firebase AI Logic SDK ships as raw `.cs` files under `Assets/Firebase/FirebaseAI/` without an assembly definition. This means it compiles into `Assembly-CSharp` by default. The UPM package's runtime asmdef cannot directly reference `Assembly-CSharp`. Two solutions:
-
-1. **Recommended:** Add an asmdef to the Firebase AI source files (`Assets/Firebase/FirebaseAI/Firebase.AI.asmdef`) and reference it from the package's asmdef. This keeps Firebase as a separately compiled assembly.
-2. **Alternative:** Use `Assembly-CSharp` references from the package asmdef (less clean, but works if Firebase SDK cannot be modified).
-
-The `package.json` should list Firebase AI Logic as a dependency that devs install separately:
-```json
-{
-  "name": "com.google.ai-embodiment",
-  "version": "0.1.0",
-  "displayName": "AI Embodiment",
-  "description": "AI-powered game characters with real-time conversation",
-  "unity": "6000.0",
-  "dependencies": {}
-}
-```
-
-Firebase is NOT listed in `dependencies` because it is not a UPM package -- it is installed via the Firebase Unity SDK `.unitypackage` or tarball. The package should document this prerequisite and fail gracefully with a clear error if Firebase.AI types are not found.
-
-### Samples~ Directory Convention
-
-The `~` suffix in `Samples~` is mandatory. Unity ignores directories ending with `~` during import, which means:
-- Sample assets are not compiled or imported automatically
-- Users import samples via Package Manager UI ("Import" button)
-- Each sample subfolder becomes a separate importable sample
-- Samples are copied into `Assets/Samples/AI Embodiment/{version}/{SampleName}/`
-
-## Patterns to Follow
-
-### Pattern 1: Thread Marshaling via ConcurrentQueue
-
-The Firebase `LiveSession.ReceiveAsync()` runs on a background thread (the WebSocket receive loop uses `ClientWebSocket` which is not Unity main-thread-bound). All Unity API calls (AudioSource, AudioClip, MonoBehaviour, Transform) must happen on the main thread.
-
-**What:** A singleton-style dispatcher that drains a ConcurrentQueue in Update().
-
-**When:** Every time data arrives from the LiveSession receive loop or ChirpTTSClient HTTP response.
-
-**Implementation approach:**
-```csharp
-public class MainThreadDispatcher : MonoBehaviour
-{
-  private static readonly ConcurrentQueue<Action> _queue = new();
-
-  public static void Enqueue(Action action)
-  {
-    _queue.Enqueue(action);
-  }
-
-  private void Update()
-  {
-    while (_queue.TryDequeue(out Action action))
-    {
-      action.Invoke();
-    }
-  }
-}
-```
-
-**Why not SynchronizationContext:** Unity's `UnitySynchronizationContext` exists but has known issues with heavy load (posts to a queue that is drained once per frame, same as above, but with more overhead). A simple ConcurrentQueue is more predictable, has lower allocation overhead, and gives explicit control over drain timing.
-
-**Why not Coroutines:** The receive loop is `IAsyncEnumerable`, not a Unity coroutine. Bridging async/await to coroutines adds complexity without benefit.
-
-### Pattern 2: ScriptableObject Configuration
-
-**What:** All persona configuration lives in a ScriptableObject asset.
-
-**When:** Developers define character personalities, voice settings, model parameters.
-
-**Why:**
-- Inspector-editable without custom editor code (basic fields just work)
-- Serializable to disk as `.asset` files
-- Referenceable from any MonoBehaviour via serialized field
-- Supports multiple personas as separate assets
-- Can be swapped at runtime by assigning a different config to PersonaSession
-
-**Key decision:** PersonaConfig is read-only at runtime. Voice backend and model selection are set at connect time (when `LiveGenerativeModel.ConnectAsync()` is called with the config). Changing persona mid-session requires disconnecting and reconnecting.
-
-### Pattern 3: Event-Driven Output via C# Delegates
-
-**What:** PersonaSession exposes events as `Action<T>` delegates, not UnityEvents.
-
-**When:** Consumers need to react to AI responses (text, audio, function calls, state changes).
-
-**Implementation approach:**
-```csharp
-public class PersonaSession : MonoBehaviour
-{
-  public event Action<string> OnTextReceived;
-  public event Action<AudioClip> OnAudioReady;
-  public event Action<PersonaPacket> OnPacketReady;
-  public event Action<FunctionCallPart> OnFunctionCall;
-  public event Action OnTurnComplete;
-  public event Action<bool> OnInterrupted;
-  public event Action<SessionState> OnStateChanged;
-  public event Action<Exception> OnError;
-}
-```
-
-**Why delegates over UnityEvents:**
-- Type-safe (compiler catches mismatches)
-- No Inspector serialization overhead for high-frequency audio events
-- Composable (multiple subscribers, lambda-friendly)
-- Better for library code (UnityEvents are designed for scene-level wiring)
-
-**Why not interfaces:** Delegates are more flexible for this use case. A single consumer may want to subscribe to some events but not others. Interface implementations require all methods.
-
-### Pattern 4: Buffer Pooling for Audio
-
-**What:** Reuse byte[] and float[] arrays for audio data instead of allocating new ones each frame.
-
-**When:** Every audio chunk received from LiveSession (potentially 30-60 times per second).
-
-**Why:** The Firebase SDK's `ConvertBytesToFloat` and `ConvertTo16BitPCM` allocate new arrays on every call (verified in `LiveSession.cs:252-268` and `LiveSessionResponse.cs:91-103`). This creates GC pressure that causes frame hitches in real-time audio playback.
-
-**Implementation approach:**
-```csharp
-internal static class AudioConverter
-{
-  private static readonly ArrayPool<byte> BytePool = ArrayPool<byte>.Shared;
-  private static readonly ArrayPool<float> FloatPool = ArrayPool<float>.Shared;
-
-  public static float[] BytesToFloat(byte[] pcmBytes, out int sampleCount)
-  {
-    sampleCount = pcmBytes.Length / 2;
-    float[] buffer = FloatPool.Rent(sampleCount);
-    for (int i = 0; i < sampleCount; i++)
-    {
-      buffer[i] = (short)(pcmBytes[i * 2] | (pcmBytes[i * 2 + 1] << 8)) / 32768f;
-    }
-    return buffer; // Caller must return to pool
-  }
-}
-```
-
-### Pattern 5: Receive Loop with CancellationToken
-
-**What:** The PersonaSession runs a continuous receive loop as a background Task, controlled by a CancellationTokenSource tied to the MonoBehaviour lifecycle.
-
-**When:** For the entire duration of a connected session.
-
-**Why:** `LiveSession.ReceiveAsync()` yields `IAsyncEnumerable<LiveSessionResponse>` that terminates on `TurnComplete`. But for a conversation, you need to call `ReceiveAsync()` again after each turn. The outer loop handles this.
-
-**Implementation approach:**
-```csharp
-private async Task ReceiveLoopAsync(LiveSession session, CancellationToken ct)
-{
-  while (!ct.IsCancellationRequested)
-  {
-    try
-    {
-      await foreach (var response in session.ReceiveAsync(ct))
-      {
-        ProcessResponse(response); // Enqueues to main thread
-      }
-      // ReceiveAsync completed (TurnComplete received)
-      // Loop back to receive the next turn
-    }
-    catch (OperationCanceledException) { break; }
-    catch (WebSocketException ex)
-    {
-      MainThreadDispatcher.Enqueue(() => OnError?.Invoke(ex));
-      break;
-    }
-  }
-}
-```
-
-**Lifecycle binding:**
-```csharp
-private CancellationTokenSource _sessionCts;
-
-private void OnDestroy()
-{
-  _sessionCts?.Cancel();
-  _sessionCts?.Dispose();
-  _liveSession?.Dispose();
-}
+Assets/LivestreamSample/                       # Development copy (same files)
 ```
 
 ## Anti-Patterns to Avoid
 
-### Anti-Pattern 1: Calling Unity API from Background Thread
+### Anti-Pattern 1: Multiple Live API WebSocket Sessions
 
-**What:** Accessing any MonoBehaviour, Transform, AudioSource, AudioClip, or other Unity object from the WebSocket receive thread.
+**What:** Creating a PersonaSession per chat bot to give each bot its own Gemini Live connection.
 
-**Why bad:** Unity is single-threaded. Accessing Unity objects from non-main threads causes crashes, undefined behavior, or silent data corruption. The crash may not happen immediately -- it may corrupt memory and crash later in an unrelated location.
+**Why bad:** Each Live API session is a persistent WebSocket with server-side state (context window, audio buffers). Multiple sessions multiply: API costs, rate limit consumption, audio thread overhead, and WebSocket connection management. Chat bots do not need real-time audio -- they produce text messages.
 
-**Instead:** Always marshal to main thread via MainThreadDispatcher before touching any Unity object. The `LiveSession.ReceiveAsync()` loop runs on a thread pool thread (verified: `ClientWebSocket.ReceiveAsync` uses the .NET thread pool). Every piece of data from this loop must be enqueued to the main thread.
+**Instead:** One PersonaSession for Aya (the only character that speaks). Chat bots use lightweight REST `generateContent` calls.
 
-### Anti-Pattern 2: Creating AudioClip Per Frame
+### Anti-Pattern 2: Modifying Package Code for Sample-Specific Behavior
 
-**What:** Calling `AudioClip.Create()` for every received audio chunk.
+**What:** Adding livestream-specific logic (finish-first, narrative director) into PersonaSession or GoalManager.
 
-**Why bad:** AudioClip creation is expensive (allocates unmanaged memory, registers with audio system). At 30+ chunks per second, this will cause frame drops and memory fragmentation.
+**Why bad:** The package is a general-purpose library. Livestream UX is one specific use case. Baking sample behavior into the package makes it harder for other developers to use the package differently.
 
-**Instead:** Use a ring-buffer approach:
-1. Pre-allocate a single AudioClip with sufficient duration (e.g., 10 seconds)
-2. Write incoming PCM data into the clip via `AudioClip.SetData()` at a write cursor
-3. Play with `AudioSource.Play()` and let the read cursor chase the write cursor
-4. Or use `OnAudioFilterRead` for direct PCM injection (most control, but requires careful timing)
+**Instead:** All livestream-specific logic lives in the sample scene layer. The sample consumes the package's public API without modification.
 
-### Anti-Pattern 3: Sending Full Audio Buffer Every Frame
+### Anti-Pattern 3: Polling Goals Mid-Session
 
-**What:** Reading all available Microphone data every Update() and sending the entire buffer.
+**What:** Calling `ReprioritizeGoal()` or `AddGoal()` repeatedly during a live session expecting Aya to change behavior.
 
-**Why bad:** Unity's `Microphone.GetData()` returns accumulated samples since last read. If Update() runs at 60fps and microphone is at 16kHz, each chunk is ~267 samples (~0.5KB). But if a frame spike occurs, the next read catches up and may send a large burst. Meanwhile, the WebSocket has a send lock (`SemaphoreSlim` in `LiveSession.cs:38`), so rapid small sends queue up.
+**Why bad:** The Gemini Live API does not support mid-session system instruction updates. Goals only take effect at `Connect()` time. The PersonaSession code explicitly logs this limitation.
 
-**Instead:** Read from Microphone at a fixed interval (~100ms chunks = 1600 samples at 16kHz). Use a ring buffer to track the read position. Send chunks of consistent size. This matches Gemini's expected input pattern and reduces WebSocket send contention.
+**Instead:** Use `SendText()` with `[DIRECTOR NOTE: ...]` tags for mid-session steering. Set all initial goals before `Connect()`.
 
-### Anti-Pattern 4: Blocking Async in MonoBehaviour Methods
+### Anti-Pattern 4: Synchronous Gemini REST Calls
 
-**What:** Using `.Result` or `.Wait()` on Tasks in Start(), Update(), or other MonoBehaviour methods.
+**What:** Blocking the main thread while waiting for a `generateContent` response for chat bot messages.
 
-**Why bad:** Blocks the main thread. Unity becomes unresponsive. Can also deadlock if the Task tries to marshal back to the main thread (which is blocked).
+**Why bad:** REST calls to Gemini take 500ms-2s. Blocking the main thread causes frame drops and audio glitches.
 
-**Instead:** Use `async void` only for Unity lifecycle entry points (Start, event handlers). Use `async Task` for everything else. Fire-and-forget with error handling:
-```csharp
-private async void Start()
-{
-  try
-  {
-    await ConnectAsync();
-  }
-  catch (Exception ex)
-  {
-    Debug.LogError($"Connection failed: {ex.Message}");
-    OnError?.Invoke(ex);
-  }
-}
-```
+**Instead:** Use `async/await` with `UnityWebRequest.SendWebRequest()` in the GeminiTextClient. Chat bot messages appear asynchronously when the response arrives.
 
-### Anti-Pattern 5: Tight Coupling to Firebase SDK Types
+### Anti-Pattern 5: Direct Audio Buffer Manipulation for Finish-First
 
-**What:** Passing `LiveSessionResponse`, `LiveSessionContent`, `FunctionCallPart` directly to game code.
+**What:** Trying to record user audio into a buffer while Aya speaks, then replaying the buffer through PersonaSession's audio pipeline.
 
-**Why bad:** The Firebase AI Logic SDK is in **Public Preview** (explicitly stated in `LiveGenerativeModel.cs:37-40`). It can change in backwards-incompatible ways without notice. If game code depends directly on SDK types, every SDK update potentially breaks all consumers.
+**Why bad:** PersonaSession's audio pipeline (AudioCapture -> HandleAudioCaptured -> FloatToPcm16 -> GeminiLiveClient.SendAudio) is tightly coupled. There is no public API to inject pre-recorded audio. Attempting to replay buffered audio would require either modifying the package or working around its internals.
 
-**Instead:** Define package-owned data types (`PersonaPacket`, `PersonaFunctionCall`) and convert from Firebase types at the boundary. Only `PersonaSession` and `FunctionCallHandler` touch Firebase types directly. Everything downstream works with package-owned types.
-
-## Threading Model
-
-### Thread Map
-
-| Thread | What Runs | Can Touch Unity API? |
-|--------|-----------|---------------------|
-| **Main Thread** | MonoBehaviour lifecycle (Start, Update, OnDestroy), AudioCapture mic reading, AudioPlayback clip manipulation, PacketAssembler, FunctionCallHandler dispatch, MainThreadDispatcher drain | YES |
-| **WebSocket Receive Thread** (thread pool) | `LiveSession.ReceiveAsync()` loop, JSON parsing of responses, `ConvertBytesToFloat` | NO |
-| **WebSocket Send Thread** (thread pool) | `LiveSession.SendAudioAsync()`, `SendAsync()` -- these are awaited from whichever thread calls them, but the actual send is serialized by `SemaphoreSlim` | NO |
-| **HTTP Thread** (thread pool) | `ChirpTTSClient` HTTP POST to Cloud TTS API | NO |
-
-### Marshaling Strategy
-
-```
-Background Thread                    ConcurrentQueue<Action>              Main Thread
-
-ReceiveAsync yields response  --->  Enqueue(() => {                  -->  Update() drains queue
-                                      assembler.ProcessChunk(data);        assembler processes
-                                    })                                     fires events
-
-ChirpTTS gets audio back     --->  Enqueue(() => {                  -->  Update() drains queue
-                                      playback.QueueAudio(pcm);           playback creates clip
-                                    })                                     plays audio
-
-FunctionCallHandler result          (result returned to delegate)    -->  Needs to send response
-  needs to go back           --->  Task.Run(() => {                       back on background
-                                      session.SendAsync(response);        thread
-                                    })
-```
-
-### Critical Constraint: Function Call Response Path
-
-Function calls arrive on a background thread, get marshaled to main thread for handler execution, then the response must be sent back via `LiveSession.SendAsync()` which is an async operation on the WebSocket. This creates a main-thread -> background-thread -> main-thread -> background-thread round trip:
-
-1. Background: ReceiveAsync yields LiveSessionToolCall
-2. Main: Enqueue -> FunctionCallHandler invokes delegate -> gets result
-3. Background: Task.Run -> session.SendAsync(FunctionResponsePart)
-
-The handler delegate itself MUST be synchronous (it runs on the main thread during Update). If a handler needs async work (e.g., database lookup), it should return immediately with a "pending" marker and send the function response asynchronously when ready.
+**Instead:** Use the simpler "wait then speak" approach: when Aya is speaking and user presses push-to-talk, show a "Aya is finishing..." indicator. When OnTurnComplete fires, enable mic capture normally.
 
 ## Scalability Considerations
 
-| Concern | Single Persona | 2-4 Personas | 10+ Personas |
-|---------|---------------|--------------|--------------|
-| WebSocket connections | 1 connection, fine | 2-4 connections, fine | May hit Firebase rate limits; consider connection pooling |
-| Audio capture | 1 Microphone, shared | Same mic, send to multiple sessions | Same mic, fan-out to sessions |
-| Audio playback | 1 AudioSource | Multiple AudioSources, Unity mixer handles | Need spatial audio management, voice priority system |
-| Memory (audio buffers) | ~100KB ring buffers | ~400KB total | Pool management becomes critical, consider streaming-only |
-| Thread pool pressure | 1 receive task | 2-4 receive tasks, fine | May want dedicated threads instead of thread pool |
-| GC pressure | Manageable with pooling | Moderate, still manageable | Must pool aggressively, avoid LINQ in hot paths |
-
-## Build Order (Dependency Graph)
-
-Components should be built in this order based on what depends on what:
-
-```
-Phase 1: Foundation (no Firebase dependency)
-  MainThreadDispatcher     -- standalone, no dependencies
-  PersonaConfig            -- standalone ScriptableObject
-  SessionState             -- standalone enum
-  PersonaPacket            -- standalone struct
-  AudioConverter (Internal) -- standalone utility
-
-Phase 2: Audio Pipeline (Unity API only)
-  AudioCapture             -- depends on: Unity Microphone API
-  AudioPlayback            -- depends on: Unity AudioSource, AudioConverter
-
-Phase 3: Firebase Integration
-  SystemInstructionBuilder -- depends on: PersonaConfig, Firebase.AI.ModelContent
-  PersonaSession (connect) -- depends on: PersonaConfig, Firebase.AI.LiveGenerativeModel
-  PersonaSession (receive) -- depends on: MainThreadDispatcher, Firebase.AI.LiveSession
-
-Phase 4: Processing
-  PacketAssembler          -- depends on: PersonaPacket, LiveSessionResponse types
-  FunctionCallHandler      -- depends on: Firebase.AI.FunctionCallPart/FunctionResponsePart
-
-Phase 5: Voice Backend
-  ChirpTTSClient           -- depends on: UnityEngine.Networking or System.Net.Http
-  VoiceBackendRouter       -- depends on: PersonaConfig.voiceBackend, ChirpTTSClient
-
-Phase 6: Integration & Polish
-  Full PersonaSession      -- wires all components together
-  Editor Inspectors        -- depends on: all Runtime types
-  Sample Scenes            -- depends on: everything
-```
-
-**Rationale:** Phase 1-2 can be built and tested without any Firebase connection. Phase 3 is the first time a real API call happens. Phase 4 processes what comes back. Phase 5 adds the alternative voice path. Phase 6 ties everything together. This ordering means each phase is independently testable before moving to the next.
+| Concern | This Sample (3-5 bots) | Future (10+ bots) |
+|---------|------------------------|---------------------|
+| REST API calls | 3-5 concurrent, well within rate limits | May need request queuing, debouncing |
+| Chat UI messages | Simple ScrollView, ~50 messages | Need virtualization or message culling |
+| SendText frequency | Every 15-30s for chat, fine | High frequency may fill context window; use summarization |
+| Context window | ~30 min session, manageable | Need context compression or session resume |
+| Audio playback | Single AudioSource for Aya | Unchanged -- only Aya speaks |
 
 ## Sources
 
-- Firebase AI Logic SDK 13.7.0 source code: `Assets/Firebase/FirebaseAI/` (direct reading of LiveSession.cs, LiveGenerativeModel.cs, LiveSessionResponse.cs, FunctionCalling.cs, ModelContent.cs, LiveGenerationConfig.cs, ResponseModality.cs)
-- Codebase analysis: `.planning/codebase/ARCHITECTURE.md`, `.planning/codebase/CONCERNS.md`, `.planning/codebase/INTEGRATIONS.md`
-- Project specification: `.planning/PROJECT.md`
-- Unity UPM package layout conventions (based on established Unity documentation patterns for custom packages -- HIGH confidence from direct knowledge of Unity 6 conventions)
-- Threading model verified from Firebase SDK source: `ClientWebSocket` async operations run on .NET thread pool, `SemaphoreSlim` for send serialization (`LiveSession.cs:38`), `IAsyncEnumerable` for receive (`LiveSession.cs:287`)
+- PersonaSession.cs (lines 354-386: AddGoal/RemoveGoal/ReprioritizeGoal API, lines 796-806: SendGoalUpdate limitation)
+- QueuedResponseController.cs (lines 1-209: 5-state machine pattern for push-to-talk)
+- AyaSampleController.cs (lines 1-162: function registration, goal injection after warm-up exchanges)
+- GeminiLiveClient.cs (lines 127-148: SendText via clientContent)
+- GoalManager.cs (lines 1-134: goal composition for system instruction)
+- SystemInstructionBuilder.cs (lines 1-115: system instruction generation with goals)
+- [Gemini Live API WebSocket Reference](https://ai.google.dev/api/live) -- configuration cannot be updated mid-session
+- [Gemini Structured Output Documentation](https://ai.google.dev/gemini-api/docs/structured-output) -- gemini-2.5-flash supports structured JSON output
+- [Gemini Live API Capabilities Guide](https://ai.google.dev/gemini-api/docs/live-guide) -- clientContent text can be sent during active audio session
+- [Gemini Session Management](https://ai.google.dev/gemini-api/docs/live-session) -- session resumption with 2-hour token validity
 
 ---
 
-*Architecture research: 2026-02-05*
+*Architecture research: 2026-02-17*

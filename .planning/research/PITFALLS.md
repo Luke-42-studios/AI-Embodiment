@@ -1,517 +1,335 @@
-# Domain Pitfalls
+# Pitfalls Research
 
-**Domain:** Unity UPM package with real-time voice AI (Firebase AI Logic / Gemini Live)
-**Researched:** 2026-02-05
-**Confidence:** HIGH for pitfalls verified against actual SDK source code; MEDIUM for general Unity audio/UPM pitfalls based on training data
+**Domain:** Simulated AI Livestream Experience -- multiple personas, chat bots, goal-driven narrative, scene transitions
+**Researched:** 2026-02-17
+**Confidence:** HIGH (experience/UX patterns), MEDIUM (Gemini structured output specifics, Unity scene loading edge cases)
 
 ---
 
 ## Critical Pitfalls
 
-Mistakes that cause rewrites, data loss, or architectural collapse.
+### Pitfall 1: The "Finish First" Trap -- User Feels Ignored While Aya Completes Her Response
 
----
-
-### Pitfall 1: Threading — Firebase Async Callbacks vs Unity Main Thread
-
-**What goes wrong:** The Firebase AI Logic SDK is entirely `async/await` based. `LiveSession.ReceiveAsync()` returns `IAsyncEnumerable<LiveSessionResponse>` which yields responses on whatever thread the WebSocket receive completes on. Developers instinctively call `AudioSource.clip`, `AudioSource.Play()`, `transform.position`, or any `UnityEngine.Object` member from within the `await foreach` loop. Unity crashes or silently corrupts state because Unity API calls are not thread-safe and must occur on the main thread.
-
-**Why it happens:** C# `async/await` with `ClientWebSocket` does not guarantee continuation on the calling thread. Unity's `SynchronizationContext` is set on the main thread, and `await` inside a MonoBehaviour coroutine started with `async void Start()` or `async Task` will typically resume on the main thread **only if the awaited task was started from the main thread and Unity's UnitySynchronizationContext is active**. However, `IAsyncEnumerable` iteration is different: each `MoveNextAsync()` call on the enumerator may resume on the ThreadPool thread that completed the WebSocket read. The SDK's `ReceiveAsync` (line 287-339 of LiveSession.cs) uses `_clientWebSocket.ReceiveAsync(buffer, cancellationToken)` which completes on an IO thread.
-
-**Consequences:**
-- `UnityException: ... can only be called from the main thread` at runtime
-- Silent state corruption if exception is swallowed
-- Intermittent crashes that are hard to reproduce (depends on thread scheduling)
-- AudioSource manipulation from wrong thread can cause audio glitches or Unity editor lockup
-
-**Warning signs:**
-- `UnityException` mentioning "main thread" in console
-- Audio plays sometimes but not always
-- NullReferenceException on `AudioSource` that definitely exists
-- Tests pass in isolation but fail under load
-
-**Prevention:**
-1. Create a dedicated `MainThreadDispatcher` utility that queues `Action` callbacks and executes them in `Update()`. This is the standard pattern for marshaling back to Unity's main thread.
-2. The `await foreach` loop over `ReceiveAsync()` should run on a background Task. Each received `LiveSessionResponse` should be enqueued into a `ConcurrentQueue<LiveSessionResponse>`. A MonoBehaviour `Update()` method drains this queue on the main thread.
-3. Never touch any `UnityEngine.Object` (AudioSource, Transform, GameObject, etc.) from the receive loop.
-4. Consider wrapping the entire Firebase interaction in a plain C# class (not MonoBehaviour) that communicates with the MonoBehaviour layer exclusively through thread-safe queues.
-
-**Detection test:** Add `Debug.Assert(Thread.CurrentThread.ManagedThreadId == 1)` at the top of any method that touches Unity APIs during development.
-
-**Phase relevance:** Must be solved in the very first phase (core session management). Every subsequent feature depends on correct threading.
-
----
-
-### Pitfall 2: ReceiveAsync Closes on TurnComplete — Single-Turn Trap
-
-**What goes wrong:** The SDK's `ReceiveAsync()` method (LiveSession.cs, line 328-333) explicitly `break`s out of the receive loop when it encounters a `TurnComplete` flag. This means each call to `ReceiveAsync()` only yields responses for a single model turn. Developers who write a single `await foreach (var response in session.ReceiveAsync())` expecting it to be a persistent stream for the lifetime of the session will find that it stops after the first AI response completes.
-
-**Why it happens:** The Gemini Live protocol has a turn-based structure. After the model finishes responding (TurnComplete=true), the client must explicitly call `ReceiveAsync()` again for the next turn. The SDK documentation comment says "Closes upon receiving a TurnComplete from the server" but developers coming from WebSocket experience expect a persistent stream.
-
-**Consequences:**
-- Session appears to "die" after the first AI response
-- Developer adds reconnection logic when the real fix is re-calling ReceiveAsync
-- If not re-called promptly, incoming server messages may be missed or buffered indefinitely in the WebSocket
-
-**Warning signs:**
-- "Session disconnected" after first response
-- Audio plays once then nothing
-- Works for one exchange but not multi-turn
-
-**Prevention:**
-1. Wrap `ReceiveAsync()` in an outer `while (!cancelled)` loop that re-calls it after each TurnComplete.
-2. Document this explicitly in the PersonaSession component — it is a counter-intuitive API behavior.
-3. Build the receive loop as: outer loop (session lifetime) -> inner loop (single turn via ReceiveAsync) -> process each response.
-
-**Detection test:** Integration test that sends two sequential prompts and verifies responses to both.
-
-**Phase relevance:** Core session management phase. Getting this wrong means the fundamental conversation loop is broken.
-
----
-
-### Pitfall 3: ReceiveAsync Concurrency Warning — Multiple Enumerations
-
-**What goes wrong:** The SDK comments explicitly state: "Having multiple of these ongoing will result in unexpected behavior" (LiveSession.cs, line 282). If a developer calls `ReceiveAsync()` from multiple places (e.g., one coroutine for audio, another for text), both will compete for the same WebSocket receive, causing message loss and corruption.
-
-**Why it happens:** There is a single WebSocket with a single receive buffer. Two concurrent `ReceiveAsync()` calls will interleave reads from the same socket, with each reader getting random fragments of messages.
-
-**Consequences:**
-- Partial JSON parsing failures
-- Missing audio chunks (some consumed by the wrong reader)
-- Intermittent: works sometimes depending on timing
-- Extremely difficult to debug because failures are non-deterministic
-
-**Warning signs:**
-- JSON parse exceptions in `LiveSessionResponse.FromJson`
-- Audio with random gaps or corruption
-- "WebSocket is not open" errors when it should be
-
-**Prevention:**
-1. Exactly ONE receive loop per LiveSession, ever. This must be a hard architectural constraint.
-2. The single receive loop demultiplexes responses by type (audio, text, function call, tool call cancellation) and dispatches to separate handlers/queues.
-3. Use the `ILiveSessionMessage` interface to pattern-match: `LiveSessionContent` for audio/text, `LiveSessionToolCall` for function calls, `LiveSessionToolCallCancellation` for cancellations.
-
-**Phase relevance:** Core architecture. This constraint shapes the entire event dispatch system.
-
----
-
-### Pitfall 4: Audio Sample Rate Mismatch — 16kHz Input vs 24kHz Output vs AudioSource
-
-**What goes wrong:** The Gemini Live protocol expects 16kHz mono 16-bit PCM input (documented in `SendAudioAsync` comment: "Expected format: 16 bit PCM audio at 16kHz little-endian"). The SDK's `ConvertBytesToFloat` in LiveSessionResponse.cs assumes 16-bit encoding for output. However, the output sample rate from Gemini native audio may be 24kHz (Gemini Live's documented output format), while Chirp 3 HD TTS outputs at a potentially different rate. Unity's `AudioSource` plays at whatever sample rate you configure the `AudioClip` with. If you create an `AudioClip` at the wrong sample rate, audio plays back too fast (chipmunk voice) or too slow (demon voice).
+**What goes wrong:**
+The core design intentionally has Aya finish her current response/animation before addressing the user's push-to-talk input. This is meant to feel like a real streamer who naturally wraps up a thought before pivoting to a viewer. But without deliberate acknowledgment mechanics, the user experiences a dead zone: they speak, nothing visible happens, and seconds pass. Research from Disney's "Let Me Finish First" study found that users who had to wait for an agent to finish its speech found the experience "awkward and frustrating." The 300ms rule in voice AI (AssemblyAI research) establishes that silences beyond 4 seconds degrade quality of experience substantially.
 
 **Why it happens:**
-- Unity's `Microphone.Start()` default sample rate may differ from 16kHz
-- Gemini native audio output is 24kHz PCM, but the SDK doesn't document this explicitly in the response
-- Chirp 3 HD TTS returns audio at its own configured sample rate
-- Developers assume input rate = output rate
+The QueuedResponseController's 5-state machine (Connecting, Idle, Recording, Reviewing, Playing) already buffers audio during the "Reviewing" state, but the livestream scene introduces a new wrinkle: Aya is already talking (to chat bots, about her art) when the user speaks. The user's input queues behind Aya's current turn. If Aya is mid-monologue about her characters, the user might wait 15-20 seconds before hearing acknowledgment. This is qualitatively different from the QueuedResponse sample where Aya was idle before the user spoke.
 
-**Consequences:**
-- AI voice sounds like a chipmunk (played at 44100Hz when data is 24000Hz)
-- AI voice sounds like a demon (played at 16000Hz when data is 24000Hz)
-- Microphone capture at wrong rate causes garbled input to Gemini
-- Subtle: audio sounds "almost right" but slightly off-pitch, hard to diagnose
+**How to avoid:**
+1. **Visual acknowledgment within 500ms.** The moment the user's push-to-talk is released, show a visible indicator in the chat/UI: "Aya noticed your message" or a subtle glance animation. This is cheap and breaks the perceived silence.
+2. **Aya acknowledges verbally at the end of her current sentence, not her current monologue.** Instead of finishing a 3-paragraph response, Aya should reach a sentence boundary, then say something like "Oh hold on -- [user], let me get back to you" before finishing her thought briefly. This requires sentence-level granularity in the "finish first" logic, not turn-level.
+3. **Cap the wait time.** If Aya has been speaking for more than 8-10 seconds after the user's input arrives, interrupt at the next sentence boundary regardless. The user's patience degrades exponentially after 4 seconds of perceived silence.
+4. **Typing indicator in chat.** Show "Aya is thinking about your question..." in the chat feed immediately. This is the same pattern every messaging app uses and it works because it confirms receipt.
+5. **Filler animation.** Research on mitigating response delays (2025) found that natural conversational fillers (chin-touch, "Hmm, let me think...") improve perceived response time significantly, while generic loading indicators had minimal effect. A subtle "glance at camera" or "pen tap" animation when user input arrives signals attention without interrupting speech.
 
 **Warning signs:**
-- Voice pitch is wrong
-- Audio plays but words are unintelligible
-- `Microphone.Start()` returns a clip at system default rate, not 16kHz
+- User says something and then waits >5 seconds with no feedback
+- Playtesters report "she didn't hear me" or "is the mic broken?"
+- Users stop using push-to-talk after the first failed attempt
+- User spams the push-to-talk button trying to get attention
 
-**Prevention:**
-1. **Microphone capture:** Explicitly pass `16000` as the frequency parameter to `Microphone.Start(null, true, bufferLengthSec, 16000)`. Verify the actual sample rate of the returned AudioClip with `clip.frequency` since some platforms may not support 16kHz and will silently use a different rate — in that case, resample.
-2. **Gemini native audio playback:** Create AudioClip at 24000Hz sample rate for Gemini audio responses. Verify by checking actual received audio — the SDK returns raw bytes with no explicit sample rate metadata.
-3. **Chirp TTS playback:** Parse the sample rate from the TTS API response (Chirp 3 HD returns audio at the rate you request, typically 24000Hz). Create AudioClip at the matching rate.
-4. **PacketAssembler:** Track sample rate per-source and set AudioClip frequency accordingly.
-5. **Validation:** Play a known test phrase and verify pitch matches expectation in the first integration test.
-
-**Detection test:** Record a known phrase, round-trip it through the system, and compare playback pitch to original.
-
-**Phase relevance:** Audio pipeline phase. Must be validated before building PacketAssembler.
+**Phase to address:**
+The QueuedResponse/push-to-talk integration phase. The "finish first" priority system needs the sentence-boundary awareness and visual acknowledgment wired in from the start, not added as a polish pass.
 
 ---
 
-### Pitfall 5: Streaming Audio Playback — AudioClip.SetData Race Condition
+### Pitfall 2: Chat Bots That Feel Like a Script, Not a Community
 
-**What goes wrong:** Unity's `AudioClip` is not designed for streaming append. The common approach is to pre-allocate a large `AudioClip` with `AudioClip.Create(name, totalSamples, channels, frequency, false)` and then call `AudioClip.SetData(samples, offsetInSamples)` to fill it as data arrives. But `AudioSource.Play()` starts playback immediately from sample 0, and if `SetData` writes are slower than playback reads, the AudioSource reaches unfilled (zero) samples, causing audible pops/silence gaps. If you call `SetData` while `AudioSource.isPlaying` is true, Unity does not lock — the read head can read partially written data.
+**What goes wrong:**
+The hybrid chat bot system (scripted messages + Gemini structured output for dynamic responses) creates two failure modes that both destroy the illusion:
+
+- **Too scripted:** Messages arrive at metronomic intervals (every 15 seconds on the dot), with no variation in length, no emoji personality, no typos, no reactions to what Aya just said. The chat feels like a slideshow, not a conversation.
+- **Too dynamic:** Every bot message is generated by Gemini, which adds latency (1-3 seconds per structured output call) and produces eerily fluent prose. Real chat messages are short, slangy, full of abbreviations and reactions. AI-generated chat reads like a blog post.
 
 **Why it happens:**
-- Network latency means audio chunks arrive irregularly
-- Gemini Live sends audio in small chunks within a turn
-- There is no built-in streaming AudioClip in Unity (AudioClip.Create with `stream=true` is for `OnAudioRead` callback, not append-style streaming)
+Developers model chat bots as "message generators" rather than "simulated people." A real Twitch chat has rhythm: bursts of messages after something exciting happens, lulls during quiet moments, messages that reference each other, running jokes, and users typing at different speeds. Scripted messages are timed to a clock, not to events. Gemini-generated messages are too well-written.
 
-**Consequences:**
-- Audible clicks/pops between chunks
-- Silence gaps where buffer ran out
-- Audio plays the first chunk then goes silent
-- Garbled audio if write position and read position collide
-
-**Warning signs:**
-- Audio plays first word then stops
-- Random clicks between sentences
-- Audio works with short responses but breaks with long ones
-
-**Prevention:**
-1. **Ring buffer approach:** Pre-allocate a large circular AudioClip. Track write position (where new data goes) and read position (where AudioSource is playing). Only call `AudioSource.Play()` after accumulating enough buffered audio (e.g., 200-400ms worth) to absorb network jitter.
-2. **OnAudioFilterRead approach (preferred for streaming):** Attach a script with `OnAudioFilterRead(float[] data, int channels)` to the AudioSource's GameObject. This callback is called on the audio thread and lets you fill audio samples directly from a ring buffer. This avoids the AudioClip.SetData race entirely.
-3. **Double-buffer approach:** Use two AudioClips. Play clip A while filling clip B. Swap when A finishes and B is ready. This is simpler but has an audible gap at swap boundaries unless crossfaded.
-4. **Write-ahead watermark:** Never start playback until at least N milliseconds of audio are buffered. Monitor buffer level and pause playback (or insert silence) if buffer drains too fast.
-
-**Detection test:** Stream a 30-second response and verify no clicks/gaps in playback.
-
-**Phase relevance:** Audio pipeline phase. This is the hardest technical problem in the project.
-
----
-
-### Pitfall 6: InlineDataPart Base64 Encoding Overhead in Audio Streaming
-
-**What goes wrong:** The SDK's `InlineDataPart.ToJson()` (ModelContent.cs, line 253) calls `Convert.ToBase64String(Data)` on every audio chunk before sending. Base64 encoding expands data by ~33%. For continuous 16kHz 16-bit mono PCM audio (32KB/sec raw), this becomes ~43KB/sec of JSON-encoded WebSocket traffic. The JSON serialization via `MiniJSON` also allocates strings on every send. At high send rates (e.g., sending audio every 100ms), this creates significant GC pressure.
-
-**Why it happens:** The Gemini Live protocol uses JSON over WebSocket with base64-encoded binary data. This is inherent to the protocol, not a bug.
-
-**Consequences:**
-- GC spikes causing frame drops (visible as stutters in gameplay)
-- Increased network bandwidth usage
-- Higher latency due to encoding overhead
-- Memory pressure from string allocations
+**How to avoid:**
+1. **Event-driven timing, not clock-driven.** Chat bots should react to what Aya says, not to a timer. When Aya mentions a character name, 2-3 bots should react within 1-4 seconds (staggered). During quiet drawing moments, chat should slow to one message every 20-30 seconds. This requires subscribing to Aya's output transcription events and matching trigger keywords.
+2. **Per-bot personality quirks in the ScriptableObject.** Each bot config needs: message length tendency (short/medium/long), emoji usage frequency, typing speed (affects delay before message appears), vocabulary level, favorite phrases/catchphrases. These constraints shape the output whether scripted or generated.
+3. **Message imperfection.** Scripted messages should include deliberate lowercase, abbreviations ("omg," "lol," "wait fr?"), and occasional typos. Generated messages should have a post-processing pass that shortens them and adds personality noise.
+4. **Burst-and-lull pattern.** Model chat activity as waves. After Aya says something interesting (detected via transcription keywords or goal events), schedule 3-5 bot messages in a 2-8 second burst with random stagger. Then silence for 10-20 seconds. Never uniform spacing.
+5. **Cross-referencing between bots.** Occasionally have Bot B respond to Bot A's message, not to Aya. "@ChatUser23 exactly!! her art style is so good" creates the illusion of a community, not isolated message generators.
 
 **Warning signs:**
-- Unity Profiler shows GC.Alloc spikes correlated with audio send rate
-- Frame drops during voice capture
-- Increasing memory usage during conversation
+- All chat messages are roughly the same length (a dead giveaway)
+- Chat activity does not change when Aya says something exciting vs mundane
+- No bot ever references another bot's message
+- Messages read like paragraphs, not chat messages
+- Perfectly regular timing between messages
 
-**Prevention:**
-1. **Send audio in appropriately sized chunks:** Do not send every frame's audio samples individually. Buffer 100-250ms of audio before sending each chunk. This reduces the number of send operations and JSON serializations.
-2. **Pool byte arrays:** Reuse byte arrays for PCM conversion instead of allocating new ones each send. The SDK's `ConvertTo16BitPCM` (LiveSession.cs, line 252) allocates new arrays every call.
-3. **Profile early:** Use Unity Profiler in the first integration test to measure GC allocations during a 60-second conversation. Set a budget (e.g., <1KB/frame allocation from the AI system).
-4. **Consider a send rate limiter:** Gemini Live can handle intermittent audio — you do not need to send continuously. Send chunks at 4-10 per second, not 60.
-
-**Phase relevance:** Audio pipeline phase, but optimization can be deferred to a polish phase. Functional correctness first.
+**Phase to address:**
+Chat bot system design phase. The ScriptableObject config for bot personas and the timing/scheduling system must be designed together. Retrofitting event-driven timing onto a clock-driven system is painful.
 
 ---
 
-### Pitfall 7: WebSocket Lifetime vs Unity Lifecycle Mismatch
+### Pitfall 3: Goal Steering That Feels Like a Pushy Salesperson
 
-**What goes wrong:** `LiveSession` wraps a `ClientWebSocket` and implements `IDisposable`. It has a finalizer (`~LiveSession`) as backup. But Unity has its own lifecycle: `OnDestroy`, `OnApplicationPause`, `OnApplicationQuit`, scene transitions. If a MonoBehaviour holding a LiveSession is destroyed (scene change, GameObject.Destroy), the WebSocket connection is not properly closed because:
-- `OnDestroy` is called on the main thread, but the receive loop may be running on a background thread
-- The CancellationToken for the receive loop may not be cancelled before the MonoBehaviour is destroyed
-- The finalizer runs on the GC thread at an unpredictable time, potentially after Unity has already shut down networking
+**What goes wrong:**
+Aya has a narrative arc: talk about her art, introduce her characters, build toward a movie clip reveal. The ConversationalGoals system uses priority-based urgency framing ("[HIGH PRIORITY - Act on this urgently]"). If the goal priority escalates too aggressively, Aya starts shoehorning the movie clip into every response: "That's a great question about my favorite color! Speaking of favorites, I've been working on this movie clip..." This breaks immersion instantly.
 
-**Why it happens:** Unity's lifecycle and C# IDisposable/async lifetime management are fundamentally different paradigms. Unity components disappear instantly on Destroy; C# async tasks need cooperative cancellation.
+Convai's research explicitly identifies this as "narrative stagnation" risk: without careful calibration, either the conversation meanders aimlessly (too passive) or the AI forces transitions unnaturally (too aggressive). The balance is the hardest design problem in the entire milestone.
 
-**Consequences:**
-- WebSocket connections leak (server-side sessions remain open)
-- `ObjectDisposedException` on the AudioSource after scene change
-- Background thread tries to access destroyed MonoBehaviour
-- Application hangs on quit because background task is still running
-- Editor play mode "stop" hangs because WebSocket is still connected
+**Why it happens:**
+The GoalManager's `ComposeGoalInstruction()` injects urgency framing directly into the system instruction. When a goal is HIGH priority, the instruction says "actively steer the conversation toward this goal. Bring it up naturally but persistently." But "naturally but persistently" is contradictory at HIGH priority -- the AI interprets "persistently" as "in every response." Additionally, the Gemini Live API does not support mid-session system instruction updates (as noted in PersonaSession.SendGoalUpdate()), so priority escalation requires reconnection or relies on the model's interpretation of accumulated context.
+
+**How to avoid:**
+1. **Time-based priority escalation with wide intervals.** Start all narrative goals at LOW priority. After 3-5 minutes of natural conversation, escalate to MEDIUM. Only escalate to HIGH after 8-10 minutes or when chat bots have naturally set up the topic. Never start at HIGH.
+2. **Use chat bots as narrative catalysts, not Aya's system instruction.** Instead of telling Aya "steer toward the movie clip," have a chat bot ask "omg aya when are you gonna show us the thing you've been working on??" This makes the steering feel like audience demand, not AI agenda. Aya can respond naturally to a direct question.
+3. **Rewrite urgency framing.** The HIGH priority instruction should not say "bring it up in every response." Instead: "If the conversation naturally touches on [topic], this is the moment to transition. If not, wait for a better opening." The model needs permission to NOT steer.
+4. **Multiple mini-goals, not one big goal.** Instead of one goal "reveal the movie clip," create a chain: (1) mention you've been drawing a lot lately, (2) talk about the character you're drawing, (3) mention you've been working on something special, (4) when asked, reveal the movie clip. Each mini-goal is LOW priority and completes naturally, creating a breadcrumb trail.
+5. **Avoid the word "urgently" in any goal framing.** Even MEDIUM priority should say "look for natural openings" not "work toward this when natural" (which the AI reads as "force it to be natural").
 
 **Warning signs:**
-- Editor freezes when stopping Play mode
-- "WebSocket is still open" warnings in console after scene change
-- Memory grows across scene transitions
-- Server-side billing for idle sessions
+- Aya mentions the movie clip within the first 2 minutes
+- Aya pivots to the goal topic mid-sentence when answering an unrelated question
+- Playtesters say "she keeps talking about the same thing"
+- The transition to the movie clip feels abrupt rather than earned
+- Aya's responses sound like a marketing pitch
 
-**Prevention:**
-1. **CancellationTokenSource per session:** Create a `CancellationTokenSource` in `OnEnable` (or `Start`), pass its token to all async operations, and call `Cancel()` in `OnDisable` (or `OnDestroy`).
-2. **Explicit disposal in OnDestroy:**
-   ```
-   void OnDestroy() {
-       _cts?.Cancel();
-       _liveSession?.Dispose();
-   }
-   ```
-3. **OnApplicationPause:** Cancel and dispose the session when the app is paused (mobile backgrounding kills WebSocket connections anyway).
-4. **OnApplicationQuit:** Force-close with a synchronous wait or fire-and-forget the close.
-5. **Test scene transitions:** Specifically test Start Scene -> Game Scene -> back to Start Scene and verify no leaked connections or errors.
-
-**Detection test:** Enter play mode, start a conversation, stop play mode, verify no console errors and no hung threads.
-
-**Phase relevance:** Core session management phase. Must be designed into PersonaSession from day one.
+**Phase to address:**
+Conversational goals / narrative flow phase. The goal chain design and urgency framing language must be iterated through playtesting, not just code review. This is a prompt engineering problem as much as a systems problem.
 
 ---
 
-### Pitfall 8: UPM Package with Firebase SDK — Dependency Hell
+### Pitfall 4: Gemini Structured Output for Chat Bots -- Latency and Cost Spiral
 
-**What goes wrong:** The Firebase Unity SDK is distributed as `.unitypackage` files or through the External Dependency Manager (EDM4U), not as a proper UPM package. Your UPM package cannot declare Firebase AI Logic as a UPM dependency in `package.json` because it does not exist in the Unity Registry or any scoped registry. This means:
-- Your package.json cannot enforce that Firebase AI Logic is installed
-- Users can install your package without Firebase, and it will fail to compile
-- Version mismatches between Firebase SDK versions are invisible
+**What goes wrong:**
+Using Gemini's `generateContent` with `response_mime_type: "application/json"` to generate dynamic chat bot responses seems elegant: define a schema with `sender`, `message`, `emoji`, and get structured bot responses. But each call has overhead:
+- **Latency:** Even though Google states structured output adds "minimal latency" to the API call, the base latency for `generateContent` is still 500ms-2s for Flash models. If you call it for every bot response, chat feels sluggish.
+- **Cost:** At $0.10/1M input tokens for Flash-Lite, generating 60 bot messages per 10-minute stream costs pennies. But the prompt context (Aya's current state, conversation history, bot personalities) grows with each call. Sending 2000+ tokens of context per bot message is wasteful.
+- **Schema complexity:** Requesting multiple bot responses in a single call (batch) is efficient but introduces ordering problems -- the model might generate all messages with the same tone, or create artificial dialogue that no human chat would produce.
 
-**Why it happens:** Firebase Unity SDK predates UPM's maturity. Google distributes it through their own mechanisms (EDM4U, direct download, .unitypackage). There is no `com.google.firebase.ai` UPM package in the Unity Registry.
+**Why it happens:**
+Developers default to "call the API for everything" without considering that 80% of bot messages can be pre-authored. The scripted/dynamic split is not just for cost -- it is for quality. Pre-authored messages with personality quirks are often better than generated ones because they can be hand-tuned.
 
-**Consequences:**
-- Users install your package, get immediate compile errors, think your package is broken
-- Users have wrong Firebase SDK version, get subtle runtime errors
-- Your package's asmdef references Firebase assemblies that may or may not exist
-- CI/CD pipeline cannot resolve dependencies automatically
+**How to avoid:**
+1. **80/20 scripted-to-dynamic ratio.** Pre-author 30-50 messages per bot persona covering common reactions ("omg that's so cool," "wait what did she just say," "can you show us [character name]?"). Randomly select from these for ambient chat. Only use Gemini for responses to user input or for reactions to unexpected Aya statements.
+2. **Batch bot responses in a single call.** When you do call Gemini, request 3-5 bot messages at once with a schema like `{messages: [{sender, text, delay_seconds}]}`. This amortizes the latency across multiple messages and lets the model create a realistic conversation fragment.
+3. **Use Gemini Flash-Lite (not Flash or Pro).** For short chat messages, Flash-Lite at $0.10/1M input is 5x cheaper than Flash. The quality difference is negligible for "lol nice" and "omg that's amazing."
+4. **Cache the context window.** Gemini supports context caching. If the bot personas and Aya's system instruction are stable across calls, cache them to reduce input token costs and latency.
+5. **Fire-and-forget with delay.** Generate bot responses asynchronously and inject them into the chat with a 1-3 second delay to simulate "typing." This hides the API latency behind perceived typing time.
 
 **Warning signs:**
-- GitHub issues: "does not compile after install"
-- Users confused about installation order
-- Different Firebase SDK versions cause different runtime behavior
+- Bot messages appear with noticeable delay after the triggering event
+- API costs exceed $1/hour of stream simulation
+- All bot messages in a batch sound similar or reference each other unnaturally
+- Bot responses are longer than typical chat messages (>30 words)
+- Rate limiting errors from Gemini API during high-activity moments
 
-**Prevention:**
-1. **Assembly Definition references:** Your package's `.asmdef` file should reference Firebase.AI.dll but with `"autoReferenced": false` and an `#if` directive check. Use `FIREBASE_AI_AVAILABLE` scripting define that users set after installing Firebase.
-2. **Runtime dependency check:** On initialization, check if `Firebase.AI.FirebaseAI` type is loadable via reflection. If not, throw a clear error: "Firebase AI Logic SDK not found. Please install it from [URL]."
-3. **Documentation-driven dependency:** Since UPM cannot enforce this, make installation instructions crystal clear. Step 1: Install Firebase SDK. Step 2: Install this package. Step 3: Configure Firebase project.
-4. **Version compatibility table:** Document which versions of your package work with which Firebase SDK versions.
-5. **Consider shipping Firebase AI Logic source within your package:** The Firebase AI Logic C# source is Apache 2.0 licensed (as seen in the file headers). You could include it directly, avoiding the dependency problem entirely. However, this means you own updates. Evaluate this tradeoff carefully.
-
-**Phase relevance:** UPM packaging phase. Must be decided before first public release.
+**Phase to address:**
+Chat bot system implementation phase. The scripted message pool and Gemini call strategy must be designed together. Starting with "everything is dynamic" and then optimizing later wastes API costs during development too.
 
 ---
 
-## Moderate Pitfalls
+### Pitfall 5: Unity Scene Loading Destroys the Livestream State
 
-Mistakes that cause delays, user frustration, or technical debt.
+**What goes wrong:**
+The movie clip is triggered as a Unity scene load when Aya's narrative goal completes. If loaded with `LoadSceneMode.Single`, it destroys the current scene -- killing the WebSocket connection (PersonaSession.OnDestroy fires, calling Disconnect), the chat UI, all bot state, and the audio pipeline. After the clip plays, returning to the livestream requires a full reconnection to Gemini, which means 2-5 seconds of dead time, loss of conversation history, and a jarring experience. Even with `LoadSceneMode.Additive`, there are problems: duplicate AudioListeners, EventSystems, and camera conflicts.
 
----
+**Why it happens:**
+Unity's scene management was designed for game levels, not for overlay content within a persistent session. The PersonaSession's OnDestroy calls `_client.Dispose()`, closing the WebSocket. The movie clip scene likely has its own Camera and AudioListener. Loading it additively means two of each, which Unity warns about ("There are 2 audio listeners in the scene").
 
-### Pitfall 9: Function Call Response Timing — Blocking the Conversation
-
-**What goes wrong:** When the model issues a `LiveSessionToolCall`, it expects a `FunctionResponsePart` back before it will continue generating. If the developer's function handler is slow (e.g., makes a network call, queries a database, or does a physics raycast that takes a few frames), the model sits waiting. The user hears silence. If the handler takes more than a few seconds, the model may time out the function call and issue a `LiveSessionToolCallCancellation`.
-
-**Why it happens:** The Gemini Live protocol is synchronous for function calls — the model pauses generation until it gets the function response. Developers think of function calls as fire-and-forget events.
-
-**Consequences:**
-- Awkward silence during function execution
-- Model cancels function calls that take too long
-- User thinks the AI is broken during complex function calls
+**How to avoid:**
+1. **Never use LoadSceneMode.Single for the movie clip.** The livestream scene must persist. Use additive loading exclusively.
+2. **Disable the livestream camera and AudioListener during clip playback.** Before loading the clip scene, disable the main camera and AudioListener. Re-enable after unloading the clip scene. This avoids the duplicate warnings and ensures the clip's camera/audio takes over cleanly.
+3. **Do NOT destroy PersonaSession during clip playback.** Keep the WebSocket alive but muted. Suppress mic input and audio output during the clip. When the clip ends, Aya can resume naturally: "So, what did you think?" without a reconnection delay.
+4. **Pre-load the clip scene.** Use `SceneManager.LoadSceneAsync` with `allowSceneActivation = false` to pre-load the scene in the background while Aya is still talking. When the goal triggers, activate the pre-loaded scene instantly -- no loading screen, no pause.
+5. **State preservation checklist:** Before clip activation, save: current goal state, chat history (for UI), bot activity timers, audio playback position. After clip, restore all of these. The user should feel like the stream paused, not restarted.
+6. **Handle the transition gracefully in-narrative.** Aya should say something like "OK chat, I want to show you something -- check this out!" and then the clip plays. When it ends, Aya says "So yeah, that's what I've been working on!" This frames the scene load as part of the experience, not a technical interruption.
 
 **Warning signs:**
-- AI stops talking for several seconds then resumes
-- `LiveSessionToolCallCancellation` messages appearing
-- Function calls work in testing (fast) but fail in production (slow)
+- Black screen or loading spinner between livestream and clip
+- WebSocket reconnection visible in the console after clip plays
+- Chat history is gone after returning from the clip
+- Audio pops or cuts at the transition boundary
+- "There are 2 audio listeners in the scene" warning in console
 
-**Prevention:**
-1. **Fast handlers only:** Function handlers should return immediately with pre-computed or cached data. If the function needs async work, return a placeholder ("looking that up...") and send a follow-up.
-2. **Timeout documentation:** Document the expected response time for function calls. Test with artificial delays to find the model's cancellation threshold.
-3. **Cancellation handling:** Implement `LiveSessionToolCallCancellation` handling — when the model cancels a function call, stop the pending work and log it.
-4. **Queued function calls:** The model may issue multiple function calls in a single `LiveSessionToolCall`. All must be responded to, and the FunctionResponsePart includes the `Id` field for correlation. Handle batch responses.
-
-**Phase relevance:** Function calling phase.
+**Phase to address:**
+Scene loading / movie clip trigger phase. The additive loading strategy, pre-loading, and state preservation must be designed before implementation. Retrofitting persistence onto a Single-mode load is a rewrite.
 
 ---
 
-### Pitfall 10: Microphone API Platform Differences
+### Pitfall 6: Multi-Persona Coherence Collapse -- Aya Contradicts Herself or Chat Bots
 
-**What goes wrong:** `UnityEngine.Microphone.Start()` behaves differently across platforms:
-- On Windows/Mac, it returns an AudioClip immediately and begins recording.
-- On Android, it requires `RECORD_AUDIO` permission — first call may prompt the user, and recording does not start until permission is granted.
-- On iOS, `NSMicrophoneUsageDescription` must be in Info.plist or the app crashes.
-- On WebGL, `Microphone.Start()` is not supported at all.
-- Sample rate support varies: some devices do not support 16kHz and silently use a different rate.
-- `Microphone.GetPosition()` can return 0 indefinitely if the device's microphone is in use by another app.
+**What goes wrong:**
+Aya is driven by Gemini Live (WebSocket, real-time audio). Chat bots are driven by scripted messages + Gemini structured output (REST API, text-only). These are independent systems with no shared state. Aya might say "I'm drawing Luna right now" while a scripted bot message says "I love how you drew Kai earlier" -- creating a continuity error. Worse, if the user asks Aya about something a bot said, Aya has no context about bot messages because they were generated outside her session.
 
-**Why it happens:** Unity's Microphone API abstracts platform differences imperfectly.
+**Why it happens:**
+Aya's Gemini session has its own context window that only sees: system instruction, user audio/text, and Aya's own responses. Bot messages are never injected into Aya's context. The bots and Aya are in separate conversational universes that happen to share a UI.
 
-**Consequences:**
-- "Works on my machine" — breaks on target platforms
-- Permission dialogs at unexpected times in gameplay
-- Silent failure: Microphone.Start succeeds but GetPosition never advances
-- Wrong sample rate audio sent to Gemini, causing garbled transcription
+**How to avoid:**
+1. **Inject bot messages into Aya's context.** When a bot says something significant (especially a question directed at Aya), send it as a text message to Aya's Gemini session via `_client.SendText("[ChatBot42 in chat]: omg aya show us the movie clip!")`. This puts the bot message into Aya's conversation history so she can reference it.
+2. **Give Aya a "chat awareness" system instruction section.** Include: "You are a livestreamer. You can see a chat window with messages from viewers. Sometimes viewers will ask you questions or make comments. You may reference what viewers say."
+3. **Limit what bots can assert.** Scripted bot messages should react to Aya ("that's so cool!") not assert new facts ("I heard you're working on a movie"). Only Gemini-generated bot messages (which can be conditioned on Aya's transcription) should reference specific things Aya said.
+4. **Shared state object.** Maintain a lightweight state object (current topic Aya is discussing, character name mentioned, current activity) that both Aya's system instruction and bot message generation can reference. Update it from Aya's output transcription events.
 
 **Warning signs:**
-- `Microphone.devices` returns empty array
-- `Microphone.GetPosition()` stuck at 0
-- Audio captures fine in editor but fails on device
+- Bot references something Aya hasn't mentioned yet
+- Aya doesn't know what a bot just said when the user asks about it
+- Bot mentions a character by wrong name or wrong context
+- Aya repeats something a bot already said, word for word
 
-**Prevention:**
-1. **Check `Microphone.devices` before starting:** If empty, surface a user-visible error.
-2. **Verify actual sample rate:** After `Microphone.Start()`, check the returned `AudioClip.frequency`. If it doesn't match 16000, implement resampling (linear interpolation is sufficient for voice).
-3. **Android permission flow:** Use Unity's `Permission.RequestUserPermission("android.permission.RECORD_AUDIO")` and wait for grant before initializing the microphone.
-4. **GetPosition polling guard:** If `Microphone.GetPosition()` returns 0 for more than 1 second after starting, report an error rather than silently sending empty audio.
-5. **Document platform support:** Explicitly list which platforms are supported in v1 (desktop-first per PROJECT.md).
-
-**Phase relevance:** Audio capture phase. Can defer mobile-specific handling per "Out of Scope" but must handle desktop gracefully.
+**Phase to address:**
+This spans multiple phases: bot system design (scripted message constraints), Aya's system instruction (chat awareness), and the integration phase (context injection via SendText). Must be architected early even if wired up later.
 
 ---
 
-### Pitfall 11: PacketAssembler Text/Audio Synchronization Drift
+### Pitfall 7: The Uncanny Valley of Chat Timing
 
-**What goes wrong:** The Gemini Live API sends text and audio in separate response chunks. Text may arrive before, after, or interleaved with audio chunks. The `LiveSessionContent` includes `InputTranscription` and `OutputTranscription` fields (LiveSessionResponse.cs, lines 187-198) which are explicitly documented as "independent to the Content, and doesn't imply any ordering between them." If the PacketAssembler assumes text and audio arrive in lockstep, subtitles will be out of sync with speech.
+**What goes wrong:**
+Real livestream chat has a very specific temporal texture. Messages appear in bursts after exciting moments, with variable delays that correspond to typing speed. Each person types at a different speed. There are pauses. Sometimes two people say the same thing simultaneously. Sometimes there is dead silence for 30 seconds. Simulated chat that does not replicate this texture feels immediately wrong, even if the content is perfect.
 
-**Why it happens:** The Gemini Live stream processes text and audio generation in parallel internally. Network packets may be reordered or batched differently.
+Research on livestream chat UX (GetStream, 2025) found that for high-message-traffic chats, using "auto" scroll (instant jump) is better than "smooth" scroll, and that slow mode (throttling) is critical for digestibility. But for a simulated stream with 4-6 bots, the problem is the opposite: not enough messages, and they need to feel individually typed.
 
-**Consequences:**
-- Subtitles appear before the AI starts speaking
-- Subtitles lag behind speech by seconds
-- Function calls (which come as text/toolCall) fire at the wrong time relative to audio
-- Emote triggers ("wave") animate before the AI says the corresponding line
+**Why it happens:**
+Developers schedule bot messages with `Invoke("PostMessage", delay)` or coroutines with fixed waits. Every message takes exactly the same time to "type" regardless of length. There is no variation in inter-message timing. The result is a metronome, not a chat room.
+
+**How to avoid:**
+1. **Per-message typing delay based on message length.** A 5-word message takes 1-2 seconds to "type." A 20-word message takes 3-5 seconds. Add random jitter (+/- 30%) to prevent regularity.
+2. **Stagger bot responses to the same event.** When Aya says something exciting, Bot A reacts in 0.5-1.5s (the fast typer), Bot B in 2-4s (the moderate typer), Bot C in 4-8s (the slow typer). These delays should be defined per-bot in the ScriptableObject config.
+3. **"Dead chat" moments are natural.** Do not fill every silence with bot messages. Real streams have lulls. After a burst of activity, schedule 15-30 seconds of no messages. This makes the bursts feel impactful by contrast.
+4. **Simultaneous messages.** Occasionally (10% of bursts), have two bots post within 200ms of each other. This mimics the real "chat goes crazy" pattern when something exciting happens.
+5. **Scroll behavior.** Auto-scroll (snap to bottom) when new messages arrive, unless the user has scrolled up to read history. Show a "new messages" indicator if scrolled up. This is the standard Twitch/YouTube chat pattern.
 
 **Warning signs:**
-- Subtitles flash ahead of voice
-- Animation triggers fire at wrong times
-- Timing works for short responses but drifts on long ones
+- All messages are exactly evenly spaced
+- Short messages and long messages appear after the same delay
+- Chat activity is constant regardless of what Aya is doing
+- No moments of "dead chat" between bursts
+- Chat scrolls smoothly instead of snapping (feels sluggish at low message volume)
 
-**Prevention:**
-1. **Do not assume ordering between text and audio chunks.** Build the PacketAssembler to buffer and align based on TurnComplete boundaries, not individual chunk arrival order.
-2. **Use OutputTranscription for text sync:** If `outputAudioTranscription` is enabled in `LiveGenerationConfig`, use the transcription text for subtitles rather than trying to parse text responses. The transcription is derived from the audio and thus implicitly synchronized.
-3. **Timestamp-based alignment:** Track elapsed playback time in the audio buffer. Associate text chunks with their position in the turn, not their arrival time.
-4. **TurnComplete as sync point:** At TurnComplete, finalize all text/audio/emote data for that turn as one unit. Do not emit partial results to the user unless explicitly needed for low-latency display.
-
-**Phase relevance:** PacketAssembler phase. This is a design problem, not just an implementation problem.
+**Phase to address:**
+Chat bot timing system phase, which should be designed alongside the chat UI. The timing model and the UI scroll behavior are tightly coupled -- getting one right without the other creates a disconnect.
 
 ---
 
-### Pitfall 12: Chirp 3 HD TTS as Separate HTTP Call — Latency Addition
+## Technical Debt Patterns
 
-**What goes wrong:** Chirp 3 HD TTS is a separate REST API call (Cloud Text-to-Speech), not integrated into the Gemini Live session. When using Chirp TTS mode, the pipeline is: Gemini Live generates text -> your code receives text -> your code calls Chirp TTS HTTP endpoint -> Chirp returns audio -> you play audio. Each HTTP request adds 200-800ms latency. For a multi-sentence response, this means either waiting for the entire text before calling TTS (high latency) or making multiple TTS calls (complexity + latency per chunk).
+Shortcuts that seem reasonable but create long-term problems.
 
-**Why it happens:** Gemini Live's built-in voices (Puck, Kore, Aoede, Charon, Fenrir) are synthesized server-side and streamed as audio inline. Chirp 3 HD is a completely separate Google Cloud service.
+| Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
+|----------|-------------------|----------------|-----------------|
+| All bot messages from Gemini (no scripted pool) | Simpler code, no message authoring | 500ms+ latency per message, API costs, messages too polished | Never for ambient chat. Only for reactive responses to user input |
+| Single Gemini call per bot message | Simple 1:1 mapping | Latency multiplied by bot count (5 bots = 5 API calls = 2.5-10s total) | Never. Batch multiple bot responses per call |
+| LoadSceneMode.Single for movie clip | Simple scene management | Destroys WebSocket, chat state, requires full reconnection | Never. Always additive |
+| Injecting ALL bot messages into Aya's context | Perfect coherence | Floods Aya's context window, increases token costs, confuses the model | Never for all messages. Only inject significant ones (questions to Aya, topic changes) |
+| Fixed goal priority (start at HIGH) | Goal completes faster | Aya sounds pushy, breaks immersion | Never. Always escalate from LOW over time |
+| No typing indicator for Aya's response to user | Less UI code | User thinks mic is broken during "finish first" wait | Never. Always show acknowledgment |
+| Clock-based bot timing (every N seconds) | Simple timer implementation | Chat feels robotic, no relationship to content | Only acceptable as a Phase 1 placeholder, must be replaced with event-driven timing |
+| Hardcoded bot personas in code | Faster to prototype | Cannot iterate on personality without recompilation | Early prototyping only. Move to ScriptableObjects before playtesting |
 
-**Consequences:**
-- Gemini native voice: <500ms time-to-first-audio
-- Chirp TTS path: 1-3 seconds time-to-first-audio
-- User perceives Chirp path as "laggy" or "broken"
-- Multiple concurrent TTS requests can overwhelm API quota
+## Integration Gotchas
 
-**Warning signs:**
-- Long silence before AI starts speaking (Chirp path only)
-- Works fine with Gemini native voices
-- TTS API rate limiting errors under load
+Common mistakes when connecting components in the livestream system.
 
-**Prevention:**
-1. **Sentence-level chunking:** Split text at sentence boundaries and fire TTS requests for each sentence as soon as it arrives. Start playing sentence 1 audio while requesting sentence 2.
-2. **Request pipelining:** Send TTS requests in parallel for multiple sentences (up to API quota limits).
-3. **Set expectations in docs:** Document that Chirp TTS path has higher latency than Gemini native audio. Recommend Gemini native voices for low-latency use cases.
-4. **Pre-buffer text:** Wait until you have at least one complete sentence before requesting TTS, rather than sending fragments.
-5. **Cache common phrases:** If persona has greetings or frequently used phrases, pre-generate TTS audio at startup.
+| Integration | Common Mistake | Correct Approach |
+|-------------|----------------|------------------|
+| Aya PersonaSession + Chat Bot System | Chat bots and Aya run in parallel with no shared context | Inject significant bot messages into Aya's session via SendText. Maintain shared state object for current topic/activity |
+| User Push-to-Talk + Aya's Current Turn | Interrupting Aya immediately (standard barge-in behavior) | Queue user input. Show visual acknowledgment. Let Aya reach sentence boundary, then pivot |
+| Movie Clip Scene + Livestream Scene | LoadSceneMode.Single destroys everything | Additive loading. Pre-load with allowSceneActivation=false. Disable livestream camera/AudioListener during clip |
+| Goal Escalation + Time-Based Triggers | Timer fires regardless of conversation state (Aya mid-sentence about something else) | Check conversation state before escalating. Only escalate during natural pauses or topic transitions |
+| Bot Gemini Calls + Aya Gemini Session | Same API key, potential rate limiting conflicts | Use separate API keys or stagger bot calls. Aya's WebSocket session is persistent; bot calls are ephemeral REST. They should not contend |
+| Chat UI Scroll + New Messages | ScrollView does not auto-scroll when new messages are added via code | Force scroll-to-bottom in the next frame (UI Toolkit requires a frame delay for layout update). Use `schedule.Execute(() => scrollView.scrollOffset = new Vector2(0, scrollView.contentContainer.layout.height))` |
+| Audio Playback + Movie Clip Audio | Both playing simultaneously during transition | Mute/pause AudioPlayback before activating clip scene. Resume after clip unloads |
 
-**Phase relevance:** Chirp TTS phase. Can be built after Gemini native audio path is working.
+## Performance Traps
 
----
+Patterns that work in testing but fail in production or extended play.
 
-### Pitfall 13: SetupComplete Response is Silently Swallowed
+| Trap | Symptoms | Prevention | When It Breaks |
+|------|----------|------------|----------------|
+| Gemini API call per bot message | Chat lag, API throttling | Batch bot responses. 80% scripted, 20% dynamic | >10 bot messages per minute during active moments |
+| Unbounded chat history in UI | Memory growth, ScrollView sluggishness | Cap visible messages at 100-200. Remove oldest when limit reached | After 10+ minutes of active chat |
+| No message pooling in chat UI | GC spikes when creating/destroying chat message UI elements | Pool VisualElements. Reuse by swapping text/name/color | After 50+ messages in a session |
+| Output transcription accumulation in StringBuilder | Memory growth from _ttsTextBuffer and _functionCallBuffer | Already cleared on TurnComplete (existing code handles this). Verify it also clears on interruption during long monologues | Only if interruption handler has bugs |
+| Pre-loading movie clip scene too early | Memory pressure from two full scenes in memory | Pre-load only when goal reaches MEDIUM priority (a few minutes before trigger), not at session start | Only if clip scene has heavy assets (large textures, meshes) |
 
-**What goes wrong:** The SDK's `LiveSessionResponse.FromJson` (line 126-129) returns `null` for `setupComplete` responses, and the `ReceiveAsync` loop (line 323) skips null responses with `if (response != null)`. This means the initial session setup acknowledgment is invisible to the consumer. If your code starts sending audio before receiving setupComplete, the server may reject or ignore the audio.
+## Security Mistakes
 
-**Why it happens:** The SDK design choice is to hide the setup handshake from the consumer. But the timing matters: there is a window between `ConnectAsync()` returning and the server being ready to receive media.
+Domain-specific security issues for a simulated livestream.
 
-**Consequences:**
-- First few hundred milliseconds of audio may be lost
-- Intermittent: depends on network latency whether setup completes before first send
-- Session appears to work but initial words are missing
+| Mistake | Risk | Prevention |
+|---------|------|------------|
+| Bot personas or scripted messages contain real user data | Privacy violation if bot "personas" are based on real people | Use clearly fictional bot names and personas. Document that all chat users are simulated |
+| API key exposed in chat UI or debug logs | Key compromise, billing abuse | Never log API keys. Sanitize debug output. Use AIEmbodimentSettings (already in Resources, not in scene) |
+| User audio sent to Gemini during movie clip | Unnecessary API usage, potential privacy concern | Disable mic capture during clip playback. Call StopListening() before clip activation |
+| No content safety on bot messages | Generated bot messages could contain inappropriate content | Apply safety settings to Gemini structured output calls for bot messages. Filter scripted messages during authoring |
 
-**Warning signs:**
-- First word or two of user speech is not heard by the AI
-- Works locally (fast connection) but fails remotely (slow connection)
-- Adding a small delay before first send "fixes" it
+## UX Pitfalls
 
-**Prevention:**
-1. **Add a small delay (200-500ms) after ConnectAsync before starting audio capture.** This is a pragmatic workaround.
-2. **Or: Modify the receive loop to detect the setupComplete state** — since the SDK swallows it, you could fork or wrap the SDK to expose a "ready" signal. However, forking the SDK has maintenance costs.
-3. **Or: Start ReceiveAsync immediately after ConnectAsync** — the first null-yielded iteration corresponds to setupComplete. After the first ReceiveAsync iteration starts successfully, begin audio capture.
+Common user experience mistakes in livestream simulation.
 
-**Phase relevance:** Core session management phase. Subtle timing issue that should be tested early.
+| Pitfall | User Impact | Better Approach |
+|---------|-------------|-----------------|
+| Chat messages appear instantly (no typing simulation) | Feels robotic, breaks immersion | Add per-message delay based on message length and bot's "typing speed" personality trait |
+| Aya talks continuously with no pauses | Overwhelming, user cannot find a moment to push-to-talk | Build natural pauses into Aya's system instruction: "Pause occasionally to let your chat react." 3-5 seconds of silence every 30-60 seconds |
+| Movie clip plays with no buildup | Jarring transition, no emotional payoff | Aya builds anticipation: "I want to show you something I've been working on..." with 5-10 second tease before trigger |
+| All bots have the same "voice" (similar vocabulary, length, emoji use) | Chat feels like one person with multiple accounts | Differentiate bots with distinct personality configs: emoji-heavy bot, one-word-reaction bot, question-asker bot, lurker-who-rarely-speaks bot |
+| User cannot tell the difference between bots and real functionality | Confusion about what is interactive and what is decorative | Push-to-talk should be visually distinct from bot chat. Maybe a different input area, microphone icon, or distinct color. Bots are in the chat feed; user input is a separate action |
+| Chat scroll is smooth-animated at low message volume | Looks floaty and artificial when one message arrives every 10 seconds | Use instant scroll (snap) when message volume is low (<1 msg/sec). Only use smooth scroll during rapid bursts |
+| No visual indicator of Aya's "state" (talking, listening, drawing, thinking) | User does not know when to talk or what Aya is doing | Show Aya's state in the UI: a subtle indicator like "LIVE -- Aya is drawing" or "Aya is listening..." or "Aya is responding..." |
 
----
+## "Looks Done But Isn't" Checklist
 
-### Pitfall 14: ScriptableObject Serialization of Sensitive Data
+Things that appear complete but are missing critical pieces.
 
-**What goes wrong:** PersonaConfig ScriptableObjects are serialized to disk and included in builds. If developers put API keys, secrets, or sensitive configuration in ScriptableObjects, they end up in the built player's data, readable by anyone who decompiles the build.
+- [ ] **Chat bot system:** Often missing cross-bot references -- verify at least 10% of messages reference another bot's message or Aya's specific statement
+- [ ] **Goal-driven narrative:** Often missing the "permission to NOT steer" -- verify Aya can have 3+ exchanges without mentioning the movie clip when the user is asking about unrelated topics
+- [ ] **Finish-first priority:** Often missing the visual acknowledgment -- verify user sees feedback within 500ms of releasing push-to-talk, even if Aya is still talking
+- [ ] **Movie clip transition:** Often missing audio crossfade -- verify no audio pop/silence at the boundary between Aya's speech and clip audio, and between clip end and Aya's resumption
+- [ ] **Chat timing:** Often missing dead chat moments -- verify there are at least 2-3 periods of 15+ seconds with no bot messages in a 10-minute session
+- [ ] **Bot personalities:** Often missing the "lurker" -- verify at least one bot speaks rarely (every 2-3 minutes) to create realistic participation variance
+- [ ] **Scene return:** Often missing state restoration -- verify chat history, bot timers, and goal state survive the movie clip round-trip
+- [ ] **Aya's pauses:** Often missing natural silence -- verify Aya pauses for 3+ seconds at least twice per minute to let chat react and user speak
+- [ ] **User input during clip:** Often missing input suppression -- verify push-to-talk is disabled and mic is muted during movie clip playback
+- [ ] **Narrative payoff:** Often missing emotional buildup -- verify Aya has at least 2-3 tease moments before the movie clip reveal ("I've been working on something special...")
 
-**Why it happens:** ScriptableObjects are convenient for configuration. Developers instinctively put all config in one place.
+## Recovery Strategies
 
-**Consequences:**
-- API keys exposed in shipped builds
-- Firebase project credentials compromised
-- Chirp TTS API key leaked
+When pitfalls occur despite prevention, how to recover.
 
-**Warning signs:**
-- API key fields in ScriptableObject inspector
-- Credentials in version control
+| Pitfall | Recovery Cost | Recovery Steps |
+|---------|---------------|----------------|
+| User feels ignored (finish-first too slow) | LOW | Add visual acknowledgment, cap wait time at sentence boundary. No architecture change needed -- just UI feedback and a timer check |
+| Chat bots feel scripted | MEDIUM | Retrofit event-driven timing onto existing timer system. Requires hooking into OnOutputTranscription for trigger keywords. May need to redesign bot scheduling |
+| Goal steering too aggressive | LOW | Adjust goal framing text in GoalManager. Reduce escalation speed. Purely prompt engineering -- no code change |
+| Goal steering too passive (never reaches movie clip) | LOW | Add time-based fallback: if 15 minutes pass, escalate to HIGH regardless. Add bot catalyst messages. Prompt engineering + one timer |
+| Gemini structured output latency | MEDIUM | Shift to higher scripted ratio. Batch bot messages. Cache context. Requires restructuring the bot message pipeline but not the UI |
+| Scene load destroys session | HIGH | Requires switching from Single to Additive loading, adding state preservation, managing duplicate cameras/AudioListeners. Architectural change |
+| Coherence collapse (Aya vs bots) | MEDIUM | Add SendText injection for bot messages, add shared state object. Requires wiring but does not break existing architecture |
+| Chat timing too uniform | LOW | Adjust timing parameters in bot configs. Add jitter. No architecture change |
 
-**Prevention:**
-1. **Never store API keys in ScriptableObjects.** PersonaConfig should contain personality, voice selection, model name, archetype, traits — but NOT credentials.
-2. **Firebase credentials come from `google-services.json` / `GoogleService-Info.plist`** — these are handled by the Firebase SDK setup process, not by your package.
-3. **Chirp TTS API key:** Use a separate configuration mechanism (e.g., `Resources.Load` of a runtime-only asset, environment variable, or server-side proxy). Document this clearly.
-4. **Code review gate:** Add a comment in PersonaConfig: "// DO NOT add API keys or secrets to this ScriptableObject."
+## Pitfall-to-Phase Mapping
 
-**Phase relevance:** Configuration/ScriptableObject design phase.
+How roadmap phases should address these pitfalls.
 
----
-
-## Minor Pitfalls
-
-Mistakes that cause annoyance but are fixable without major rework.
-
----
-
-### Pitfall 15: AudioSource 3D Spatial Settings Override
-
-**What goes wrong:** When a developer attaches an AudioSource for AI voice playback and enables 3D spatialization (e.g., for a character in a 3D world), the default 3D settings may cause the AI voice to be inaudible if the AudioListener is far from the character, or to pan unexpectedly as the camera moves.
-
-**Prevention:** Document recommended AudioSource settings for voice AI playback. Suggest `spatialBlend = 0` (2D) for debugging, then tune 3D settings per game. The PersonaSession component should not force any AudioSource settings — leave that to the developer.
-
-**Phase relevance:** Sample scene / documentation phase.
-
----
-
-### Pitfall 16: Unity Microphone Ring Buffer Overflow
-
-**What goes wrong:** `Microphone.Start(null, true, bufferLengthSec, 16000)` creates a looping AudioClip. If `Microphone.GetPosition()` wraps around the buffer and the consumer has not read the old data, audio is lost. With a small buffer (e.g., 1 second) and infrequent polling, you lose audio data.
-
-**Prevention:** Use a buffer of at least 10 seconds. Poll `Microphone.GetPosition()` every frame in Update(). Track the last read position and copy new samples since last read. Handle the wrap-around case (position < lastPosition means it looped).
-
-**Phase relevance:** Audio capture phase.
-
----
-
-### Pitfall 17: Assembly Definition File Structure for UPM
-
-**What goes wrong:** UPM packages require assembly definition files (`.asmdef`) to define compilation boundaries. Common mistakes:
-- Missing `.asmdef` causes scripts to compile in the default Assembly-CSharp, not the package assembly
-- Test assemblies reference runtime assemblies incorrectly
-- Editor-only code mixed with runtime code
-- Missing `"autoReferenced": true` causes user scripts to not see the package API
-
-**Prevention:**
-- Create at least three asmdef files: `Runtime`, `Editor`, `Tests`
-- Runtime asmdef: references Firebase.AI, UnityEngine
-- Editor asmdef: references Runtime asmdef, UnityEditor
-- Tests asmdef: references Runtime asmdef, add test framework references
-- Use `"includePlatforms": ["Editor"]` on Editor asmdef
-
-**Phase relevance:** UPM packaging phase.
-
----
-
-### Pitfall 18: Dispose Pattern — IAsyncDisposable vs IDisposable
-
-**What goes wrong:** `LiveSession` implements `IDisposable` but its cleanup is inherently async (closing a WebSocket). The `Dispose()` method calls `_clientWebSocket.CloseAsync()` but does not await it (LiveSession.cs, line 66). This means the WebSocket close handshake may not complete before the object is garbage collected, potentially leaking the connection.
-
-**Prevention:** In PersonaSession, do not rely solely on `Dispose()`. Instead:
-1. `await session.CloseAsync(cancellationToken)` explicitly before disposing
-2. Then call `session.Dispose()` for cleanup
-3. Handle the case where CloseAsync throws (WebSocket already closed)
-
-**Phase relevance:** Core session management phase.
-
----
-
-## Phase-Specific Warnings
-
-| Phase Topic | Likely Pitfall | Mitigation |
-|-------------|---------------|------------|
-| Core session management | Threading (#1), ReceiveAsync lifecycle (#2, #3), WebSocket lifecycle (#7), SetupComplete timing (#13), Dispose (#18) | Build MainThreadDispatcher first. Single receive loop with ConcurrentQueue. CancellationTokenSource tied to MonoBehaviour lifecycle. |
-| Audio capture | Sample rate mismatch (#4), Microphone platform differences (#10), Ring buffer overflow (#16) | Force 16kHz, verify actual rate, 10s buffer, poll every frame |
-| Audio playback | Streaming playback race (#5), Sample rate mismatch (#4) | OnAudioFilterRead ring buffer approach. Create AudioClip at correct output sample rate. |
-| PacketAssembler | Text/audio sync drift (#11) | Do not assume ordering. Use TurnComplete as sync boundary. |
-| Function calling | Response timing (#9), Cancellation handling | Fast handlers, handle batch calls, respect function IDs |
-| Chirp TTS | Latency addition (#12) | Sentence-level chunking, pipelining, document latency tradeoff |
-| UPM packaging | Firebase dependency (#8), asmdef structure (#17), secrets (#14) | Documentation-driven install, version compat table, separate credentials |
-| GC/Performance | Base64 overhead (#6) | Chunk sends at 100-250ms intervals, pool byte arrays, profile early |
-
----
+| Pitfall | Prevention Phase | Verification |
+|---------|------------------|--------------|
+| Finish-first feels unresponsive (#1) | Push-to-talk / QueuedResponse integration | Playtester reports <5s perceived wait with visible acknowledgment. No "is the mic broken?" feedback |
+| Chat bots feel scripted (#2) | Chat bot system design | Side-by-side comparison: can an observer distinguish simulated chat from a recording of real Twitch chat for 30 seconds? |
+| Goal steering too pushy (#3) | Narrative flow / conversational goals | 10-minute playtest: Aya does NOT mention the movie clip in first 3 minutes. Transition feels earned |
+| Gemini structured output overhead (#4) | Chat bot implementation | Bot messages appear within 1-3 seconds of triggering event. API costs < $0.50 per 10-minute session |
+| Scene load destroys state (#5) | Movie clip / scene loading | Chat history, goal state, and WebSocket connection survive clip round-trip. No reconnection in console |
+| Multi-persona coherence (#6) | Integration / system wiring | User asks Aya about something a bot said, Aya can reference it. No factual contradictions in 10-minute session |
+| Chat timing uncanny valley (#7) | Chat bot timing system | Variable inter-message delays. Burst-and-lull pattern visible. Dead chat moments present |
 
 ## Sources
 
-- **Firebase AI Logic SDK source code** (Apache 2.0, directly in project at `Assets/Firebase/FirebaseAI/`): PRIMARY source for pitfalls #1-3, #6-7, #9, #13, #18. Confidence: HIGH.
-- **LiveSession.cs** lines 252-268 (ConvertTo16BitPCM), 287-339 (ReceiveAsync), 85-108 (InternalSendBytesAsync): Direct code analysis.
-- **LiveSessionResponse.cs** lines 62-76 (Audio property), 89-104 (ConvertBytesToFloat), 126-129 (setupComplete handling), 187-198 (Transcription independence): Direct code analysis.
-- **LiveGenerationConfig.cs** lines 86-97 (SpeechConfig, responseModalities): Direct code analysis.
-- **Unity Microphone API behavior**: Training data knowledge. Confidence: MEDIUM (well-established API, unlikely to have changed significantly).
-- **Unity AudioClip/AudioSource streaming limitations**: Training data knowledge. Confidence: MEDIUM.
-- **UPM packaging requirements**: Training data knowledge. Confidence: MEDIUM.
-- **Gemini Live protocol details (sample rates, turn semantics)**: Training data + inferred from SDK code. Confidence: MEDIUM.
-- **Chirp 3 HD TTS latency characteristics**: Training data. Confidence: LOW (should be validated with actual API calls during implementation).
+- [Google Research -- DialogLab: Multi-party AI group conversation dynamics](https://research.google/blog/beyond-one-on-one-authoring-simulating-and-testing-dynamic-human-ai-group-conversations/) -- MEDIUM confidence. Informed turn-taking and coherence pitfalls. Published 2025.
+- [Frontiers in AI -- Multi-party turn-taking in Murder Mystery games](https://www.frontiersin.org/journals/artificial-intelligence/articles/10.3389/frai.2025.1582287/full) -- MEDIUM confidence. Speaker selection mechanisms, dialogue breakdown patterns.
+- [AssemblyAI -- The 300ms rule for voice AI latency](https://www.assemblyai.com/blog/low-latency-voice-ai) -- HIGH confidence. Established latency thresholds for perceived responsiveness.
+- [arXiv -- Mitigating Response Delays in Free-Form Conversations with LLM-powered IVAs](https://arxiv.org/html/2507.22352v1) -- HIGH confidence. Filler strategies, 4-second degradation threshold, "natural conversational fillers improve perceived response time."
+- [Convai -- Narrative Design for AI NPCs](https://convai.com/blog/convai-narrative-design) -- MEDIUM confidence. Goal-driven steering challenges, "narrative stagnation" risk.
+- [GetStream -- 7 UX Best Practices for Livestream Chat](https://getstream.io/blog/7-ux-best-practices-for-livestream-chat/) -- HIGH confidence. Scroll behavior, message pacing, slow mode, virtualized lists.
+- [Gemini API -- Structured Output documentation](https://ai.google.dev/gemini-api/docs/structured-output) -- HIGH confidence. Schema design, streaming support, "minimal latency" claim for structured output overhead.
+- [Gemini API Pricing 2026](https://www.aifreeapi.com/en/posts/gemini-api-pricing-2026) -- MEDIUM confidence. Flash-Lite at $0.10/1M input tokens, cost optimization strategies.
+- [Unity Discussions -- Additive scene loading and duplicate AudioListeners](https://discussions.unity.com/t/avoiding-multiple-event-systems-audio-listeners-etc-with-additive-scene-loading/866174) -- HIGH confidence. Standard Unity issue with well-known workarounds.
+- Existing codebase analysis: PersonaSession.cs, QueuedResponseController.cs, GoalManager.cs, GeminiLiveClient.cs -- HIGH confidence. Direct source code reading.
+- Disney Research "Let Me Finish First" study (2024) -- MEDIUM confidence. Referenced via secondary sources, not directly verified. Key finding: users found wait-to-finish "awkward and frustrating."
+- [NN/g -- Response Time Limits](https://www.nngroup.com/articles/response-times-3-important-limits/) -- HIGH confidence. Classic HCI research on perceived responsiveness.
+
+---
+*Pitfalls research for: AI Embodiment v1.0 Livestream Experience*
+*Researched: 2026-02-17*

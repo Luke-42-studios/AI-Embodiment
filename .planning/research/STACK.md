@@ -1,515 +1,470 @@
-# Technology Stack
+# Stack Research
 
-**Project:** AI Embodiment (Unity UPM Package)
-**Researched:** 2026-02-05
-**Overall Confidence:** HIGH (primary source: actual SDK source code in project)
-
-## Research Method
-
-This stack analysis is derived primarily from **reading the actual Firebase AI Logic SDK source code** present at `Assets/Firebase/FirebaseAI/` (v13.7.0), the Unity project manifest, and the project configuration files. Web search and web fetch tools were unavailable during this research session, so third-party documentation could not be verified externally. Confidence levels reflect what could be confirmed from source code inspection versus what relies on training data.
+**Domain:** AI-driven livestream experience (simulated chat bots, structured output, narrative steering, scene loading)
+**Researched:** 2026-02-17
+**Confidence:** HIGH (verified against official Gemini API docs, Unity 6 docs, and existing codebase)
 
 ---
 
 ## Recommended Stack
 
-### Core Runtime
+### Core Technologies (Already In Use -- No Changes)
 
-| Technology | Version | Purpose | Why | Confidence |
-|------------|---------|---------|-----|------------|
-| Unity 6 | 6000.3.7f1 | Game engine, audio pipeline, component model | Already in use. Unity 6 is the current LTS-equivalent. `AudioSource`, `Microphone`, `AudioClip` APIs are stable. | HIGH |
-| C# | 9.0 | Primary language | Confirmed via `Assembly-CSharp.csproj`. Supports `IAsyncEnumerable`, `record`, pattern matching -- all needed for streaming patterns. | HIGH |
-| .NET Standard | 2.1 | Target framework | Confirmed in `.csproj`. Provides `System.Net.WebSockets`, `System.Threading.Tasks`, `System.Buffers` for audio buffer pooling. | HIGH |
+| Technology | Version | Purpose | Why Recommended |
+|------------|---------|---------|-----------------|
+| Unity 6 | 6000.3.7f1 | Engine, audio pipeline, scene management, UI Toolkit | Already in use. Stable. |
+| C# | 9.0 (.NET Standard 2.1) | Primary language | Confirmed via .csproj. Async/await, pattern matching, records. |
+| Newtonsoft.Json | com.unity.nuget.newtonsoft-json | JSON serialization for all API communication | Already in use since v0.8. Required for Gemini REST API structured output. |
+| Gemini Live (WebSocket) | v1beta BidiGenerateContent | Real-time Aya conversation with audio | Already in use. PersonaSession + GeminiLiveClient handle this. |
+| Input System | com.unity.inputsystem | Keyboard push-to-talk | Already in use in AyaSampleController. |
 
-### AI / Conversation Backend
+### New Technologies for v1.0 Milestone
 
-| Technology | Version | Purpose | Why | Confidence |
-|------------|---------|---------|-----|------------|
-| Firebase AI Logic SDK | 13.7.0 (source) | Gemini Live bidirectional streaming | Already imported. Source-level SDK gives us full visibility into the WebSocket protocol, audio format, and function calling wire format. No black-box dependencies. | HIGH |
-| Firebase App SDK | 13.7.0 (native) | Firebase initialization, API key, auth token management | Already imported. Required by Firebase AI Logic. Provides `FirebaseApp.DefaultInstance`, API key from `google-services.json`. | HIGH |
-| Gemini 2.0 Flash | (API-side) | AI model for real-time conversation | The `LiveGenerativeModel` is designed for Gemini 2.0 Flash's live streaming mode. Supports audio input/output, function calling, transcription. Model name passed as string to `GetLiveModel()`. | HIGH |
+| Technology | Version | Purpose | Why Recommended |
+|------------|---------|---------|-----------------|
+| Gemini REST API (generateContent) | v1beta | Chat bot structured output responses | Live API does NOT support `response_schema`. Chat bots need structured JSON output. Must use separate REST `generateContent` endpoint. |
+| UnityWebRequest | Built-in | HTTP client for REST API calls | Already used for ChirpTTSClient. Main-thread safe, Unity lifecycle aware. |
+| SceneManager.LoadSceneAsync | Built-in | Additive scene loading for movie clip | Standard Unity API. Load movie scene additively without unloading livestream. |
+| UI Toolkit ListView | Built-in (Unity 6) | Virtualized chat feed | ScrollView degrades with 100+ elements. ListView provides element recycling via makeItem/bindItem pattern. |
 
-### Text-to-Speech (Chirp 3 HD)
+### Supporting Patterns (Reuse Existing Infrastructure)
 
-| Technology | Version | Purpose | Why | Confidence |
-|------------|---------|---------|-----|------------|
-| Google Cloud TTS REST API | v1 | Chirp 3 HD voice synthesis | Firebase AI Logic SDK does NOT include TTS. Must call Cloud TTS API directly via HTTP. The `SpeechConfig.UsePrebuiltVoice()` in the SDK only configures Gemini's native voices -- it does not provide Chirp 3 HD access. | HIGH |
-| UnityWebRequest | Built-in | HTTP client for TTS requests | Unity-native HTTP. Runs on main thread by default, supports async via coroutines or `SendWebRequest().completed`. Preferred over `System.Net.Http.HttpClient` because it respects Unity's lifecycle and works on all platforms including WebGL/mobile. | HIGH |
-
-**Chirp 3 HD API Details (MEDIUM confidence -- from training data, not verified against live docs):**
-
-- **Endpoint:** `https://texttospeech.googleapis.com/v1/text:synthesize`
-- **Auth:** API key via `?key=` query param or `Authorization: Bearer` with service account OAuth token
-- **Request format:**
-  ```json
-  {
-    "input": { "text": "Hello world" },
-    "voice": {
-      "languageCode": "en-US",
-      "name": "en-US-Chirp3-HD-Achernar"
-    },
-    "audioConfig": {
-      "audioEncoding": "LINEAR16",
-      "sampleRateHertz": 24000
-    }
-  }
-  ```
-- **Response:** Base64-encoded audio in `audioContent` field
-- **Audio format:** LINEAR16 (16-bit PCM), 24kHz sample rate recommended for HD quality
-- **Available Chirp 3 HD voices:** Names follow the pattern `{lang}-{region}-Chirp3-HD-{VoiceName}` (e.g., Achernar, Algieba, Auva, Charon, Fenrir, Kore, Leda, Orus, Puck, Sulafat, Zephyr, and others)
-- **IMPORTANT:** Verify voice name format and available voices against official docs before implementation. Chirp 3 HD voices may have been updated since training cutoff.
-
-### Unity Audio Pipeline
-
-| Technology | Version | Purpose | Why | Confidence |
-|------------|---------|---------|-----|------------|
-| `UnityEngine.Microphone` | Built-in | Audio capture from user microphone | Unity's cross-platform mic API. `Microphone.Start()` creates an `AudioClip` that fills a circular buffer. Read samples with `AudioClip.GetData()`. | HIGH |
-| `UnityEngine.AudioSource` | Built-in | AI voice playback | Standard Unity spatial audio. Developers can attach effects, spatialize in 3D, and mix via AudioMixer. The key challenge is streaming PCM data to it in real-time. | HIGH |
-| `UnityEngine.AudioClip` | Built-in | Audio buffer container | `AudioClip.Create()` with streaming flag for dynamic audio. Use `AudioClip.SetData()` to push PCM samples. | HIGH |
-
-### Package Distribution
-
-| Technology | Version | Purpose | Why | Confidence |
-|------------|---------|---------|-----|------------|
-| Unity Package Manager (UPM) | Built-in | Package format and distribution | Standard Unity package distribution. Installable via git URL. Supports assembly definitions, samples, and dependency declaration. | HIGH |
-
-### Supporting Libraries
-
-| Library | Version | Purpose | When to Use | Confidence |
-|---------|---------|---------|-------------|------------|
-| `System.Buffers` (ArrayPool) | .NET Standard 2.1 | Buffer pooling for audio data | Always for audio PCM conversion. Avoids GC pressure from constant `float[]`/`byte[]` allocation in the hot audio path. | HIGH |
-| `System.Threading.Channels` | .NET Standard 2.1 | Producer-consumer queues | Thread-safe hand-off between WebSocket receive thread and Unity main thread for audio/text data. | HIGH |
-| `Google.MiniJSON` | (bundled) | JSON serialization | Already bundled with Firebase SDK. Use for any JSON that interfaces with Firebase. For project-specific serialization, prefer `UnityEngine.JsonUtility`. | HIGH |
-| `UnityEngine.JsonUtility` | Built-in | Serialization for ScriptableObject configs | Use for project-authored data structures (persona config, etc). Fast, no allocation, GC-friendly. | HIGH |
-| Newtonsoft.Json (Unity) | `com.unity.nuget.newtonsoft-json` | Complex JSON serialization | Only if `JsonUtility` is insufficient (e.g., polymorphic types, dictionary serialization). TTS API response parsing may benefit from this. | MEDIUM |
+| Pattern | Where It Exists | How It's Reused |
+|---------|----------------|-----------------|
+| PersonaSession | Runtime/PersonaSession.cs | Aya's live conversation -- unchanged |
+| ConversationalGoals | Runtime/GoalManager.cs | Time-based and user-triggered narrative steering |
+| FunctionCalling | Runtime/FunctionRegistry.cs | Animation triggers (emote, start_movie, start_drawing) |
+| QueuedResponse | Samples~/QueuedResponseSample/ | Finish-first push-to-talk pattern (adapt, don't copy) |
+| AyaChatUI | Samples~/AyaLiveStream/ | Upgrade from ScrollView to ListView, add chat bot messages |
 
 ---
 
-## What NOT to Use
+## Critical Architecture Decision: Two Gemini Paths
 
-| Technology | Why Not |
-|------------|---------|
-| `System.Net.Http.HttpClient` for TTS | Does not respect Unity's lifecycle, can cause issues on IL2CPP/mobile. `UnityWebRequest` is the correct choice for HTTP in Unity. |
-| Newtonsoft.Json for everything | Adds a dependency. `JsonUtility` handles most cases faster with zero allocation. Only pull in Newtonsoft if you hit a `JsonUtility` limitation (no dictionary support, no polymorphism). |
-| WebSocket# / NativeWebSocket / third-party WS libs | The Firebase SDK already manages its own `ClientWebSocket`. Adding another WebSocket library creates confusion. All Gemini Live communication goes through `LiveSession`. |
-| FMOD / Wwise / third-party audio | Overkill for v1. Unity's built-in AudioSource + AudioClip + Microphone is sufficient. Adding middleware creates a dependency users must also install. |
-| Firebase Auth SDK (for v1) | Adds complexity. The API key approach works for desktop-first development. Firebase Auth can be added later as an optional dependency. The SDK already discovers it via reflection if present. |
-| `async void` patterns | Dangerous in Unity -- unhandled exceptions crash silently. All async code should return `Task` and be caught with try-catch or `UniTask`. |
-| UniTask | Tempting for Unity async, but adds a dependency to the UPM package. Stick with standard `Task`/`async-await` from .NET Standard 2.1. Users who want UniTask can wrap the API themselves. |
+This milestone requires TWO distinct Gemini API paths running simultaneously:
 
----
+### Path 1: Gemini Live WebSocket (Aya's Conversation)
 
-## Firebase AI Logic SDK -- Detailed API Reference
+**Already built.** PersonaSession connects via `GeminiLiveClient` to `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent`.
 
-This section documents the actual API surface from reading the source code. This is the ground truth for building the integration layer.
+- Audio-only response modality (AUDIO)
+- Real-time bidirectional streaming
+- Function calling for animation triggers
+- Conversational goals for narrative steering
+- Does NOT support `response_schema` or `response_mime_type`
 
-### Initialization
+### Path 2: Gemini REST generateContent (Chat Bot Responses)
 
-```csharp
-// Get Firebase AI instance (GoogleAI backend -- simpler, no location needed)
-var ai = FirebaseAI.GetInstance(FirebaseAI.Backend.GoogleAI());
+**New.** A lightweight HTTP client that calls the standard `generateContent` endpoint for structured JSON output.
 
-// Or Vertex AI backend (requires location)
-var ai = FirebaseAI.GetInstance(FirebaseAI.Backend.VertexAI("us-central1"));
-```
+- Text-only (no audio)
+- Request-response (not streaming)
+- Structured output with JSON schema enforcement
+- Used to generate chat bot persona responses
+- Runs on main thread via UnityWebRequest
 
-**IMPORTANT BUG (from source inspection):** `LiveGenerativeModel.ConnectAsync()` at line 154 hardcodes the VertexAI-style model path in the setup message (`projects/{id}/locations/{location}/publishers/google/models/{name}`) regardless of backend. The `GetURL()` method correctly switches WebSocket endpoints. Recommendation: **Use VertexAI backend for Live sessions** until this is confirmed fixed upstream.
-
-### Creating a Live Model
-
-```csharp
-var liveModel = ai.GetLiveModel(
-    modelName: "gemini-2.0-flash-live-001",  // or "gemini-2.0-flash"
-    liveGenerationConfig: new LiveGenerationConfig(
-        responseModalities: new[] { ResponseModality.Audio },
-        speechConfig: SpeechConfig.UsePrebuiltVoice("Puck"),
-        inputAudioTranscription: new AudioTranscriptionConfig(),
-        outputAudioTranscription: new AudioTranscriptionConfig(),
-        temperature: 0.7f
-    ),
-    tools: new Tool[] { new Tool(functionDeclarations) },
-    systemInstruction: ModelContent.Text("You are a friendly NPC...")
-);
-```
-
-**Key facts from source:**
-- `LiveGenerationConfig` supports: `speechConfig`, `responseModalities`, `temperature`, `topP`, `topK`, `maxOutputTokens`, `presencePenalty`, `frequencyPenalty`, `inputAudioTranscription`, `outputAudioTranscription`
-- `ResponseModality` enum: `Text`, `Image`, `Audio` -- SDK comment says "currently only supports one type"
-- `SpeechConfig.UsePrebuiltVoice(string voice)` -- these are **Gemini's native voices** (Puck, Kore, Aoede, Charon, Fenrir), NOT Chirp 3 HD voices
-- `AudioTranscriptionConfig` is an empty struct -- its presence enables transcription, its absence disables it
-- System instruction is a `ModelContent` -- use `ModelContent.Text("instruction")` for text-only
-
-### Connecting and Streaming
-
-```csharp
-// Connect -- opens WebSocket, sends setup, returns LiveSession
-LiveSession session = await liveModel.ConnectAsync(cancellationToken);
-
-// Send audio (float[] from Unity Microphone)
-await session.SendAudioAsync(audioSamples, cancellationToken);
-// Expected format: 16-bit PCM at 16kHz, little-endian
-// The SDK converts float[] to byte[] internally via ConvertTo16BitPCM()
-
-// Send text
-await session.SendTextRealtimeAsync("Hello", cancellationToken);
-
-// Send structured content with turn-complete signal
-await session.SendAsync(
-    content: ModelContent.Text("What's the weather?"),
-    turnComplete: true,
-    cancellationToken: ct
-);
-
-// Receive responses (IAsyncEnumerable)
-await foreach (var response in session.ReceiveAsync(cancellationToken))
-{
-    // Text content
-    string text = response.Text;
-
-    // Audio content (byte arrays of 16-bit PCM)
-    IReadOnlyList<byte[]> audioBytes = response.Audio;
-
-    // Audio as float[] (for Unity AudioClip.SetData)
-    IReadOnlyList<float[]> audioFloats = response.AudioAsFloat;
-
-    // Message type dispatch
-    if (response.Message is LiveSessionContent content)
-    {
-        // content.TurnComplete -- model finished responding
-        // content.Interrupted -- client interrupted the model
-        // content.InputTranscription?.Text -- what the user said
-        // content.OutputTranscription?.Text -- what the model said
-    }
-    else if (response.Message is LiveSessionToolCall toolCall)
-    {
-        foreach (var fc in toolCall.FunctionCalls)
-        {
-            string name = fc.Name;
-            IReadOnlyDictionary<string, object> args = fc.Args;
-            string id = fc.Id;
-            // Execute function, then send response back
-        }
-    }
-    else if (response.Message is LiveSessionToolCallCancellation cancel)
-    {
-        IReadOnlyList<string> cancelledIds = cancel.FunctionIds;
-    }
-}
-
-// Close session
-await session.CloseAsync(cancellationToken);
-// Or session.Dispose()
-```
-
-### Function Calling
-
-```csharp
-// Declare functions
-var emoteFunc = new FunctionDeclaration(
-    name: "emote",
-    description: "Trigger a character animation/emote",
-    parameters: new Dictionary<string, Schema>
-    {
-        { "emote_name", Schema.String("The name of the emote to play") },
-        { "intensity", Schema.Float("How intense the emote should be", minimum: 0f, maximum: 1f) }
-    },
-    optionalParameters: new[] { "intensity" }
-);
-
-var tool = new Tool(emoteFunc);
-
-// Handle function response
-var functionResponse = ModelContent.FunctionResponse(
-    name: "emote",
-    response: new Dictionary<string, object> { { "status", "playing" } },
-    id: functionCallPart.Id  // Pass back the ID from the FunctionCallPart
-);
-await session.SendAsync(content: functionResponse);
-```
-
-### Audio Format Details (from source code)
-
-**Input (microphone to Gemini):**
-- Format: 16-bit PCM, 16kHz, mono, little-endian
-- MIME type: `"audio/pcm"` (set in `SendAudioAsync`)
-- Conversion: `LiveSession.ConvertTo16BitPCM(float[])` -- clamps to [-32768, 32767], copies via `Buffer.BlockCopy`
-- Wire format: base64-encoded in JSON `{ "realtimeInput": { "audio": { "mimeType": "audio/pcm", "data": "base64..." } } }`
-
-**Output (Gemini response audio):**
-- Format: 16-bit PCM (sample rate determined by model/SpeechConfig -- typically 24kHz for Gemini native audio)
-- Access: `response.Audio` returns `List<byte[]>`, `response.AudioAsFloat` converts to `float[]`
-- Conversion: `LiveSessionResponse.ConvertBytesToFloat(byte[])` -- little-endian 16-bit to [-1f, 1f] float
-
-**CRITICAL NOTE:** The SDK sends and receives audio as `"audio/pcm"` mime type. The sample rate for **input** is documented as 16kHz. The sample rate for **output** from Gemini's native voices is **24kHz** (this is from training data -- MEDIUM confidence). This mismatch means you need separate AudioClip configurations for capture vs playback.
+**Why two paths instead of one:** The Gemini Live API explicitly does not support `responseSchema`, `responseMimeType`, `responseLogprobs`, or `stopSequence` in its `BidiGenerateContentSetup`. This is confirmed in the [Live API reference](https://ai.google.dev/api/live). Chat bots need guaranteed JSON structure (bot name, message text, optional reaction type). The REST API is the only way to get schema-enforced output.
 
 ---
 
-## Unity Microphone API Specifics
+## Gemini REST API: Structured Output Details
 
-**Confidence:** HIGH (Unity built-in API, well-documented, stable across versions)
-
-### Capture Setup
-
-```csharp
-// Start recording
-string deviceName = null; // null = default microphone
-int sampleRate = 16000;   // 16kHz for Gemini input
-int lengthSec = 1;        // Circular buffer length
-bool loop = true;          // Circular buffer mode
-
-AudioClip micClip = Microphone.Start(deviceName, loop, lengthSec, sampleRate);
-
-// Wait for microphone to actually start
-while (Microphone.GetPosition(deviceName) <= 0) { }
-```
-
-### Reading Samples
-
-```csharp
-int micPosition = Microphone.GetPosition(deviceName);
-int samplesToRead = micPosition - lastReadPosition;
-if (samplesToRead < 0) samplesToRead += micClip.samples; // Handle circular wrap
-
-float[] buffer = new float[samplesToRead];
-micClip.GetData(buffer, lastReadPosition);
-lastReadPosition = micPosition;
-```
-
-### Key Parameters
-
-| Parameter | Recommended Value | Rationale |
-|-----------|-------------------|-----------|
-| Sample rate | 16000 Hz | Gemini Live expects 16kHz PCM input (confirmed in SDK source: `ConvertTo16BitPCM` doc comment says "16 bit PCM audio at 16kHz") |
-| Channels | 1 (mono) | Gemini expects mono audio |
-| Buffer length | 1 second | Short enough for low latency, long enough to avoid overwrites at typical send rates (every 100-200ms) |
-| Loop | true | Circular buffer -- read position chases write position |
-| Send interval | 100ms (~1600 samples) | Good balance of latency vs overhead. Each send is ~3.2KB of PCM data. |
-
-### Platform Caveats
-
-| Platform | Issue | Mitigation |
-|----------|-------|------------|
-| Android | `Microphone.Start()` requires `RECORD_AUDIO` permission | Must declare in AndroidManifest.xml. Unity can auto-request in Player Settings. |
-| iOS | Requires `NSMicrophoneUsageDescription` in Info.plist | Set in Player Settings > iOS > Microphone Usage Description. |
-| WebGL | `Microphone` API not supported | Out of scope for v1. |
-| macOS | Privacy prompt for mic access | Handled by OS, no code needed. |
-| Linux | ALSA/PulseAudio required | Standard on modern Linux desktops. |
-
----
-
-## AudioSource Streaming Patterns for Real-Time PCM Playback
-
-**Confidence:** HIGH (established Unity pattern)
-
-### Pattern 1: Streaming AudioClip with Ring Buffer (Recommended)
-
-This is the recommended approach for real-time AI voice playback. Create a long AudioClip and continuously write incoming PCM data to it.
-
-```csharp
-// Create streaming AudioClip
-int outputSampleRate = 24000; // Gemini native audio or Chirp 3 HD
-int bufferLengthSec = 10;     // 10 second ring buffer
-AudioClip streamClip = AudioClip.Create(
-    "AIVoice",
-    outputSampleRate * bufferLengthSec,
-    1,                          // mono
-    outputSampleRate,
-    false                       // NOT streaming callback -- we push data manually
-);
-
-AudioSource audioSource = GetComponent<AudioSource>();
-audioSource.clip = streamClip;
-audioSource.loop = true;
-audioSource.Play();
-
-// Write incoming audio
-int writePosition = 0;
-void OnAudioReceived(float[] pcmData)
-{
-    streamClip.SetData(pcmData, writePosition);
-    writePosition = (writePosition + pcmData.Length) % streamClip.samples;
-}
-```
-
-**Why this pattern:**
-- `AudioSource.Play()` with a looping clip continuously reads from the buffer
-- We write ahead of the playback position
-- Developers can apply Unity audio effects, spatialize in 3D, route through AudioMixer
-- No native plugin required
-
-**Key challenge:** Tracking write position vs. play position to avoid underrun (silence gaps) or overrun (audio glitches). The PacketAssembler component needs to manage this.
-
-### Pattern 2: OnAudioFilterRead Callback (Alternative)
-
-For more precise control, use `OnAudioFilterRead` on the AudioSource's GameObject.
-
-```csharp
-// MonoBehaviour on same GameObject as AudioSource
-private ConcurrentQueue<float> _audioQueue = new();
-
-void OnAudioFilterRead(float[] data, int channels)
-{
-    for (int i = 0; i < data.Length; i++)
-    {
-        if (_audioQueue.TryDequeue(out float sample))
-        {
-            data[i] = sample;
-        }
-        else
-        {
-            data[i] = 0f; // Silence on underrun
-        }
-    }
-}
-```
-
-**Why NOT this as primary pattern:**
-- Runs on audio thread (not main thread) -- cannot access most Unity APIs
-- Harder for end-users to work with
-- Still useful as an internal implementation detail within the package
-
-### Playback Configuration
-
-| Parameter | Value | Rationale |
-|-----------|-------|-----------|
-| Sample rate (Gemini native) | 24000 Hz | Gemini Live output audio sample rate (MEDIUM confidence) |
-| Sample rate (Chirp 3 HD) | 24000 Hz | Chirp 3 HD recommended output rate (MEDIUM confidence) |
-| Channels | 1 (mono) | AI voice is mono. Users can spatialize in Unity. |
-| Buffer length | 10 seconds | Enough headroom for network jitter. PacketAssembler manages actual write position. |
-| AudioSource.priority | 0 (highest) | AI voice should never be culled by Unity's audio channel limit. |
-
----
-
-## UPM Package Structure
-
-**Confidence:** HIGH (standard Unity convention, well-established)
-
-### Directory Layout
+### Endpoint
 
 ```
-com.yourcompany.ai-embodiment/
-  package.json                    # Package manifest (REQUIRED)
-  README.md                       # Package documentation
-  CHANGELOG.md                    # Version history
-  LICENSE.md                      # License file
-  Runtime/
-    AIEmbodiment.asmdef           # Runtime assembly definition (REQUIRED)
-    PersonaConfig.cs              # ScriptableObject for persona configuration
-    PersonaSession.cs             # MonoBehaviour -- main entry point
-    LiveSessionManager.cs         # Wraps Firebase LiveSession lifecycle
-    MicrophoneCapture.cs          # Microphone input to PCM conversion
-    AudioPlayback.cs              # PCM streaming to AudioSource
-    PacketAssembler.cs            # Synchronizes text + audio + emotes
-    ChirpTTSClient.cs             # HTTP client for Cloud TTS API
-    FunctionCallDispatcher.cs     # C# delegate-based function call routing
-    SystemInstructionBuilder.cs   # Generates system prompt from PersonaConfig
-  Editor/
-    AIEmbodiment.Editor.asmdef    # Editor assembly definition
-    PersonaConfigEditor.cs        # Custom inspector (optional)
-  Tests/
-    Runtime/
-      AIEmbodiment.Tests.asmdef   # Test assembly definition
-    Editor/
-      AIEmbodiment.Editor.Tests.asmdef
-  Samples~/                       # Samples (tilde = not auto-imported)
-    BasicConversation/
-      .sample.json
-      SampleScene.unity
-      SamplePersona.asset
-  Documentation~/                 # Package documentation
-    index.md
+POST https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={API_KEY}
+Content-Type: application/json
 ```
 
-### package.json
+### Model Selection
+
+Use `gemini-2.5-flash` for chat bot responses because:
+- Cheapest model that supports structured output
+- Fastest response time (chat bots should respond quickly)
+- Supports `response_schema` in `generationConfig`
+- Gemini 2.0 Flash is being retired March 31, 2026
+
+**Do NOT use `gemini-2.5-flash-native-audio`** for chat bots -- that model is for the Live API audio path only.
+
+### Request Format
 
 ```json
 {
-  "name": "com.nevatars.ai-embodiment",
-  "version": "0.1.0",
-  "displayName": "AI Embodiment",
-  "description": "AI-powered game characters with real-time conversation, synchronized voice, and animation events.",
-  "unity": "6000.0",
-  "unityRelease": "0f1",
-  "documentationUrl": "https://github.com/org/ai-embodiment#readme",
-  "changelogUrl": "https://github.com/org/ai-embodiment/blob/main/CHANGELOG.md",
-  "licensesUrl": "https://github.com/org/ai-embodiment/blob/main/LICENSE.md",
-  "dependencies": {
-    "com.unity.modules.audio": "1.0.0",
-    "com.unity.modules.unitywebrequest": "1.0.0"
-  },
-  "keywords": [
-    "ai",
-    "npc",
-    "character",
-    "conversation",
-    "gemini",
-    "voice",
-    "tts"
+  "contents": [
+    {
+      "role": "user",
+      "parts": [{ "text": "Generate chat bot responses for: {context}" }]
+    }
   ],
-  "author": {
-    "name": "Nevatars",
-    "url": "https://github.com/org"
-  },
-  "type": "library"
+  "generationConfig": {
+    "response_mime_type": "application/json",
+    "response_schema": {
+      "type": "ARRAY",
+      "items": {
+        "type": "OBJECT",
+        "properties": {
+          "bot_name": {
+            "type": "STRING",
+            "description": "Name of the chat bot persona"
+          },
+          "message": {
+            "type": "STRING",
+            "description": "The chat message text"
+          },
+          "reaction_type": {
+            "type": "STRING",
+            "enum": ["none", "heart", "laugh", "wow", "sad"],
+            "description": "Optional emoji reaction"
+          }
+        },
+        "required": ["bot_name", "message"]
+      }
+    },
+    "temperature": 0.9,
+    "max_output_tokens": 256
+  }
 }
 ```
 
-**Key decisions:**
-- `"unity": "6000.0"` -- minimum Unity 6. Set floor at 6000.0 for broadest Unity 6 compatibility.
-- Firebase AI Logic is NOT listed as a UPM dependency because it is distributed as a `.unitypackage`, not a UPM package. The README must instruct users to install Firebase SDK separately.
-- `com.unity.modules.audio` and `com.unity.modules.unitywebrequest` are the only hard UPM dependencies.
+### Response Format
 
-### Assembly Definitions
+```json
+{
+  "candidates": [
+    {
+      "content": {
+        "parts": [
+          {
+            "text": "[{\"bot_name\":\"artfan99\",\"message\":\"omg that shading technique is amazing!\",\"reaction_type\":\"heart\"}]"
+          }
+        ]
+      }
+    }
+  ]
+}
+```
 
-The package MUST use Assembly Definitions (`.asmdef`) to:
-1. Isolate compilation -- package code compiles independently from user code
-2. Control references -- explicitly declare which assemblies the package depends on
-3. Enable testability -- test assemblies can reference the runtime assembly
+Parse `candidates[0].content.parts[0].text` as JSON. The structured output guarantees it matches the schema.
 
-**Runtime asmdef references:**
-- `Firebase.AI` (via GUID or assembly name reference)
-- `Firebase.App` (via GUID or assembly name reference)
-- `UnityEngine.AudioModule`
-- `UnityEngine.UnityWebRequestModule`
+### Supported Schema Types
 
-**IMPORTANT:** Firebase AI Logic SDK files in `Assets/Firebase/FirebaseAI/` do NOT have their own `.asmdef` file. They compile into the default `Assembly-CSharp`. The UPM package's `.asmdef` will need to reference `Assembly-CSharp` or -- better -- the Firebase SDK files should be given their own `.asmdef` before the package is extracted. Alternatively, reference the Firebase DLLs directly if they are pre-compiled.
+| Type | JSON Value | Notes |
+|------|-----------|-------|
+| STRING | `"type": "STRING"` | Supports `enum` for restricted values |
+| NUMBER | `"type": "NUMBER"` | Floating point. Supports `minimum`, `maximum` |
+| INTEGER | `"type": "INTEGER"` | Whole numbers |
+| BOOLEAN | `"type": "BOOLEAN"` | true/false |
+| OBJECT | `"type": "OBJECT"` | With `properties`, `required` |
+| ARRAY | `"type": "ARRAY"` | With `items` schema |
+
+**Limitations:**
+- Schema size counts toward input token limit
+- Deeply nested schemas may be rejected -- keep flat
+- Not all JSON Schema features are supported (no `$ref`, no `allOf`)
+
+### Field Name Convention
+
+The REST API accepts **both** `snake_case` and `camelCase` field names. The official documentation uses `snake_case` in curl examples. Use `snake_case` in raw JSON to match official examples.
+
+**Confidence:** HIGH -- verified against [Gemini API structured output docs](https://ai.google.dev/gemini-api/docs/structured-output) and [API reference](https://ai.google.dev/api/generate-content).
 
 ---
 
-## Threading Model
+## Chat Bot Design: Single Call vs Multiple Calls
 
-**Confidence:** HIGH (Unity threading constraints are well-established)
+### Recommendation: Single call, array response
 
-### The Core Problem
+Generate ALL bot responses in a single `generateContent` call by requesting an array of bot message objects.
 
-Unity's main thread restriction means:
-- `AudioSource`, `AudioClip`, `Microphone`, all `MonoBehaviour` methods -- **main thread only**
-- Firebase `LiveSession.ReceiveAsync()` blocks waiting for WebSocket data -- **should NOT block main thread**
-- Firebase `LiveSession.SendAudioAsync()` is async but fast -- **can call from main thread**
+**Why single call:**
+- Lower latency (one HTTP round trip vs N)
+- Lower cost (one prompt evaluation vs N)
+- Better coherence (bots can react to each other in context)
+- Schema enforcement via `ARRAY` type with `items` schema
 
-### Recommended Pattern
+**How it works:**
+1. System prompt describes all bot personas (name, personality, typical messages)
+2. User prompt provides current context (what Aya just said, what the user said, current topic)
+3. Response schema is `ARRAY` of bot message objects
+4. Parse the array and drip-feed messages into the chat at randomized intervals
+
+**Schema for multi-bot response:**
+
+```json
+{
+  "type": "ARRAY",
+  "items": {
+    "type": "OBJECT",
+    "properties": {
+      "bot_name": { "type": "STRING" },
+      "message": { "type": "STRING" },
+      "delay_seconds": { "type": "NUMBER", "description": "Suggested delay before showing this message (0-5 seconds)" }
+    },
+    "required": ["bot_name", "message"]
+  }
+}
+```
+
+The `delay_seconds` field lets the model suggest staggering for natural chat pacing. The client can use this or override with its own timing.
+
+---
+
+## Chat Bot System: Scripted + Dynamic Hybrid
+
+### Architecture
 
 ```
-[Main Thread]                     [Background Thread/Task]
-
-MonoBehaviour.Update()            LiveSession.ReceiveAsync() loop
-  |                                 |
-  +-- Read Microphone.GetData()     +-- Parse LiveSessionResponse
-  +-- Send audio via SendAudioAsync +-- Extract audio/text/toolcalls
-  |                                 +-- Write to Channel<T>
-  +-- Read from Channel<T>
-  +-- Push audio to AudioClip
-  +-- Dispatch function calls
-  +-- Update UI/animations
+ChatBotManager
+  |
+  +-- ScriptedMessageQueue (List<ScriptedMessage>)
+  |     Pre-authored messages with trigger conditions (time, event, goal state)
+  |     Zero latency, zero cost, fires on schedule
+  |
+  +-- DynamicMessageGenerator (GeminiRestClient)
+  |     Calls generateContent when user speaks or Aya says something noteworthy
+  |     ~500ms-2s latency, costs API tokens per call
+  |
+  +-- MessageMerger
+        Interleaves scripted and dynamic messages
+        Enforces minimum gap between messages
+        Prevents bot message spam during Aya's speech
 ```
 
-**Use `System.Threading.Channels.Channel<T>`** as the thread-safe handoff mechanism:
-- Background task writes `LiveSessionResponse` items to channel
-- Main thread reads from channel in `Update()` (non-blocking `TryRead`)
-- No `lock` contention, no `ConcurrentQueue` overhead, built into .NET Standard 2.1
+### ScriptedMessage ScriptableObject
 
-### SynchronizationContext
+```csharp
+[CreateAssetMenu(menuName = "AI Embodiment/Chat Bot/Scripted Message")]
+public class ScriptedMessage : ScriptableObject
+{
+    public string botName;
+    public string message;
+    public float triggerTimeSeconds;  // -1 for event-triggered
+    public string triggerEvent;       // e.g., "goal_activated", "user_spoke", "aya_mentioned_character"
+}
+```
 
-Unity provides a `UnitySynchronizationContext` on the main thread. Firebase SDK's `await` calls will resume on the captured context if started from the main thread. However, the `ReceiveAsync()` loop should be started with `Task.Run()` or `ConfigureAwait(false)` to avoid blocking the main thread.
+### ChatBotConfig ScriptableObject
+
+```csharp
+[CreateAssetMenu(menuName = "AI Embodiment/Chat Bot/Bot Config")]
+public class ChatBotConfig : ScriptableObject
+{
+    public string botName;
+    public string personality;       // e.g., "enthusiastic art student"
+    public string[] typicalPhrases;  // Seed phrases for the model
+    public Color nameColor;          // Chat UI display color
+}
+```
+
+---
+
+## Unity Scene Loading: Movie Clip Trigger
+
+### API
+
+```csharp
+using UnityEngine.SceneManagement;
+
+// Load movie scene additively (does not unload livestream scene)
+AsyncOperation op = SceneManager.LoadSceneAsync("MovieClipScene", LoadSceneMode.Additive);
+
+// Optional: preload without activating
+op.allowSceneActivation = false;
+// ... later, when ready:
+op.allowSceneActivation = true;
+
+// When movie is done, unload:
+SceneManager.UnloadSceneAsync("MovieClipScene");
+```
+
+### Pattern: Preload on Goal Escalation
+
+```
+1. Goal "reveal_movie" reaches HIGH priority
+2. Preload movie scene (allowSceneActivation = false)
+3. Aya triggers start_movie function call
+4. Function handler activates scene (allowSceneActivation = true)
+5. Transition UI (fade, camera switch, or overlay)
+6. Movie plays via VideoPlayer or Timeline
+7. On complete: unload movie scene, return to livestream
+```
+
+### Movie Clip Playback Options
+
+| Option | Component | When to Use |
+|--------|-----------|-------------|
+| VideoPlayer + RenderTexture | `UnityEngine.Video.VideoPlayer` | Pre-rendered video file (MP4, WebM) |
+| Timeline + Playable Director | `UnityEngine.Timeline.PlayableDirector` | Unity-rendered cinematic with cameras, animations, post-processing |
+| Camera switch only | Custom script | Movie scene has its own camera, deactivate livestream camera |
+
+**Recommendation:** Use Timeline + PlayableDirector for "Unity-rendered movie clip" since the project spec says "Unity-rendered" not pre-recorded video. The movie scene would contain a PlayableDirector with animation tracks, camera tracks, and audio tracks.
+
+---
+
+## Livestream UI: Chat Feed Implementation
+
+### Current State
+
+The existing `AyaChatUI.cs` uses a `ScrollView` with dynamically added `Label` elements. This works for the current simple transcript but will degrade with 100+ chat bot messages.
+
+### Recommendation: Upgrade to ListView
+
+Use UI Toolkit's `ListView` for the chat feed because:
+- Virtualized element recycling (only renders visible items)
+- Handles hundreds of messages without performance degradation
+- makeItem/bindItem pattern matches the chat message data model
+
+### ListView Configuration
+
+```csharp
+// In chat UI initialization
+_chatListView = root.Q<ListView>("chat-feed");
+_chatListView.makeItem = () => {
+    var label = new Label();
+    label.AddToClassList("chat-message");
+    return label;
+};
+_chatListView.bindItem = (element, index) => {
+    var msg = _messages[index];
+    var label = (Label)element;
+    label.text = $"{msg.SenderName}: {msg.Text}";
+    label.RemoveFromClassList("msg-aya");
+    label.RemoveFromClassList("msg-user");
+    label.RemoveFromClassList("msg-bot");
+    label.RemoveFromClassList("msg-system");
+    label.AddToClassList(msg.CssClass);
+};
+_chatListView.itemsSource = _messages;
+_chatListView.selectionType = SelectionType.None;
+```
+
+### Variable Height Caveat
+
+ListView in Unity 6 supports `fixedItemHeight` and dynamic sizing. For chat messages with varying lengths:
+- Set `ListView.fixedItemHeight = -1` (or use `virtualizationMethod = CollectionVirtualizationMethod.DynamicHeight` if available)
+- If dynamic height is not reliable, use a **capped message length** (e.g., max 140 characters per chat message) so all items are approximately the same height
+- Alternative fallback: keep ScrollView but cap at ~50 messages (remove oldest when adding new), which is sufficient for a livestream chat that scrolls fast
+
+### Chat Message Data Model
+
+```csharp
+public enum ChatMessageType { Aya, User, Bot, System }
+
+public class ChatMessage
+{
+    public string SenderName;
+    public string Text;
+    public ChatMessageType Type;
+    public float Timestamp;
+
+    public string CssClass => Type switch
+    {
+        ChatMessageType.Aya => "msg-aya",
+        ChatMessageType.User => "msg-user",
+        ChatMessageType.Bot => "msg-bot",
+        ChatMessageType.System => "msg-system",
+        _ => "msg-system"
+    };
+}
+```
+
+### UI Layout (UXML)
+
+```xml
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+  <ui:VisualElement name="root" class="root">
+    <!-- Stream viewport (where Aya's 3D character renders) -->
+    <ui:VisualElement name="stream-viewport" class="viewport" />
+
+    <!-- Chat panel (right side or overlay) -->
+    <ui:VisualElement name="chat-panel" class="chat-panel">
+      <ui:VisualElement name="header" class="header">
+        <ui:VisualElement name="live-indicator" class="live-dot" />
+        <ui:Label name="stream-title" text="Aya's Art Stream" class="title" />
+      </ui:VisualElement>
+
+      <!-- Aya transcript (what she's currently saying) -->
+      <ui:Label name="aya-transcript" class="transcript" />
+
+      <!-- Chat feed (bot messages + user messages) -->
+      <ui:ListView name="chat-feed" class="chat-feed" />
+
+      <!-- Footer: PTT + status -->
+      <ui:VisualElement name="footer" class="footer">
+        <ui:Label name="status-label" text="Hold SPACE to talk" class="status" />
+        <ui:Button name="ptt-button" text="Push to Talk" class="ptt-btn" />
+      </ui:VisualElement>
+    </ui:VisualElement>
+  </ui:VisualElement>
+</ui:UXML>
+```
+
+---
+
+## GeminiRestClient: New Component
+
+A lightweight REST client for `generateContent` requests. Separate from `GeminiLiveClient` (WebSocket).
+
+### API Surface
+
+```csharp
+public class GeminiRestClient
+{
+    private readonly string _apiKey;
+    private readonly string _model;
+
+    public GeminiRestClient(string apiKey, string model = "gemini-2.5-flash")
+    {
+        _apiKey = apiKey;
+        _model = model;
+    }
+
+    /// <summary>
+    /// Sends a generateContent request with structured output schema.
+    /// Returns the parsed text from the first candidate.
+    /// </summary>
+    public async Task<string> GenerateStructuredAsync(
+        string systemPrompt,
+        string userPrompt,
+        JObject responseSchema,
+        float temperature = 0.9f,
+        int maxTokens = 256)
+    {
+        // Build request body
+        // POST via UnityWebRequest
+        // Parse candidates[0].content.parts[0].text
+        // Return raw JSON string for caller to deserialize
+    }
+}
+```
+
+### Implementation Pattern
+
+Use `UnityWebRequest.Post` with raw JSON body. The method returns `Task<string>` using `SendWebRequest()` with a `TaskCompletionSource` wrapper:
+
+```csharp
+private Task<string> PostAsync(string url, string jsonBody)
+{
+    var tcs = new TaskCompletionSource<string>();
+    var request = new UnityWebRequest(url, "POST");
+    request.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(jsonBody));
+    request.downloadHandler = new DownloadHandlerBuffer();
+    request.SetRequestHeader("Content-Type", "application/json");
+
+    var op = request.SendWebRequest();
+    op.completed += _ =>
+    {
+        if (request.result == UnityWebRequest.Result.Success)
+            tcs.SetResult(request.downloadHandler.text);
+        else
+            tcs.SetException(new Exception(request.error));
+        request.Dispose();
+    };
+    return tcs.Task;
+}
+```
+
+**This pattern is already proven** in `ChirpTTSClient.cs` for TTS HTTP calls. The same `UnityWebRequest` async pattern applies.
 
 ---
 
@@ -517,102 +472,72 @@ Unity provides a `UnitySynchronizationContext` on the main thread. Firebase SDK'
 
 | Category | Recommended | Alternative | Why Not |
 |----------|-------------|-------------|---------|
-| AI Backend | Firebase AI Logic (Gemini Live) | Direct Gemini API WebSocket | Firebase SDK handles auth, token refresh, WebSocket protocol, type safety. No reason to reimplement. |
-| AI Backend | Firebase AI Logic | OpenAI Realtime API | Google ecosystem (Firebase + Gemini + Chirp) is more integrated. OpenAI would require a separate auth system, different audio formats, different function calling protocol. |
-| TTS | Chirp 3 HD via REST | ElevenLabs, Azure TTS | Chirp 3 HD is Google ecosystem (same project, same billing). Lower latency when co-located. Good voice quality for games. |
-| TTS | Chirp 3 HD via REST | Gemini native audio only | Gemini native voices (Puck, Kore, etc.) are limited to ~5 voices. Chirp 3 HD offers many more voices with HD quality. Having both paths gives developers choice. |
-| Audio capture | Unity Microphone API | Native plugins (e.g., NatCorder) | Adds platform-specific complexity. Unity Microphone API works on desktop and mobile. Sufficient for v1. |
-| Audio playback | AudioSource + AudioClip.SetData | OnAudioFilterRead only | AudioSource gives users spatial audio, effects, mixing for free. OnAudioFilterRead is lower-level and harder to use. |
-| JSON | JsonUtility + MiniJSON | Newtonsoft.Json everywhere | Fewer dependencies. JsonUtility is fast and GC-free. MiniJSON is already bundled. Only add Newtonsoft if hit a wall. |
-| Async model | Task/async-await (.NET) | UniTask | Adding UniTask to a UPM package forces the dependency on all users. Standard Task works fine with .NET Standard 2.1. |
-| Package format | UPM via git URL | Asset Store package | UPM supports proper versioning, dependency management, and CI. Asset Store requires review process and has different update semantics. |
-| Config system | ScriptableObject | JSON/YAML files | ScriptableObject is Unity-native, Inspector-editable, serializable, and familiar to Unity developers. JSON config requires custom editor windows. |
+| Bot responses | Gemini REST generateContent | Live API text-only session | Live API has no `response_schema`. Cannot guarantee JSON structure. Would need prompt-only enforcement which is unreliable. |
+| Bot responses | Single call, array schema | Multiple calls per bot | N calls = N times latency and cost. Single call with array schema is cheaper and more coherent. |
+| Bot responses | Gemini 2.5 Flash | Gemini 2.5 Pro | Flash is sufficient for short chat messages. Pro is more expensive and slower for this use case. |
+| Chat feed UI | ListView (virtualized) | ScrollView (current) | ScrollView adds all elements to DOM. At 100+ messages it degrades. ListView recycles visible elements only. |
+| Chat feed UI | ListView | IMGUI / Canvas-based UI | Project already uses UI Toolkit. Switching to Canvas adds a dependency and inconsistency. |
+| Scene loading | LoadSceneAsync Additive | Single scene with enable/disable | Additive loading is cleaner: movie scene is self-contained, can be preloaded, and unloading is automatic. Enable/disable requires all movie objects in the main scene. |
+| Movie playback | Timeline + PlayableDirector | VideoPlayer | Project spec says "Unity-rendered movie clip" -- Timeline is for authored cinematics. VideoPlayer is for pre-recorded video files. |
+| Structured output | response_schema enforcement | Prompt-only JSON instruction | Schema enforcement guarantees valid JSON structure. Prompt-only fails ~5-15% of the time with malformed JSON. |
 
 ---
 
-## Version Pinning
+## What NOT to Use
 
-| Component | Pinned Version | Update Strategy |
-|-----------|----------------|-----------------|
-| Firebase SDK | 13.7.0 | Pin until Live API exits Public Preview. Test thoroughly before upgrading. |
-| Unity | 6000.3.x | Follow Unity 6 patch releases. No reason to stay on exact .7f1. |
-| Gemini model | `gemini-2.0-flash-live-001` | Model version is a string -- can be changed at runtime or in persona config. |
-| Chirp 3 HD | API v1 | Google TTS API is stable (v1). Monitor for v2 announcements. |
-
----
-
-## Dependency Graph
-
-```
-[Developer's Unity Project]
-    |
-    +-- [AI Embodiment UPM Package]
-    |       |
-    |       +-- com.unity.modules.audio (built-in)
-    |       +-- com.unity.modules.unitywebrequest (built-in)
-    |       +-- Firebase AI Logic SDK (external, user must install)
-    |              |
-    |              +-- Firebase.App 13.7.0 (native plugins)
-    |              +-- Google.MiniJSON (bundled)
-    |              +-- ExternalDependencyManager 1.2.187
-    |
-    +-- [User's game code]
-            |
-            +-- References AI Embodiment package
-            +-- Creates PersonaConfig ScriptableObjects
-            +-- Adds PersonaSession to GameObjects
-            +-- Registers function call handlers
-```
+| Avoid | Why | Use Instead |
+|-------|-----|-------------|
+| Gemini Live API for chat bots | Does not support `response_schema`, `response_mime_type`. No structured output. | Gemini REST `generateContent` with `response_schema` |
+| `responseJsonSchema` field name | This appears in some docs but is NOT the correct REST field name | `response_schema` (snake_case) in the REST JSON body |
+| Firebase AI Logic SDK | Removed in v0.8. Zero Firebase dependency is a project constraint. | Direct WebSocket (GeminiLiveClient) + direct REST (GeminiRestClient) |
+| System.Net.Http.HttpClient | Does not respect Unity lifecycle. Can cause issues on IL2CPP/mobile. | UnityWebRequest |
+| Gemini 2.0 Flash for REST calls | Being retired March 31, 2026 | gemini-2.5-flash |
+| ScrollView for 100+ chat messages | No virtualization, all elements in DOM, degrades at scale | ListView with makeItem/bindItem |
+| Multiple PersonaSession instances for bots | Each session opens a WebSocket. Bots don't need real-time audio. Wasteful. | Single REST client shared across all bot persona generation |
+| UGemini Unity package | Third-party dependency. Our REST needs are simple (one endpoint, one schema). | Custom GeminiRestClient (~100 lines) |
+| Batch API for bot responses | 24-hour turnaround. Chat bots need responses in <2 seconds. | Standard generateContent (synchronous, immediate response) |
 
 ---
 
-## Installation Flow for End Users
+## Version Compatibility
 
-```bash
-# Step 1: Install Firebase AI Logic SDK (via .unitypackage or UPM tarball)
-# Download from: https://firebase.google.com/docs/unity/setup
-# Import FirebaseAI.unitypackage into Unity project
+| Component | Version | Compatible With | Notes |
+|-----------|---------|-----------------|-------|
+| gemini-2.5-flash | Current stable | generateContent + response_schema | Structured output confirmed supported |
+| gemini-2.5-flash-native-audio | Preview | Live API (BidiGenerateContent) only | Used for Aya's voice session. Does NOT support REST generateContent. |
+| Unity 6 | 6000.3.7f1 | SceneManager.LoadSceneAsync, ListView, UI Toolkit | All APIs stable in Unity 6 |
+| Newtonsoft.Json | com.unity.nuget.newtonsoft-json | JObject for REST request/response building | Already imported |
+| Input System | com.unity.inputsystem | Keyboard push-to-talk | Already in use |
 
-# Step 2: Configure Firebase
-# Place google-services.json in Assets/
-# Configure API key in Google Cloud Console
+---
 
-# Step 3: Install AI Embodiment package
-# In Unity: Window > Package Manager > + > Add package from git URL
-# URL: https://github.com/org/ai-embodiment.git
+## Implementation Sizing
 
-# Step 4: (Optional) Install Chirp 3 HD support
-# Enable Cloud Text-to-Speech API in Google Cloud Console
-# Create API key or service account for TTS
-```
+| New Component | Estimated Lines | Complexity | Notes |
+|---------------|----------------|------------|-------|
+| GeminiRestClient | ~100-150 | Low | UnityWebRequest POST + JSON build/parse. Pattern from ChirpTTSClient. |
+| ChatBotManager | ~200-300 | Medium | Scripted queue + dynamic generator + message merging + timing |
+| ChatBotConfig (ScriptableObject) | ~30 | Low | Bot name, personality, color, scripted lines |
+| LivestreamUI (upgraded AyaChatUI) | ~250-350 | Medium | ListView chat feed, transcript panel, live indicator, PTT |
+| NarrativeDirector | ~150-250 | Medium | Time-based goal escalation, event routing, scene load trigger |
+| MovieSceneController | ~80-120 | Low | Scene load/unload, playback monitoring, return-to-stream |
+
+**Total new code estimate:** ~800-1,200 lines of C#
 
 ---
 
 ## Sources
 
-- **Firebase AI Logic SDK source code** (v13.7.0): `Assets/Firebase/FirebaseAI/` -- READ DIRECTLY. All API details, wire formats, and WebSocket protocol confirmed from source.
-- **Firebase version manifest**: `Assets/Firebase/Editor/FirebaseAI_version-13.7.0_manifest.txt`
-- **Unity project manifest**: `Packages/manifest.json` -- confirmed all package versions
-- **Assembly-CSharp.csproj**: confirmed C# 9.0, .NET Standard 2.1
-- **Project settings**: `ProjectSettings/ProjectSettings.asset` -- confirmed Unity 6000.3.7f1, build targets
-- **Google Cloud TTS API format**: Training data (MEDIUM confidence -- verify against live docs)
-- **Gemini output audio sample rate (24kHz)**: Training data (MEDIUM confidence -- verify during implementation)
-- **UPM package structure**: Training data (HIGH confidence -- stable convention since Unity 2019)
-- **Unity Microphone/AudioSource API**: Training data (HIGH confidence -- stable APIs, unchanged in Unity 6)
+- [Gemini API Structured Output docs](https://ai.google.dev/gemini-api/docs/structured-output) -- response_schema format, supported types, limitations (HIGH confidence)
+- [Gemini Live API reference](https://ai.google.dev/api/live) -- confirmed response_schema NOT supported in Live API (HIGH confidence)
+- [Gemini API GenerationConfig reference](https://ai.google.dev/api/generate-content) -- exact field names: response_schema, response_mime_type (HIGH confidence)
+- [Gemini models page](https://ai.google.dev/gemini-api/docs/models) -- gemini-2.5-flash supports structured output (HIGH confidence)
+- [Unity 6 SceneManager.LoadSceneAsync](https://docs.unity3d.com/6000.0/Documentation/ScriptReference/SceneManagement.SceneManager.LoadSceneAsync.html) -- additive scene loading API (HIGH confidence)
+- [Unity 6 ListView manual](https://docs.unity3d.com/6000.3/Documentation/Manual/UIE-uxml-element-ListView.html) -- virtualization, makeItem/bindItem (HIGH confidence)
+- Existing codebase: PersonaSession.cs, GeminiLiveClient.cs, ChirpTTSClient.cs, AyaChatUI.cs, AyaSampleController.cs -- direct source code inspection (HIGH confidence)
+- [Unity VideoPlayer reference](https://docs.unity3d.com/Manual/class-VideoPlayer.html) -- render targets, API-only mode (MEDIUM confidence -- project may use Timeline instead)
 
 ---
 
-## Items Requiring Phase-Specific Verification
-
-These items could not be verified via web fetch and should be verified when implementation begins:
-
-1. **Chirp 3 HD voice name format** -- Verify exact `name` field format against `https://cloud.google.com/text-to-speech/docs/chirp3-hd`
-2. **Gemini Live output audio sample rate** -- Confirm 24kHz by inspecting actual response audio during first integration test
-3. **Gemini native voice names** -- Confirm current set (Puck, Kore, Aoede, Charon, Fenrir) against Firebase docs
-4. **Firebase AI Logic SDK update cadence** -- Check if a newer version than 13.7.0 is available
-5. **`SpeechConfig` voice names for Gemini Live** -- The SDK references Chirp 3 HD voices in the `SpeechConfig` doc comment but the actual voices available via this path need verification
-6. **`ResponseModality.Audio` output format** -- Whether the audio response includes a sample rate header or if it must be assumed
-
----
-
-*Stack research: 2026-02-05*
+*Stack research for: AI Embodiment v1.0 Livestream Experience*
+*Researched: 2026-02-17*

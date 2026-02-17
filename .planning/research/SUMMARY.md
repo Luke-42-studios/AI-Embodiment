@@ -1,214 +1,201 @@
 # Project Research Summary
 
-**Project:** AI Embodiment (Unity UPM Package)
-**Domain:** Real-time AI character conversation SDK for Unity
-**Researched:** 2026-02-05
+**Project:** AI Embodiment v1.0 Livestream Experience
+**Domain:** Simulated AI Livestream / Interactive Narrative Experience (Unity)
+**Researched:** 2026-02-17
 **Confidence:** HIGH
 
 ## Executive Summary
 
-AI Embodiment is a Unity UPM package that wraps Firebase AI Logic SDK (Gemini Live) into a developer-friendly conversation pipeline for AI-powered game characters. The project has a significant advantage: the Firebase AI Logic SDK 13.7.0 source code is already in the project, giving full visibility into the WebSocket protocol, audio format, and function calling wire format. The recommended approach is a five-stage pipeline architecture (Capture, Transport, Processing, Assembly, Presentation) built as a headless library with no UI opinions -- developers bring their own AudioSource, Animator, and UI. The dual voice backend (Gemini native for low latency, Chirp 3 HD for voice variety) is a genuine differentiator over competitors like Convai and Inworld, who lock developers into proprietary voice pipelines.
+The v1.0 Livestream Experience is a self-contained Unity sample scene where an AI character (Aya) hosts an intimate art stream, interacts with simulated chat bot personas and one real user via push-to-talk, and builds toward a cinematic movie clip reveal. The existing AI Embodiment package provides a strong foundation -- PersonaSession, ConversationalGoals, function calling, audio playback, and push-to-talk patterns are already built. The new work is a sample scene layer (~800-1,200 lines of C#) that orchestrates these existing systems alongside two genuinely new components: a chat bot system and a narrative director.
 
-The core technical challenge is threading: Firebase's async WebSocket receive loop runs on a background thread while every Unity API call must happen on the main thread. This is not optional or deferrable -- it must be solved in the first phase with a MainThreadDispatcher pattern using ConcurrentQueue. The second hardest problem is streaming audio playback: Unity's AudioClip was not designed for append-style streaming, so a ring-buffer approach with write-ahead watermarking is needed to avoid pops, silence gaps, and race conditions. Both problems are well-understood with established patterns, but getting them wrong causes architectural collapse.
+The central architectural decision is the **dual Gemini API path**: Aya uses the existing Gemini Live WebSocket for real-time audio conversation, while chat bots use a new lightweight REST client (`generateContent` with structured JSON output) for text-only responses. This split is non-negotiable -- the Live API does not support `response_schema`, and chat bots need guaranteed JSON structure. The REST client targets `gemini-2.5-flash` for cost and speed. All new code lives in the sample scene layer; the package runtime requires zero modifications.
 
-The primary risks are: (1) the Firebase AI Logic SDK is in Public Preview and can break without notice -- the package must wrap all Firebase types in package-owned types at the boundary; (2) the ReceiveAsync API closes on TurnComplete (single-turn trap) requiring an outer re-call loop; (3) audio sample rate mismatches between input (16kHz) and output (24kHz) will produce chipmunk/demon voice if not handled explicitly. All three risks have known mitigations detailed in this research. The PacketAssembler -- which synchronizes text, audio, and animation events into coherent packets -- is the project's most novel contribution and its primary differentiator against all known competitors.
+The primary risks are experiential, not technical: (1) the "finish-first" push-to-talk pattern can make users feel ignored if there is no visual acknowledgment within 500ms, (2) chat bot timing that feels robotic rather than organic will break the livestream illusion, and (3) narrative goal steering can feel pushy if priorities escalate too aggressively. All three are solvable through careful UX design and prompt engineering, but they must be addressed in the initial implementation -- not retrofitted as polish. Scene loading for the movie clip must use additive mode to preserve the WebSocket connection and chat state.
 
 ## Key Findings
 
 ### Recommended Stack
 
-The stack is almost entirely determined by what is already in the project. Unity 6 (6000.3.7f1), C# 9.0, .NET Standard 2.1 form the runtime foundation. Firebase AI Logic SDK 13.7.0 provides the Gemini Live bidirectional streaming session. Google Cloud TTS REST API provides Chirp 3 HD voice synthesis as a separate HTTP call. All audio flows through Unity's built-in Microphone, AudioSource, and AudioClip APIs. No third-party audio middleware, async libraries, or WebSocket libraries should be added -- everything needed is already present.
+The stack is almost entirely in place. Unity 6, C# 9, Newtonsoft.Json, Gemini Live WebSocket, and the Input System are already in the codebase. The only new technology is the Gemini REST `generateContent` endpoint for chat bot structured output, called via `UnityWebRequest` (the same async pattern already proven in `ChirpTTSClient`).
 
-**Core technologies:**
-- **Firebase AI Logic SDK 13.7.0:** Gemini Live bidirectional streaming with function calling -- already imported as source, provides full protocol visibility
-- **Unity 6 Audio APIs (Microphone, AudioSource, AudioClip):** Cross-platform audio capture and playback -- standard, stable, no external dependencies
-- **Google Cloud TTS REST API (Chirp 3 HD):** High-quality voice synthesis with 30+ voices -- called via UnityWebRequest, same Google Cloud project billing
-- **System.Threading.Channels / ConcurrentQueue:** Thread-safe handoff between WebSocket background thread and Unity main thread -- built into .NET Standard 2.1
-- **ScriptableObject (PersonaConfig):** Inspector-editable persona configuration -- Unity-native, serializable, zero custom editor needed for basic use
+**Core technologies (already in use -- no changes):**
+- **Unity 6 (6000.3.7f1):** Engine, scene management, UI Toolkit, audio pipeline
+- **Gemini Live WebSocket (v1beta):** Aya's real-time audio conversation via PersonaSession
+- **Newtonsoft.Json:** All JSON serialization for API communication
 
-**What NOT to use:** UniTask (forces dependency on package consumers), System.Net.Http.HttpClient (breaks on IL2CPP/mobile), third-party WebSocket libraries (Firebase SDK already manages its own), FMOD/Wwise (overkill, adds user-facing dependency), Firebase Auth SDK (not needed for v1).
+**New for v1.0:**
+- **Gemini REST generateContent (gemini-2.5-flash):** Structured JSON output for chat bot responses. Single call returns array of bot messages with schema enforcement
+- **UI Toolkit ListView:** Virtualized chat feed replacing current ScrollView. Element recycling via makeItem/bindItem handles 100+ messages without degradation
+- **SceneManager.LoadSceneAsync (Additive):** Movie clip scene loaded without unloading livestream. Pre-loadable with `allowSceneActivation = false`
+- **Timeline + PlayableDirector:** Unity-rendered cinematic for the movie clip (not pre-recorded video)
 
-See [STACK.md](./STACK.md) for full API reference, code samples, and version pinning details.
+**Critical version note:** Do NOT use gemini-2.0-flash for REST calls -- it is being retired March 31, 2026. Use gemini-2.5-flash.
+
+See [STACK.md](./STACK.md) for full API reference, structured output schema examples, and implementation patterns.
 
 ### Expected Features
 
-The feature landscape was analyzed against six competitors (Convai, Inworld AI, Charisma.ai, Replica Studios, NVIDIA ACE, ReadyPlayerMe). AI Embodiment is NOT a full NPC platform -- it is a focused conversation pipeline SDK. This distinction is critical for feature scoping.
-
 **Must have (table stakes):**
-- Microphone capture to Gemini at 16kHz PCM with permission handling
-- AI audio response playback through developer-assigned AudioSource
-- At least one working TTS path (Gemini native audio)
-- Speech-to-text transcription for UI/logs (SDK already supports this)
-- System instruction / persona prompt via ScriptableObject
-- Bidirectional real-time streaming (not request/response)
-- Turn management (TurnComplete, Interrupted flags)
-- Interruption handling (stop audio playback on user interrupt)
-- MonoBehaviour component with drag-and-drop setup
-- Function calling with C# delegate handler registration
-- Session lifecycle management (connect, disconnect, reconnect, dispose)
-- Error events and connection state callbacks
+- Scrolling chat feed with 2-3 bot personas (dad, friend, casual viewer) posting at irregular intervals
+- Aya speaks proactively as stream host, driving conversation without waiting for user prompts
+- Push-to-talk user interaction with finish-first priority (Aya completes her thought before responding)
+- Time-based narrative progression through 5 phases: warm-up, art process, character stories, emotional build, movie clip reveal
+- Goal-triggered movie clip reveal via `start_movie()` function call
+- Stream status UI: LIVE badge, viewer count, duration timer, transcript panel
+- Animation function calls: wave, spin, draw gestures triggered naturally by Aya
+- All configuration via ScriptableObjects (PersonaConfig, ChatBotConfig, NarrativeConfig)
 
 **Should have (differentiators):**
-- PacketAssembler (text + audio + emote timing sync) -- no competitor offers this as a composable primitive
-- Dual voice backend (Gemini native + Chirp 3 HD) -- uncommon flexibility
-- Headless library architecture (no UI shipped) -- avoids the "this doesn't fit my game" rejection
-- Template variable system in persona prompts ({player_name}, {location})
-- Sample scene proving full pipeline in under 5 minutes
+- Aya acknowledges user by name, creating parasocial intimacy
+- Chat bots serve as narrative catalysts (asking questions that advance the story arc)
+- Multi-phase goal escalation with user input acceleration
+- Natural topic transitions guided by system instruction and director notes
+- Small viewer count aesthetic (5-viewer stream, not broadcast scale)
 
 **Defer (v2+):**
-- Persistent conversation memory / history export
-- Custom voice cloning (Instant Custom Voice)
-- Voice activity detection (use Gemini's built-in turn detection for v1)
-- Lip sync / viseme data (expose hooks, do not implement)
-- Multiplayer support (design single-player cleanly first)
+- Dynamic bot responses via Gemini REST (v1.x -- after core loop validated)
+- Cross-session memory
+- Art canvas visualization
+- Multiple narrative arcs
+- Audio ambiance (lo-fi background music, notification sounds)
 
-See [FEATURES.md](./FEATURES.md) for complete feature tables, anti-features list, and dependency graph.
+**Anti-features (deliberately NOT building):**
+- Real Twitch/YouTube integration -- this is a simulated experience, not a streaming product
+- User typing in chat -- push-to-talk only; voice-first interaction
+- Bot voice output (TTS) -- bots are text-only; Aya is the only voice
+- Multiplayer -- single user experience with simulated audience
+- Skip/fast-forward narrative -- the journey IS the experience
+
+See [FEATURES.md](./FEATURES.md) for complete feature tables, anti-features rationale, chat bot behavior design, and narrative pacing specification.
 
 ### Architecture Approach
 
-The architecture is a five-stage pipeline: Capture (Microphone -> PCM), Transport (LiveSession WebSocket), Processing (PacketAssembler correlates chunks), Assembly (PersonaPacket structs), and Presentation (AudioPlayback + FunctionCallHandler). Each stage has a single owner component with well-defined inputs and outputs. The threading boundary is explicit: everything before the MainThreadDispatcher can run on background threads; everything after it runs on the main thread. Two data paths exist: Path 1 (Gemini Native Audio) where audio arrives inline with the WebSocket stream, and Path 2 (Chirp 3 HD TTS) where text is extracted from the stream and sent to a separate HTTP endpoint for synthesis.
+All new components live in the sample scene layer (`Samples~/LivestreamSample/`), consuming the package's existing public API surface. The package runtime (PersonaSession, GoalManager, FunctionRegistry, AudioPlayback, GeminiLiveClient) requires zero modifications. A `LivestreamController` MonoBehaviour orchestrates all new systems.
 
 **Major components:**
-1. **PersonaSession** (MonoBehaviour) -- lifecycle owner, connects LiveSession, owns the receive loop, exposes C# events
-2. **AudioCapture** -- reads Unity Microphone into PCM chunks, sends to LiveSession at 100ms intervals
-3. **AudioPlayback** -- receives PCM audio, manages ring-buffer AudioClip, streams to AudioSource
-4. **PacketAssembler** -- correlates text/audio/function-call chunks into ordered PersonaPacket structs with timing
-5. **FunctionCallHandler** -- registry of C# delegates keyed by function name, dispatches on main thread, returns responses
-6. **MainThreadDispatcher** -- ConcurrentQueue-based marshaling from background WebSocket thread to Unity Update()
-7. **ChirpTTSClient** -- HTTP POST to Cloud TTS, returns PCM audio from text
-8. **PersonaConfig** (ScriptableObject) -- personality, voice, model, tools, safety settings
-9. **SystemInstructionBuilder** -- pure function composing PersonaConfig fields into a Gemini system instruction
+1. **LivestreamController** -- Top-level orchestrator wiring PersonaSession, ChatBotManager, NarrativeDirector, LivestreamUI, and SceneTransition
+2. **ChatBotManager** -- Manages bot personas, scripted message timers, and optional Gemini REST calls for dynamic responses. Injects significant bot messages into Aya's context via `SendText("[CHAT] botName: message")`
+3. **NarrativeDirector** -- Time-based goal lifecycle manager. Pre-loads goals before `Connect()`, steers mid-session via `SendText("[DIRECTOR NOTE: ...]")` since the Live API cannot update system instructions mid-session
+4. **GeminiTextClient** -- Lightweight REST utility (~100 lines) wrapping UnityWebRequest for `generateContent` with structured output
+5. **LivestreamUI** -- UI Toolkit controller: ListView chat feed, Aya transcript panel, push-to-talk controls, stream status indicators
+6. **SceneTransition** -- Function call handler for `start_movie()`. Additive scene loading with camera/AudioListener management
 
-See [ARCHITECTURE.md](./ARCHITECTURE.md) for component boundaries, data flow diagrams, threading model, and build order.
+**Key architectural constraint:** Goals cannot be updated mid-session via the Live API. The NarrativeDirector works around this by (a) pre-loading the full narrative arc in the system instruction at connect time, and (b) injecting `[DIRECTOR NOTE: ...]` text messages for mid-session steering. This is verified in the codebase -- `SendGoalUpdate()` logs a warning about this limitation.
+
+See [ARCHITECTURE.md](./ARCHITECTURE.md) for component boundaries, data flow diagrams, build order, and anti-patterns.
 
 ### Critical Pitfalls
 
-18 pitfalls were identified (7 critical, 7 moderate, 4 minor). The top 5 that must inform roadmap design:
+1. **"Finish-first" makes users feel ignored** -- When Aya is mid-monologue and the user speaks, there is a dead zone with no feedback. Users will think the mic is broken. Prevention: show visual acknowledgment within 500ms ("Aya noticed your message"), cap wait time at 8-10 seconds, add a filler animation (glance at camera). This must be built into the initial push-to-talk implementation, not added later.
 
-1. **Threading: Firebase async vs Unity main thread** -- ReceiveAsync runs on IO thread pool; touching any Unity API from there causes crashes or silent corruption. Solve with MainThreadDispatcher + ConcurrentQueue in the very first phase. Every subsequent feature depends on this.
+2. **Chat bots feel like a script, not a community** -- Metronomic timing, uniform message length, and no reactions to Aya's speech destroy the livestream illusion. Prevention: event-driven timing (react to Aya's transcript keywords), per-bot personality quirks in ScriptableObject config (typing speed, emoji usage, message length), burst-and-lull pattern with deliberate dead chat moments, and message imperfection (lowercase, abbreviations, occasional typos).
 
-2. **ReceiveAsync single-turn trap** -- The SDK's ReceiveAsync() breaks on TurnComplete. Developers must wrap it in an outer while loop to sustain multi-turn conversation. Failure looks like "session dies after first response."
+3. **Goal steering feels like a pushy salesperson** -- HIGH priority goals make Aya shoehorn the movie clip into every response. Prevention: start ALL goals at LOW, escalate slowly over minutes, use chat bots as narrative catalysts ("omg when are you gonna show us the thing??" is better than telling Aya to steer), rewrite urgency framing to give Aya permission to NOT steer, and use mini-goal chains instead of one big goal.
 
-3. **Audio sample rate mismatch (16kHz in, 24kHz out)** -- Input to Gemini is 16kHz PCM; output from Gemini/Chirp is 24kHz. Creating AudioClip at the wrong rate produces chipmunk or demon voice. Must create separate AudioClip configs for capture vs playback.
+4. **Scene loading destroys livestream state** -- Using `LoadSceneMode.Single` for the movie clip kills the WebSocket, chat history, and bot state. Prevention: always use additive loading, pre-load with `allowSceneActivation = false`, disable livestream camera/AudioListener during clip, keep PersonaSession alive but muted during playback. This is a hard architectural requirement -- getting it wrong requires a rewrite.
 
-4. **Streaming AudioClip.SetData race condition** -- AudioSource reads while SetData writes. Without a write-ahead watermark (200-400ms buffer before starting playback), audio has pops, silence gaps, and garbled chunks. This is the hardest technical problem in the project.
+5. **Multi-persona coherence collapse** -- Aya and chat bots are independent systems with no shared context. Bots may reference things Aya has not said. Prevention: inject significant bot messages into Aya's session via `SendText()`, give Aya a "chat awareness" system instruction section, limit what scripted bots can assert (reactions only, not new facts), and maintain a shared state object for current topic/activity.
 
-5. **WebSocket lifetime vs Unity lifecycle mismatch** -- Scene transitions, OnDestroy, and application quit can leak WebSocket connections or crash background threads. Must use CancellationTokenSource tied to MonoBehaviour lifecycle from day one.
-
-See [PITFALLS.md](./PITFALLS.md) for all 18 pitfalls with source code references, warning signs, and prevention strategies.
+See [PITFALLS.md](./PITFALLS.md) for all 7 critical pitfalls with research citations, warning signs, recovery strategies, and the "Looks Done But Isn't" verification checklist.
 
 ## Implications for Roadmap
 
-Based on combined research, the project naturally decomposes into 6 phases ordered by dependency. Each phase is independently testable before moving to the next.
+Based on combined research, the project decomposes into 5 phases ordered by dependency. Each phase is independently testable.
 
-### Phase 1: Foundation and Core Session
+### Phase 1: Foundation Components
+**Rationale:** These components have zero dependencies on each other and can be built and tested in isolation. They are the building blocks everything else needs.
+**Delivers:** ChatBotConfig ScriptableObject, GeminiTextClient REST utility, LivestreamUI shell (UXML/USS layout + ListView chat feed + transcript panel + stream status indicators)
+**Addresses:** Stream atmosphere UI (LIVE badge, chat feed, transcript), configurable ScriptableObjects
+**Avoids:** Pitfall #4 (structured output overhead) -- building the REST client correctly from the start with batched array responses
 
-**Rationale:** Everything depends on correct threading and session management. The MainThreadDispatcher, PersonaConfig, and LiveSession wrapper must exist before any feature can work. This phase has the highest pitfall density (5 critical pitfalls apply here).
-**Delivers:** Working bidirectional connection to Gemini Live. Text can be sent and received. Session connects, disconnects, and survives scene transitions cleanly.
-**Addresses:** PersonaConfig ScriptableObject, PersonaSession MonoBehaviour, session lifecycle management, error events, connection state
-**Avoids:** Threading pitfall (#1), ReceiveAsync single-turn trap (#2), concurrent enumeration (#3), WebSocket lifecycle mismatch (#7), SetupComplete timing (#13), Dispose pattern (#18)
-**Components:** MainThreadDispatcher, PersonaConfig, SessionState, PersonaPacket, PersonaSession (connect/receive), SystemInstructionBuilder
+### Phase 2: Chat Bot System
+**Rationale:** Depends on Phase 1 (ChatBotConfig + GeminiTextClient + LivestreamUI). The chat bot system is the most novel component and needs the most iteration time.
+**Delivers:** ChatBotManager with scripted message scheduling, event-driven timing, per-bot personality differentiation, and optional dynamic responses
+**Addresses:** Multiple bot personas, bot messages over time, bot personality differentiation, burst-and-lull timing
+**Avoids:** Pitfall #2 (scripted-feeling bots) -- event-driven timing and personality quirks built in from the start. Pitfall #7 (uncanny timing) -- per-message typing delay, staggered reactions, dead chat moments
 
-### Phase 2: Audio Pipeline
+### Phase 3: Narrative Director + Push-to-Talk Integration
+**Rationale:** Depends on PersonaSession's existing API (AddGoal, SendText, OnTurnComplete). The narrative director and push-to-talk finish-first logic are both about controlling Aya's conversation flow and should be designed together.
+**Delivers:** NarrativeDirector (time-based goal lifecycle, SendText steering), finish-first push-to-talk controller with visual acknowledgment, Aya's livestream PersonaConfig
+**Addresses:** Time-based narrative progression, push-to-talk with finish-first, Aya as proactive host, goal injection strategy
+**Avoids:** Pitfall #1 (user feels ignored) -- visual acknowledgment and wait-time cap built in from the start. Pitfall #3 (pushy goal steering) -- mini-goal chains and slow escalation designed from the start. Pitfall #6 (coherence collapse) -- SendText injection for bot messages wired during integration
 
-**Rationale:** Audio capture and playback are the two halves of voice conversation. They can be built in parallel with each other but require Phase 1's session management to integrate. This phase contains the hardest technical problem (streaming playback).
-**Delivers:** User speaks into microphone, audio reaches Gemini. Gemini's native audio response plays through AudioSource. Full voice conversation loop working.
-**Addresses:** Microphone capture, AI audio response playback, audio streaming, voice selection per character
-**Avoids:** Sample rate mismatch (#4), streaming AudioClip race condition (#5), base64 encoding overhead (#6), microphone platform differences (#10), ring buffer overflow (#16)
-**Components:** AudioCapture, AudioPlayback, AudioConverter (Internal)
+### Phase 4: Scene Transition + Movie Clip
+**Rationale:** Depends on function calling (already built), NarrativeDirector (Phase 3), and a correct understanding of additive scene loading requirements. This is the narrative climax -- it must be bulletproof.
+**Delivers:** SceneTransition handler, MovieClipScene with Timeline/PlayableDirector, pre-loading strategy, camera/AudioListener management, state preservation during clip playback
+**Addresses:** Goal-triggered movie clip reveal, scene transition as technical showcase
+**Avoids:** Pitfall #5 (scene load destroys state) -- additive loading, pre-loading, and state preservation designed as the primary approach from day one
 
-### Phase 3: PacketAssembler and Synchronization
-
-**Rationale:** With audio working, the PacketAssembler can be built to correlate text, audio, and events. This is the project's primary differentiator and depends on both the session receive loop (Phase 1) and audio playback (Phase 2) being functional.
-**Delivers:** Synchronized text + audio + event packets. Subtitles match speech timing. Foundation for animation sync.
-**Addresses:** PacketAssembler (text + audio + emote timing sync), streaming chunk coordination, turn management, interruption handling, speech-to-text transcription
-**Avoids:** Text/audio synchronization drift (#11)
-**Components:** PacketAssembler, SentenceBoundaryDetector (Internal)
-
-### Phase 4: Function Calling
-
-**Rationale:** Function calling is architecturally independent from audio but depends on the session receive loop (Phase 1). It can technically be built alongside Phase 2-3, but testing it properly requires the full conversation loop. Building it after PacketAssembler means function call timing can be synchronized with speech.
-**Delivers:** AI can trigger game actions. Developers register C# delegates. Built-in emote function demonstrates the pattern.
-**Addresses:** Declare callable functions, handler registration, function response round-trip, emote/animation with timing, configurable safety settings
-**Avoids:** Function call response timing (#9)
-**Components:** FunctionCallHandler, built-in emote function example
-
-### Phase 5: Chirp 3 HD Voice Backend
-
-**Rationale:** The Gemini native audio path (Phase 2) should be working and stable before adding the alternative Chirp TTS path. Chirp adds HTTP latency and sentence-chunking complexity that is best layered on top of a proven audio pipeline.
-**Delivers:** 30+ high-quality voices via Chirp 3 HD. Per-persona voice backend selection (Gemini native vs Chirp).
-**Addresses:** Dual voice backend, per-persona voice backend selection, Chirp TTS integration
-**Avoids:** Chirp TTS latency addition (#12), sensitive data in ScriptableObject (#14)
-**Components:** ChirpTTSClient, VoiceBackendRouter
-
-### Phase 6: UPM Packaging, Editor Tools, and Samples
-
-**Rationale:** Packaging is last because the runtime API must be stable before creating assembly definitions, editor inspectors, and sample scenes. This phase is about developer experience, not functionality.
-**Delivers:** Installable UPM package via git URL. Sample scene that proves the full pipeline in under 5 minutes. Custom inspectors for PersonaConfig.
-**Addresses:** Sample scene, minimal dependency footprint, MonoBehaviour drag-and-drop setup, UPM distribution
-**Avoids:** Firebase dependency hell (#8), asmdef structure issues (#17), AudioSource 3D spatial gotchas (#15)
-**Components:** package.json, assembly definitions, PersonaConfigEditor, PersonaSessionEditor, sample scenes, documentation
+### Phase 5: Integration + Polish
+**Rationale:** The LivestreamController orchestrator depends on all other components. This phase wires everything together and validates the full experience loop.
+**Delivers:** LivestreamController orchestrator, complete 10-minute experience loop, cross-component context injection (bot messages to Aya, director notes, shared state), animation function calls (emote registration)
+**Addresses:** All remaining table stakes, end-to-end experience validation
+**Avoids:** Pitfall #6 (coherence collapse) -- full context injection verified. All pitfalls validated via the "Looks Done But Isn't" checklist from PITFALLS.md
 
 ### Phase Ordering Rationale
 
-- **Phase 1 before all else:** 5 of 7 critical pitfalls apply to the session/threading layer. Getting this wrong cascades into every subsequent phase.
-- **Phase 2 immediately after:** Voice conversation is the core product. Without working audio, nothing can be tested end-to-end.
-- **Phase 3 after audio:** PacketAssembler needs real audio data to test synchronization. It cannot be validated without a working audio pipeline.
-- **Phase 4 after sync:** Function calls need timing correlation with speech, which depends on PacketAssembler. Building function calling earlier is possible but testing is limited.
-- **Phase 5 is additive:** Chirp 3 HD is an alternative voice path layered on top of a working Gemini native path. It does not block MVP.
-- **Phase 6 is polish:** UPM packaging wraps stable code. Doing it earlier means repackaging after every API change.
+- **Foundation first** because every other component depends on the REST client, UI shell, and data model
+- **Chat bots before narrative** because the chat bot system is the most novel and risky component -- it needs the most iteration time, and it can be tested independently against a simple Aya session
+- **Narrative and push-to-talk together** because they both control Aya's conversational flow -- the finish-first logic and director note injection interact at the PersonaSession boundary
+- **Scene transition late** because it depends on the narrative director reaching the reveal goal, and the technical pattern (additive loading) is well-documented -- it just needs to be done correctly
+- **Integration last** because the orchestrator is a thin wiring layer that depends on all other components existing
 
 ### Research Flags
 
 Phases likely needing deeper research during planning:
-- **Phase 2 (Audio Pipeline):** The streaming AudioClip playback pattern (ring buffer vs OnAudioFilterRead vs double-buffer) needs prototyping to choose the right approach. The Gemini output audio sample rate (24kHz) has MEDIUM confidence and must be verified with actual API responses.
-- **Phase 3 (PacketAssembler):** Text/audio synchronization is a design problem, not just implementation. The SDK explicitly states transcriptions are "independent to the Content" with no ordering guarantees. Needs careful protocol analysis.
-- **Phase 5 (Chirp TTS):** Chirp 3 HD voice name format, available voices, and exact API request/response format need verification against current Google Cloud docs. Training data may be stale.
+- **Phase 2 (Chat Bot System):** Event-driven timing model needs prototyping. The burst-and-lull pattern, per-bot typing speed, and cross-bot referencing are experiential and hard to specify without iteration. Recommend building a minimal chat-only prototype first.
+- **Phase 3 (Narrative Director):** The `SendText("[DIRECTOR NOTE: ...]")` approach for mid-session steering needs validation with the actual Gemini model. How reliably does the model follow director notes embedded in conversation context? This needs testing before committing to the full narrative arc design.
+- **Phase 3 (Finish-First Push-to-Talk):** The "wait then speak" approach (delay mic capture until Aya finishes) is simpler than audio buffering but changes the UX. Needs playtesting to determine if users accept waiting to speak or if true audio buffering is required.
 
 Phases with standard patterns (skip research-phase):
-- **Phase 1 (Foundation):** ConcurrentQueue dispatcher, ScriptableObject config, and CancellationToken lifecycle are well-documented Unity patterns.
-- **Phase 4 (Function Calling):** The Firebase SDK's function calling API is fully documented in the source code. C# delegate registration is straightforward.
-- **Phase 6 (UPM Packaging):** UPM package layout is a stable convention since Unity 2019. Assembly definitions are well-documented.
+- **Phase 1 (Foundation):** REST client is a standard UnityWebRequest pattern (already proven in ChirpTTSClient). ListView is documented Unity 6 API. ScriptableObjects are standard Unity.
+- **Phase 4 (Scene Transition):** Additive scene loading is a well-documented Unity pattern. Timeline/PlayableDirector is standard Unity cinematic tooling. The pitfalls are known and avoidable with the right approach.
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | Primary source was actual SDK source code in the project. All API details confirmed from code. Only Chirp 3 HD API format and Gemini output sample rate are MEDIUM. |
-| Features | HIGH (table stakes), MEDIUM (competitors) | Table stakes verified against SDK capabilities. Competitor feature comparison based on training data through May 2025, not live docs. |
-| Architecture | HIGH | Five-stage pipeline derived from SDK source code analysis and Unity threading constraints. Build order follows actual dependency graph. |
-| Pitfalls | HIGH (SDK-derived), MEDIUM (platform/audio) | 10 of 18 pitfalls verified directly against SDK source code with line numbers. Platform-specific audio and UPM pitfalls based on training data. |
+| Stack | HIGH | All technologies verified against official docs. Gemini REST structured output confirmed. Existing codebase inspected directly. No speculative technology choices. |
+| Features | MEDIUM-HIGH | Table stakes derived from VTuber/livestream research and existing codebase. Chat bot behavior design is well-reasoned but untested. Narrative pacing draws from drama management research but Gemini-specific behavior needs validation. |
+| Architecture | HIGH | Component boundaries clean. Package API surface sufficient (zero modifications). Dual Gemini path is well-justified. Anti-patterns clearly identified. Build order has clear dependency rationale. |
+| Pitfalls | HIGH | Pitfalls grounded in HCI research (300ms rule, 4-second degradation threshold), existing codebase constraints (mid-session goal limitation), and Unity platform knowledge (additive scene loading). Recovery strategies identified for each. |
 
 **Overall confidence:** HIGH
 
 ### Gaps to Address
 
-- **Gemini Live output audio sample rate:** Assumed 24kHz based on training data. Must be verified by inspecting actual response audio during first integration test in Phase 2.
-- **Chirp 3 HD voice name format:** Assumed `{lang}-{region}-Chirp3-HD-{VoiceName}` pattern. Must be verified against live Google Cloud TTS docs before Phase 5.
-- **Firebase AI Logic SDK VertexAI bug:** Source inspection revealed ConnectAsync hardcodes VertexAI-style model path regardless of backend. Recommendation to use VertexAI backend needs verification -- may be fixed in newer SDK versions.
-- **Firebase SDK update cadence:** SDK is 13.7.0. A newer version may be available. Check before Phase 1 implementation begins.
-- **Competitor feature sets:** Convai, Inworld AI, and others may have updated their offerings since May 2025. Re-verify if competitive positioning matters for marketing.
-- **ResponseModality.Audio output format:** Whether audio response includes a sample rate header or must be assumed -- affects AudioClip creation in Phase 2.
+- **SendText director note reliability:** How consistently does Gemini follow `[DIRECTOR NOTE: ...]` tags in conversation context? This is prompt engineering, not API limitation, but it has not been tested. Validate early in Phase 3 with a simple test: inject a director note and verify Aya changes topic within 1-2 responses.
+- **Finish-first UX acceptance:** Will users accept the "wait then speak" model (mic capture delayed until Aya finishes)? Or will they expect to speak immediately and have their input buffered? Playtesting in Phase 3 will determine if the simpler approach works or if `SendRawAudio()` needs to be added to PersonaSession.
+- **ListView dynamic height in Unity 6:** Chat messages have variable length. ListView's dynamic height support may not work perfectly. Fallback: cap message length at 140 characters or use ScrollView with a 50-message cap (sufficient for a small stream).
+- **Context window growth:** Over a 10-15 minute session with bot messages injected via SendText, Aya's context window will grow. No research confirmed the token limit impact. Monitor during integration testing and add selective injection (only significant messages) if context grows too large.
+- **Gemini 2.5 Flash structured output array reliability:** The schema requests an ARRAY of bot message objects. While structured output is documented, array-of-objects with multiple required fields has not been tested against this specific model version. Validate in Phase 1 when building GeminiTextClient.
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- Firebase AI Logic SDK 13.7.0 source code: `Assets/Firebase/FirebaseAI/` -- LiveSession.cs, LiveGenerativeModel.cs, LiveSessionResponse.cs, FunctionCalling.cs, ModelContent.cs, LiveGenerationConfig.cs, ResponseModality.cs
-- Unity project configuration: `Packages/manifest.json`, `Assembly-CSharp.csproj`, `ProjectSettings/ProjectSettings.asset`
-- Firebase version manifest: `Assets/Firebase/Editor/FirebaseAI_version-13.7.0_manifest.txt`
-- Project specification: `.planning/PROJECT.md`
-- Codebase analysis: `.planning/codebase/ARCHITECTURE.md`, `.planning/codebase/INTEGRATIONS.md`, `.planning/codebase/CONCERNS.md`
+- [Gemini API Structured Output docs](https://ai.google.dev/gemini-api/docs/structured-output) -- response_schema format, supported types, limitations
+- [Gemini Live API reference](https://ai.google.dev/api/live) -- confirmed response_schema NOT supported in Live API, configuration immutable mid-session
+- [Gemini API GenerationConfig reference](https://ai.google.dev/api/generate-content) -- field names: response_schema, response_mime_type
+- [Unity 6 SceneManager.LoadSceneAsync](https://docs.unity3d.com/6000.0/Documentation/ScriptReference/SceneManagement.SceneManager.LoadSceneAsync.html) -- additive loading API
+- [Unity 6 ListView manual](https://docs.unity3d.com/6000.3/Documentation/Manual/UIE-uxml-element-ListView.html) -- virtualization, makeItem/bindItem
+- [AssemblyAI -- 300ms rule for voice AI](https://www.assemblyai.com/blog/low-latency-voice-ai) -- latency thresholds for perceived responsiveness
+- [GetStream -- Livestream Chat UX](https://getstream.io/blog/7-ux-best-practices-for-livestream-chat/) -- scroll behavior, message pacing, virtualized lists
+- Existing codebase: PersonaSession.cs, GeminiLiveClient.cs, GoalManager.cs, QueuedResponseController.cs, ChirpTTSClient.cs, AyaSampleController.cs -- direct source code inspection
 
 ### Secondary (MEDIUM confidence)
-- Unity Microphone/AudioSource/AudioClip API behavior -- stable APIs, unlikely changed in Unity 6
-- UPM package layout conventions -- stable since Unity 2019
-- Gemini Live protocol details (sample rates, turn semantics) -- inferred from SDK source + training data
-- Competitor feature sets (Convai, Inworld AI, Charisma.ai, Replica Studios, NVIDIA ACE) -- training data through May 2025
+- [AI VTuber Fandom Research (arxiv)](https://arxiv.org/html/2509.10427v1) -- parasocial dynamics, consistency-as-authenticity
+- [Facade Interactive Drama Design](https://www.gamedeveloper.com/design/the-story-of-facade-the-ai-powered-interactive-drama) -- beat system, drama manager patterns
+- [Convai Narrative Design](https://convai.com/blog/convai-narrative-design) -- goal-driven steering challenges, narrative stagnation risk
+- [arXiv -- Mitigating Response Delays](https://arxiv.org/html/2507.22352v1) -- filler strategies, 4-second degradation threshold
+- [Google DialogLab Research](https://research.google/blog/beyond-one-on-one-authoring-simulating-and-testing-dynamic-human-ai-group-conversations/) -- turn-taking, multi-party coherence
+- [Unity Discussions -- Additive scene loading](https://discussions.unity.com/t/avoiding-multiple-event-systems-audio-listeners-etc-with-additive-scene-loading/866174) -- duplicate AudioListener workarounds
+- [Gemini Session Management](https://ai.google.dev/gemini-api/docs/live-session) -- session resumption with 2-hour token validity
 
 ### Tertiary (LOW confidence)
-- Chirp 3 HD TTS latency characteristics -- training data only, must validate with actual API calls
-- Chirp 3 HD voice name format and available voices -- may have been updated since training cutoff
+- Disney Research "Let Me Finish First" study (2024) -- referenced via secondary sources, not directly verified
+- [Gemini API Pricing 2026](https://www.aifreeapi.com/en/posts/gemini-api-pricing-2026) -- pricing data, may be outdated
 
 ---
-*Research completed: 2026-02-05*
+*Research completed: 2026-02-17*
 *Ready for roadmap: yes*
