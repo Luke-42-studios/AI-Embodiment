@@ -69,13 +69,13 @@ Plans:
   3. When the user presses push-to-talk while Aya is speaking, a visual acknowledgment appears within 500ms ("Aya noticed you"), and Aya completes her current response before addressing the user's input
   4. User can review their transcribed speech and approve/edit before it is sent to Aya (QueuedResponse pattern)
   5. Scene transitions fire on conditional triggers (TimedOut, QuestionsAnswered) advancing the narrative from one beat to the next without manual intervention
-**Plans**: TBD
+**Plans:** 4 plans
 
 Plans:
-- [ ] 14-01: NarrativeBeat/Scene data model and nevatars beat migration
-- [ ] 14-02: NarrativeDirector with time-based goal lifecycle and SendText steering
-- [ ] 14-03: Dual-queue system and scene type execution (AyaDialogue, ChatBurst, AyaAction, AyaChecksChat, UserChoice)
-- [ ] 14-04: Push-to-talk finish-first controller with visual acknowledgment and transcript approval
+- [ ] 14-01-PLAN.md -- NarrativeBeatConfig ScriptableObject data model and 3 beat assets (warm-up, art process, characters)
+- [ ] 14-02-PLAN.md -- NarrativeDirector with time-based beat lifecycle, SendText steering, and ChatBotManager pacing integration
+- [ ] 14-03-PLAN.md -- Scene-type execution (AyaDialogue, AyaChecksChat, AyaAction) with conditional transitions
+- [ ] 14-04-PLAN.md -- PushToTalkController with finish-first state machine, transcript overlay, and visual acknowledgment
 
 ### Phase 15: Scene Transition & Animation
 **Goal**: Aya can trigger pre-authored animations via function calls, and the narrative climax triggers an additive scene load for the Unity-rendered movie clip -- all without destroying the livestream WebSocket or chat state
