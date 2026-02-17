@@ -16,31 +16,64 @@ namespace AIEmbodiment
     /// <see cref="PacketAssembler"/>. Only Unity dependency is <see cref="UnityWebRequest"/>
     /// which must run on the main thread.
     ///
+    /// Supports two authentication paths:
+    /// <list type="bullet">
+    /// <item><description>
+    /// <b>API key</b> (v1 endpoint): Standard Chirp voices via <c>x-goog-api-key</c> header.
+    /// </description></item>
+    /// <item><description>
+    /// <b>Bearer token</b> (v1beta1 endpoint): OAuth2 via <see cref="GoogleServiceAccountAuth"/>.
+    /// Required for custom/cloned voices. Also works for standard voices.
+    /// </description></item>
+    /// </list>
+    ///
     /// Handles both standard Chirp 3 HD voices (with SSML wrapping) and custom/cloned
     /// voices (plain text with voice cloning key passed at construction).
     /// </summary>
     public class ChirpTTSClient : IDisposable, ITTSProvider
     {
-        private const string TTS_ENDPOINT = "https://texttospeech.googleapis.com/v1/text:synthesize";
+        private const string TTS_ENDPOINT_V1 = "https://texttospeech.googleapis.com/v1/text:synthesize";
+        private const string TTS_ENDPOINT_V1BETA1 = "https://texttospeech.googleapis.com/v1beta1/text:synthesize";
         private const int SAMPLE_RATE = 24000;
         private const int WAV_HEADER_SIZE = 44;
 
         private readonly string _apiKey;
+        private readonly GoogleServiceAccountAuth _auth;
         private readonly string _voiceCloningKey;
         private bool _disposed;
 
         /// <summary>
-        /// Creates a new ChirpTTSClient with the given API key and optional voice cloning key.
+        /// Creates a new ChirpTTSClient with API key authentication (v1 endpoint).
         /// Caller obtains the API key via <c>AIEmbodimentSettings.Instance.ApiKey</c>.
         /// </summary>
         /// <param name="apiKey">Google Cloud API key with Cloud TTS enabled.</param>
         /// <param name="voiceCloningKey">Optional cloning key for custom voices. When provided,
-        /// requests use <c>voiceClone</c> instead of a named voice.</param>
+        /// requests use <c>voiceClone</c> instead of a named voice.
+        /// Note: custom voice cloning requires bearer auth -- use the
+        /// <see cref="ChirpTTSClient(GoogleServiceAccountAuth, string)"/> constructor instead.</param>
         public ChirpTTSClient(string apiKey, string voiceCloningKey = null)
         {
             if (string.IsNullOrEmpty(apiKey))
                 throw new ArgumentException("API key must not be null or empty.", nameof(apiKey));
             _apiKey = apiKey;
+            _auth = null;
+            _voiceCloningKey = voiceCloningKey;
+        }
+
+        /// <summary>
+        /// Creates a new ChirpTTSClient with OAuth2 bearer token authentication (v1beta1 endpoint).
+        /// Required for custom/cloned voices; also works for standard voices.
+        /// The caller (typically <see cref="PersonaSession"/>) owns the lifetime of
+        /// <paramref name="auth"/> -- this client does NOT dispose it.
+        /// </summary>
+        /// <param name="auth">Service account credential provider. Must not be null.
+        /// See <see cref="GoogleServiceAccountAuth"/>.</param>
+        /// <param name="voiceCloningKey">Optional cloning key for custom voices. When provided,
+        /// requests use <c>voiceClone</c> instead of a named voice.</param>
+        public ChirpTTSClient(GoogleServiceAccountAuth auth, string voiceCloningKey = null)
+        {
+            _auth = auth ?? throw new ArgumentNullException(nameof(auth));
+            _apiKey = null;
             _voiceCloningKey = voiceCloningKey;
         }
 
@@ -76,11 +109,23 @@ namespace AIEmbodiment
             string json = BuildRequestJson(text, voiceName, languageCode, _voiceCloningKey);
             byte[] bodyBytes = Encoding.UTF8.GetBytes(json);
 
-            using var request = new UnityWebRequest(TTS_ENDPOINT, "POST");
+            string endpoint = _auth != null ? TTS_ENDPOINT_V1BETA1 : TTS_ENDPOINT_V1;
+
+            using var request = new UnityWebRequest(endpoint, "POST");
             request.uploadHandler = new UploadHandlerRaw(bodyBytes);
             request.downloadHandler = new DownloadHandlerBuffer();
             request.SetRequestHeader("Content-Type", "application/json; charset=utf-8");
-            request.SetRequestHeader("x-goog-api-key", _apiKey);
+
+            if (_auth != null)
+            {
+                string token = await _auth.GetAccessTokenAsync();
+                request.SetRequestHeader("Authorization", "Bearer " + token);
+                request.SetRequestHeader("x-goog-user-project", _auth.ProjectId);
+            }
+            else
+            {
+                request.SetRequestHeader("x-goog-api-key", _apiKey);
+            }
 
             await request.SendWebRequest();
 
@@ -90,10 +135,11 @@ namespace AIEmbodiment
             if (request.result != UnityWebRequest.Result.Success)
             {
                 throw new Exception(
-                    $"Cloud TTS request failed: {request.error}\n" +
+                    $"Cloud TTS request failed ({endpoint}): {request.error}\n" +
                     $"Response: {request.downloadHandler?.text ?? "(no body)"}\n" +
-                    "If you see 403: ensure Cloud Text-to-Speech API is enabled in " +
-                    "Google Cloud Console and the API key is not restricted.");
+                    (_auth != null
+                        ? "Check: service account has Cloud TTS API access, project billing is enabled."
+                        : "Check: API key has Cloud TTS API enabled in Google Cloud Console."));
             }
 
             // Parse response JSON to extract base64 audioContent
