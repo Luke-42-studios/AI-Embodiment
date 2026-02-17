@@ -20,7 +20,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 12: Foundation & Data Model** - REST client, UI shell, ChatBotConfig ScriptableObject, and migrated character data
 - [x] **Phase 13: Chat Bot System** - Scripted and dynamic chat bots with burst timing, personality, and tracked messages
-- [ ] **Phase 14: Narrative Director & User Interaction** - Beat/scene structure, dual-queue orchestration, push-to-talk finish-first, and narrative steering
+- [x] **Phase 14: Narrative Director & User Interaction** - Beat/scene structure, dual-queue orchestration, push-to-talk finish-first, and narrative steering
 - [ ] **Phase 15: Scene Transition & Animation** - Animation function calls, clean scene transition to movie clip, toast UI feedback
 - [ ] **Phase 16: Integration & Experience Loop** - Full livestream scene wiring, cross-system context injection, and end-to-end experience
 
@@ -72,10 +72,10 @@ Plans:
 **Plans:** 4 plans
 
 Plans:
-- [ ] 14-01-PLAN.md -- NarrativeBeatConfig ScriptableObject data model and 3 beat assets (warm-up, art process, characters)
-- [ ] 14-02-PLAN.md -- NarrativeDirector with time-based beat lifecycle, SendText steering, and ChatBotManager pacing integration
-- [ ] 14-03-PLAN.md -- Scene-type execution (AyaDialogue, AyaChecksChat, AyaAction) with conditional transitions
-- [ ] 14-04-PLAN.md -- PushToTalkController with finish-first state machine, transcript overlay, and visual acknowledgment
+- [x] 14-01-PLAN.md -- NarrativeBeatConfig ScriptableObject data model and 3 beat assets (warm-up, art process, characters)
+- [x] 14-02-PLAN.md -- NarrativeDirector with time-based beat lifecycle, SendText steering, and ChatBotManager pacing integration
+- [x] 14-03-PLAN.md -- Scene-type execution (AyaDialogue, AyaChecksChat, AyaAction) with conditional transitions
+- [x] 14-04-PLAN.md -- PushToTalkController with finish-first state machine, transcript overlay, and visual acknowledgment
 
 ### Phase 15: Scene Transition & Animation
 **Goal**: Aya can trigger pre-authored animations via function calls during conversation, and the narrative climax triggers a clean scene exit to the movie clip -- with visible toast feedback for animation triggers and explicit WebSocket disconnect before scene unload
@@ -116,6 +116,6 @@ Phases execute in numeric order: 12 -> 13 -> 14 -> 15 -> 16
 |-------|----------------|--------|-----------|
 | 12. Foundation & Data Model | 3/3 | Complete | 2026-02-17 |
 | 13. Chat Bot System | 3/3 | Complete | 2026-02-17 |
-| 14. Narrative Director & User Interaction | 0/4 | Not started | - |
+| 14. Narrative Director & User Interaction | 4/4 | Complete | 2026-02-17 |
 | 15. Scene Transition & Animation | 0/2 | Not started | - |
 | 16. Integration & Experience Loop | 0/3 | Not started | - |
