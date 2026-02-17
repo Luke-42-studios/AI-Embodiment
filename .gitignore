@@ -28,6 +28,10 @@ Assets/Plugins.meta
 Assets/Editor Default Resources/
 Assets/Editor Default Resources.meta
 
+# API keys / secrets
+Assets/Resources/AIEmbodimentSettings.asset
+Assets/Resources/AIEmbodimentSettings.asset.meta
+
 # Firebase credentials (sensitive)
 Assets/google-services.json
 Assets/google-services.json.meta
