@@ -65,5 +65,8 @@
             </ui:VisualElement>
 
         </ui:VisualElement>
+
+        <!-- Toast notification for animation triggers -->
+        <ui:Label name="toast-label" text="" class="toast-label" />
     </ui:VisualElement>
 </ui:UXML>

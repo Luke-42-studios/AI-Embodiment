@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -30,6 +31,10 @@ namespace AIEmbodiment.Samples
         // PTT acknowledgment
         private VisualElement _pttAck;
 
+        // Toast notification
+        private Label _toastLabel;
+        private int _toastCounter;
+
         private readonly List<ChatMessage> _messages = new();
         private float _sessionStartTime;
         private Label _currentAyaMessage;
@@ -50,6 +55,7 @@ namespace AIEmbodiment.Samples
             _transcriptText = root.Q<Label>("transcript-text");
             _autoSubmitFill = root.Q("auto-submit-fill");
             _pttAck = root.Q("ptt-ack");
+            _toastLabel = root.Q<Label>("toast-label");
 
             // Configure ListView for chat messages
             _chatFeed.makeItem = MakeChatItem;
@@ -240,6 +246,34 @@ namespace AIEmbodiment.Samples
             if (_autoSubmitFill != null)
             {
                 _autoSubmitFill.style.width = new StyleLength(Length.Percent(Mathf.Clamp01(progress) * 100f));
+            }
+        }
+
+        /// <summary>
+        /// Shows a toast notification in the livestream UI. Auto-dismisses after the
+        /// specified duration. Handles overlapping calls correctly -- a newer toast
+        /// resets the dismiss timer without the older dismiss canceling it early.
+        /// </summary>
+        /// <param name="message">The text to display in the toast.</param>
+        /// <param name="duration">How long to show the toast in seconds (default 3).</param>
+        public async void ShowToast(string message, float duration = 3f)
+        {
+            if (_toastLabel == null) return;
+
+            _toastLabel.text = message;
+            _toastLabel.AddToClassList("toast--visible");
+            int myCounter = ++_toastCounter;
+
+            try
+            {
+                await Awaitable.WaitForSecondsAsync(duration, destroyCancellationToken);
+            }
+            catch (OperationCanceledException) { return; }
+
+            // Only dismiss if no newer toast has been shown
+            if (_toastCounter == myCounter)
+            {
+                _toastLabel.RemoveFromClassList("toast--visible");
             }
         }
 

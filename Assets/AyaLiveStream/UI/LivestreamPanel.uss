@@ -251,3 +251,23 @@
     transition-property: width;
     transition-duration: 100ms;
 }
+
+/* Toast notification (animation triggers) */
+.toast-label {
+    position: absolute;
+    bottom: 60px;
+    left: 50%;
+    translate: -50% 0;
+    background-color: rgba(40, 40, 60, 0.9);
+    color: rgb(200, 170, 255);
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    -unity-font-style: italic;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.toast--visible {
+    opacity: 1;
+}
