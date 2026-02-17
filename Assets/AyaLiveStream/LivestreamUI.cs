@@ -22,6 +22,14 @@ namespace AIEmbodiment.Samples
         private VisualElement _ayaIndicator;
         private Label _pttStatus;
 
+        // Transcript overlay elements
+        private VisualElement _transcriptOverlay;
+        private Label _transcriptText;
+        private VisualElement _autoSubmitFill;
+
+        // PTT acknowledgment
+        private VisualElement _pttAck;
+
         private readonly List<ChatMessage> _messages = new();
         private float _sessionStartTime;
         private Label _currentAyaMessage;
@@ -37,6 +45,11 @@ namespace AIEmbodiment.Samples
             _ayaTranscript = root.Q<ScrollView>("aya-transcript");
             _ayaIndicator = root.Q("aya-indicator");
             _pttStatus = root.Q<Label>("ptt-status");
+
+            _transcriptOverlay = root.Q("transcript-overlay");
+            _transcriptText = root.Q<Label>("transcript-text");
+            _autoSubmitFill = root.Q("auto-submit-fill");
+            _pttAck = root.Q("ptt-ack");
 
             // Configure ListView for chat messages
             _chatFeed.makeItem = MakeChatItem;
@@ -171,6 +184,63 @@ namespace AIEmbodiment.Samples
         public void SetViewerCount(int count)
         {
             _viewerCount.text = $"{count} viewers";
+        }
+
+        /// <summary>
+        /// Shows or hides the "Aya noticed you" acknowledgment indicator.
+        /// Uses CSS class toggle for synchronous, frame-immediate update (&lt;500ms).
+        /// </summary>
+        public void ShowPTTAcknowledgment(bool show)
+        {
+            if (_pttAck == null) return;
+            if (show)
+            {
+                _pttAck.RemoveFromClassList("ptt-ack--hidden");
+                _pttAck.AddToClassList("ptt-ack--visible");
+            }
+            else
+            {
+                _pttAck.RemoveFromClassList("ptt-ack--visible");
+                _pttAck.AddToClassList("ptt-ack--hidden");
+            }
+        }
+
+        /// <summary>
+        /// Shows or hides the transcript review overlay.
+        /// </summary>
+        public void ShowTranscriptOverlay(bool show)
+        {
+            if (_transcriptOverlay == null) return;
+            if (show)
+            {
+                _transcriptOverlay.RemoveFromClassList("transcript-overlay--hidden");
+                _transcriptOverlay.AddToClassList("transcript-overlay--visible");
+            }
+            else
+            {
+                _transcriptOverlay.RemoveFromClassList("transcript-overlay--visible");
+                _transcriptOverlay.AddToClassList("transcript-overlay--hidden");
+            }
+        }
+
+        /// <summary>
+        /// Sets the transcript text displayed in the review overlay.
+        /// </summary>
+        public void SetTranscriptText(string text)
+        {
+            if (_transcriptText != null) _transcriptText.text = text;
+        }
+
+        /// <summary>
+        /// Updates the auto-submit countdown progress bar.
+        /// </summary>
+        /// <param name="progress">0.0 (empty) to 1.0 (full).</param>
+        public void UpdateAutoSubmitProgress(float progress)
+        {
+            if (_autoSubmitFill != null)
+            {
+                _autoSubmitFill.style.width = new StyleLength(Length.Percent(Mathf.Clamp01(progress) * 100f));
+            }
         }
 
         private void Update()

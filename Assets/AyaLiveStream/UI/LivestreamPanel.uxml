@@ -28,6 +28,18 @@
                     <ui:Label name="chat-input-placeholder" text="Chat messages appear here..."
                         class="chat-input-placeholder" />
                 </ui:VisualElement>
+
+                <!-- Transcript review overlay (slides up from bottom) -->
+                <ui:VisualElement name="transcript-overlay" class="transcript-overlay transcript-overlay--hidden">
+                    <ui:Label name="transcript-label" text="Your message:" class="transcript-label" />
+                    <ui:Label name="transcript-text" text="" class="transcript-text" />
+                    <ui:VisualElement name="transcript-actions" class="transcript-actions">
+                        <ui:Label name="transcript-hint" text="ENTER to send | ESC to cancel" class="transcript-hint" />
+                        <ui:VisualElement name="auto-submit-bar" class="auto-submit-bar">
+                            <ui:VisualElement name="auto-submit-fill" class="auto-submit-fill" />
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                </ui:VisualElement>
             </ui:VisualElement>
 
             <!-- Aya panel (~40% width) -->
@@ -40,6 +52,11 @@
                 <ui:ScrollView name="aya-transcript" class="aya-transcript"
                     vertical-scroller-visibility="Auto"
                     horizontal-scroller-visibility="Hidden" />
+
+                <!-- PTT acknowledgment: "Aya noticed you" -->
+                <ui:VisualElement name="ptt-ack" class="ptt-ack ptt-ack--hidden">
+                    <ui:Label name="ptt-ack-text" text="Aya heard you -- finishing her thought..." class="ptt-ack-text" />
+                </ui:VisualElement>
 
                 <!-- Push-to-talk area -->
                 <ui:VisualElement name="ptt-area" class="ptt-area">
