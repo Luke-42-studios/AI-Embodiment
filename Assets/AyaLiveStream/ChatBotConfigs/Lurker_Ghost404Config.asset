@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b1caf4fd68dc6a5a896e5ccfe3e2cb1, type: 3}
+  m_Name: Lurker_Ghost404Config
+  m_EditorClassIdentifier: com.google.ai-embodiment.samples.ayalivestream::AIEmbodiment.Samples.ChatBotConfig
+  botName: Lurker_Ghost404
+  chatColor: {r: 0.6, g: 0.6, b: 0.7, a: 1}
+  personality: First-time viewer who rarely chats. When they do speak, it is brief
+    and understated. Might be socially anxious. Uses lowercase everything.
+  speechTraits:
+  - all lowercase
+  - very short
+  - no punctuation
+  - rare messages
+  scriptedMessages:
+  - hi
+  - nice
+  - wow
+  - cool
+  - first time here
+  - how do you do that
+  messageAlternatives: []
+  typingSpeed: 3
+  capsFrequency: 0
+  emojiFrequency: 0
