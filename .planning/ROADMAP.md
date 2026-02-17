@@ -133,8 +133,8 @@ Plans:
 **Plans:** 2 plans
 
 Plans:
-- [ ] 11.2-01-PLAN.md -- GoogleServiceAccountAuth credential provider (JWT signing, token exchange, caching), AIEmbodimentSettings service account path field, editor UI file picker, .gitignore updates
-- [ ] 11.2-02-PLAN.md -- ChirpTTSClient dual-auth (API key v1 / bearer token v1beta1), PersonaSession service account lifecycle and auth-aware TTS provider creation
+- [x] 11.2-01-PLAN.md -- GoogleServiceAccountAuth credential provider (JWT signing, token exchange, caching), AIEmbodimentSettings service account path field, editor UI file picker, .gitignore updates
+- [x] 11.2-02-PLAN.md -- ChirpTTSClient dual-auth (API key v1 / bearer token v1beta1), PersonaSession service account lifecycle and auth-aware TTS provider creation
 
 ## Progress
 
@@ -154,4 +154,4 @@ Plans:
 | 10. Function Calling and Goals Migration | v0.8 | 2/2 | Complete | 2026-02-13 |
 | 11. Integration Verification | v0.8 | 2/2 | Complete | 2026-02-13 |
 | 11.1. Queued Response Sample | v0.8 | 0/2 | Planned | - |
-| 11.2. Chirp Custom Voice Bearer Auth | v0.8 | 1/2 | In progress | - |
+| 11.2. Chirp Custom Voice Bearer Auth | v0.8 | 2/2 | Complete | 2026-02-17 |

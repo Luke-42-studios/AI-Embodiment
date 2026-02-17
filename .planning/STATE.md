@@ -5,21 +5,21 @@
 See: .planning/PROJECT.md (updated 2026-02-13)
 
 **Core value:** Developers can drop an AI character into their Unity scene and have it talking -- with synchronized voice, text, and animation events -- in minutes, not weeks.
-**Current focus:** Phase 11.2 -- Chirp Custom Voice Bearer Auth (OAuth2 bearer token auth via service account JWT)
+**Current focus:** Phase 11.2 complete -- Chirp Custom Voice Bearer Auth (OAuth2 bearer token auth via service account JWT)
 
 ## Current Position
 
 Phase: 11.2 (Chirp Custom Voice Bearer Auth) -- INSERTED
-Plan: 1 of 2 in current phase
-Status: In progress
-Last activity: 2026-02-17 -- Completed 11.2-01-PLAN.md
+Plan: 2 of 2 in current phase
+Status: Phase complete
+Last activity: 2026-02-17 -- Completed 11.2-02-PLAN.md
 
-Progress: [####################] 100% (29/30 total plans -- 17 v1 complete, 10 v0.8 complete, 1 v11.1 complete, 1 v11.2 complete)
+Progress: [####################] 100% (30/30 total plans -- 17 v1 complete, 10 v0.8 complete, 1 v11.1 complete, 2 v11.2 complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 29
+- Total plans completed: 30
 - Average duration: 1.8 min (excluding human verification time)
 - Total execution time: ~0.9 hours
 
@@ -73,6 +73,9 @@ Recent decisions affecting current work:
 - 11.2-01: Service account JSON loaded from file path at runtime, never serialized into Unity asset
 - 11.2-01: Token refresh margin 300s (5 min) before 3600s expiry to prevent mid-flight expiration
 - 11.2-01: Service account path masked by default in editor UI (screen-sharing safety)
+- 11.2-02: PersonaSession owns GoogleServiceAccountAuth lifetime (caller-owns pattern, not ChirpTTSClient)
+- 11.2-02: ChirpTTSClient does NOT dispose _auth -- avoids double-dispose
+- 11.2-02: API key check in Connect() stays as-is: Gemini Live WebSocket always needs API key
 
 ### Pending Todos
 
@@ -91,5 +94,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Completed 11.2-01-PLAN.md. Plan 02 (ChirpTTSClient dual-auth wiring) remains.
+Stopped at: Completed 11.2-02-PLAN.md. Phase 11.2 complete. Phase 11.1 (Queued Response Sample) has 2 unexecuted plans remaining.
 Resume file: None
