@@ -1,0 +1,52 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <Style src="LivestreamPanel.uss" />
+
+    <ui:VisualElement name="root-container" class="root">
+        <!-- Top bar: LIVE badge, viewer count, duration timer -->
+        <ui:VisualElement name="top-bar" class="top-bar">
+            <ui:Label name="live-badge" text="LIVE" class="live-badge" />
+            <ui:Label name="viewer-count" text="0 viewers" class="viewer-count" />
+            <ui:Label name="duration-timer" text="00:00" class="duration-timer" />
+        </ui:VisualElement>
+
+        <!-- Main content: chat panel (left) and Aya panel (right) -->
+        <ui:VisualElement name="main-content" class="main-content">
+
+            <!-- Chat panel (~60% width) -->
+            <ui:VisualElement name="chat-panel" class="chat-panel">
+                <ui:ListView name="chat-feed"
+                    virtualization-method="DynamicHeight"
+                    fixed-item-height="40"
+                    selection-type="None"
+                    show-alternating-row-backgrounds="None"
+                    show-border="false"
+                    reorderable="false"
+                    class="chat-feed" />
+
+                <!-- Chat input area (placeholder for future user input) -->
+                <ui:VisualElement name="chat-input-area" class="chat-input-area">
+                    <ui:Label name="chat-input-placeholder" text="Chat messages appear here..."
+                        class="chat-input-placeholder" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <!-- Aya panel (~40% width) -->
+            <ui:VisualElement name="aya-panel" class="aya-panel">
+                <ui:VisualElement name="aya-header" class="aya-header">
+                    <ui:VisualElement name="aya-indicator" class="aya-indicator" />
+                    <ui:Label name="aya-name" text="Aya" class="aya-name" />
+                </ui:VisualElement>
+
+                <ui:ScrollView name="aya-transcript" class="aya-transcript"
+                    vertical-scroller-visibility="Auto"
+                    horizontal-scroller-visibility="Hidden" />
+
+                <!-- Push-to-talk area -->
+                <ui:VisualElement name="ptt-area" class="ptt-area">
+                    <ui:Label name="ptt-status" text="Hold SPACE to talk" class="ptt-status" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>
