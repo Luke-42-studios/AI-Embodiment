@@ -86,39 +86,39 @@ Requirements for the Livestream Experience milestone. Builds on existing v0.8 pa
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| LIVE-01 | - | Pending |
-| LIVE-02 | - | Pending |
-| LIVE-03 | - | Pending |
-| LIVE-04 | - | Pending |
-| BOT-01 | - | Pending |
-| BOT-02 | - | Pending |
-| BOT-03 | - | Pending |
-| BOT-04 | - | Pending |
-| BOT-05 | - | Pending |
-| BOT-06 | - | Pending |
-| NAR-01 | - | Pending |
-| NAR-02 | - | Pending |
-| NAR-03 | - | Pending |
-| NAR-04 | - | Pending |
-| NAR-05 | - | Pending |
-| NAR-06 | - | Pending |
-| USR-01 | - | Pending |
-| USR-02 | - | Pending |
-| USR-03 | - | Pending |
-| ANI-01 | - | Pending |
-| ANI-02 | - | Pending |
-| ANI-03 | - | Pending |
-| INF-01 | - | Pending |
-| INF-02 | - | Pending |
-| MIG-01 | - | Pending |
-| MIG-02 | - | Pending |
-| MIG-03 | - | Pending |
+| LIVE-01 | Phase 16 | Pending |
+| LIVE-02 | Phase 14 | Pending |
+| LIVE-03 | Phase 14 | Pending |
+| LIVE-04 | Phase 14 | Pending |
+| BOT-01 | Phase 12 | Pending |
+| BOT-02 | Phase 13 | Pending |
+| BOT-03 | Phase 13 | Pending |
+| BOT-04 | Phase 13 | Pending |
+| BOT-05 | Phase 13 | Pending |
+| BOT-06 | Phase 13 | Pending |
+| NAR-01 | Phase 14 | Pending |
+| NAR-02 | Phase 14 | Pending |
+| NAR-03 | Phase 14 | Pending |
+| NAR-04 | Phase 16 | Pending |
+| NAR-05 | Phase 16 | Pending |
+| NAR-06 | Phase 14 | Pending |
+| USR-01 | Phase 14 | Pending |
+| USR-02 | Phase 14 | Pending |
+| USR-03 | Phase 14 | Pending |
+| ANI-01 | Phase 15 | Pending |
+| ANI-02 | Phase 15 | Pending |
+| ANI-03 | Phase 15 | Pending |
+| INF-01 | Phase 12 | Pending |
+| INF-02 | Phase 12 | Pending |
+| MIG-01 | Phase 12 | Pending |
+| MIG-02 | Phase 14 | Pending |
+| MIG-03 | Phase 13 | Pending |
 
 **Coverage:**
 - v1.0 requirements: 27 total
-- Mapped to phases: 0 (pending roadmap)
-- Unmapped: 27
+- Mapped to phases: 27
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-17*
-*Last updated: 2026-02-17 after initial definition*
+*Last updated: 2026-02-17 after roadmap creation*

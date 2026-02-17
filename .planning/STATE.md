@@ -5,23 +5,34 @@
 See: .planning/PROJECT.md (updated 2026-02-17)
 
 **Core value:** Developers can drop an AI character into their Unity scene and have it talking -- with synchronized voice, text, and animation events -- in minutes, not weeks.
-**Current focus:** Planning next milestone
+**Current focus:** Phase 12 - Foundation & Data Model
 
 ## Current Position
 
-Phase: None (between milestones)
-Plan: N/A
-Status: v0.8 shipped, next milestone not yet defined
-Last activity: 2026-02-17 -- v0.8 WebSocket Migration milestone complete
+Phase: 12 of 16 (Foundation & Data Model)
+Plan: 0 of 3 in current phase
+Status: Ready to plan
+Last activity: 2026-02-17 -- v1.0 Livestream Experience roadmap created
 
-Progress: Two milestones shipped (v1 MVP + v0.8 WebSocket Migration)
+Progress: [░░░░░░░░░░░░░░░] 0/15 plans (0%)
 
 ## Performance Metrics
 
 **Velocity:**
 - v1 MVP: 17 plans in ~1 day
-- v0.8 WebSocket Migration: 14 plans in ~5 days (including human verification)
+- v0.8 WebSocket Migration: 14 plans in ~5 days
 - Total plans completed: 31
+- v1.0 Livestream Experience: 15 plans planned
+
+**By Phase:**
+
+| Phase | Plans | Total | Avg/Plan |
+|-------|-------|-------|----------|
+| 12 | 3 | - | - |
+| 13 | 3 | - | - |
+| 14 | 4 | - | - |
+| 15 | 2 | - | - |
+| 16 | 3 | - | - |
 
 ## Accumulated Context
 
@@ -29,22 +40,26 @@ Progress: Two milestones shipped (v1 MVP + v0.8 WebSocket Migration)
 
 Full decision log in PROJECT.md Key Decisions table.
 
+- Hybrid chat bots: scripted + Gemini structured output (low latency ambient, dynamic for user interactions)
+- Finish-first priority: Aya completes current response before addressing user input
+- Dual Gemini path: Live WebSocket for Aya, REST generateContent for chat bots
+- Zero package modifications: all new code in Samples~/LivestreamSample/
+- SendText director notes for mid-session narrative steering (Live API cannot update system instructions)
+- Additive scene loading for movie clip (preserves WebSocket + chat state)
+
 ### Pending Todos
 
 None.
 
-### Roadmap Evolution
-
-- v1 MVP shipped 2026-02-05 (Phases 1-6)
-- v0.8 WebSocket Migration shipped 2026-02-17 (Phases 7-11.2)
-- Phase 11.1 and 11.2 were inserted phases for QueuedResponse sample and Chirp bearer auth
-
 ### Blockers/Concerns
 
-- RSA.ImportPkcs8PrivateKey works on desktop Mono (editor) but may fail on Android IL2CPP -- editor-only for now
+- RSA.ImportPkcs8PrivateKey may fail on Android IL2CPP (editor-only for now)
+- SendText director note reliability needs early validation in Phase 14
+- ListView dynamic height for variable-length chat messages may need fallback
+- Context window growth over 10-15 min session with bot message injection -- monitor in Phase 16
 
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: v0.8 milestone complete. Next milestone not yet defined.
+Stopped at: Roadmap created for v1.0 Livestream Experience milestone. Ready to plan Phase 12.
 Resume file: None
