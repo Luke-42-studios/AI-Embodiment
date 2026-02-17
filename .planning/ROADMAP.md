@@ -154,4 +154,4 @@ Plans:
 | 10. Function Calling and Goals Migration | v0.8 | 2/2 | Complete | 2026-02-13 |
 | 11. Integration Verification | v0.8 | 2/2 | Complete | 2026-02-13 |
 | 11.1. Queued Response Sample | v0.8 | 0/2 | Planned | - |
-| 11.2. Chirp Custom Voice Bearer Auth | v0.8 | 0/2 | Planned | - |
+| 11.2. Chirp Custom Voice Bearer Auth | v0.8 | 1/2 | In progress | - |

@@ -5,21 +5,21 @@
 See: .planning/PROJECT.md (updated 2026-02-13)
 
 **Core value:** Developers can drop an AI character into their Unity scene and have it talking -- with synchronized voice, text, and animation events -- in minutes, not weeks.
-**Current focus:** Phase 11.1 -- Queued Response Sample (push-to-talk transcript approval UX)
+**Current focus:** Phase 11.2 -- Chirp Custom Voice Bearer Auth (OAuth2 bearer token auth via service account JWT)
 
 ## Current Position
 
-Phase: 11.1 (Queued Response Sample) -- INSERTED
-Plan: 1 of 1 in current phase
-Status: Phase complete
-Last activity: 2026-02-13 -- Completed 11.1-01-PLAN.md
+Phase: 11.2 (Chirp Custom Voice Bearer Auth) -- INSERTED
+Plan: 1 of 2 in current phase
+Status: In progress
+Last activity: 2026-02-17 -- Completed 11.2-01-PLAN.md
 
-Progress: [####################] 100% (28/28 total plans -- 17 v1 complete, 10 v0.8 complete, 1 v11.1 complete)
+Progress: [####################] 100% (29/30 total plans -- 17 v1 complete, 10 v0.8 complete, 1 v11.1 complete, 1 v11.2 complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 28
+- Total plans completed: 29
 - Average duration: 1.8 min (excluding human verification time)
 - Total execution time: ~0.9 hours
 
@@ -69,6 +69,10 @@ Recent decisions affecting current work:
 - 11.1-01: Playback completion via _turnComplete && !_audioPlayback.IsPlaying (not OnAISpeakingStopped)
 - 11.1-01: Audio buffered in List<float[]> during Reviewing, bulk fed to AudioPlayback on Enter
 - 11.1-01: indicator--speaking reused from Aya USS; recording (red) and response-ready (green) classes added
+- 11.2-01: Manual JWT RS256 signing (~200 lines) instead of Google.Apis.Auth NuGet dependency
+- 11.2-01: Service account JSON loaded from file path at runtime, never serialized into Unity asset
+- 11.2-01: Token refresh margin 300s (5 min) before 3600s expiry to prevent mid-flight expiration
+- 11.2-01: Service account path masked by default in editor UI (screen-sharing safety)
 
 ### Pending Todos
 
@@ -77,13 +81,15 @@ None.
 ### Roadmap Evolution
 
 - Phase 11.1 inserted after Phase 11: Queued Response Sample -- push-to-talk transcript approval UX with pre-fetched AI response playback (URGENT)
+- Phase 11.2 inserted after Phase 11.1: Chirp Custom Voice Bearer Auth -- OAuth2 bearer token auth via service account JWT for Chirp Custom Voice TTS on v1beta1 endpoint (URGENT)
 
 ### Blockers/Concerns
 
 - Gemini output audio sample rate assumed 24kHz -- verified working in practice during 11-02 human verification
+- RSA.ImportPkcs8PrivateKey works on desktop Mono (editor) but may fail on Android IL2CPP -- editor-only for now per success criterion 5
 
 ## Session Continuity
 
-Last session: 2026-02-13
-Stopped at: Completed 11.1-01-PLAN.md. Phase 11.1 (Queued Response Sample) is complete.
+Last session: 2026-02-17
+Stopped at: Completed 11.2-01-PLAN.md. Plan 02 (ChirpTTSClient dual-auth wiring) remains.
 Resume file: None
