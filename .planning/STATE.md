@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-17)
 ## Current Position
 
 Phase: 13 of 16 (Chat Bot System)
-Plan: 0 of 3 in current phase
-Status: Ready to plan
-Last activity: 2026-02-17 -- Phase 12 complete
+Plan: 1 of 3 in current phase
+Status: In progress
+Last activity: 2026-02-17 -- Completed 13-01-PLAN.md
 
-Progress: [███░░░░░░░░░░░░] 3/15 plans (20%)
+Progress: [████░░░░░░░░░░░] 4/15 plans (27%)
 
 ## Performance Metrics
 
@@ -46,6 +46,8 @@ Full decision log in PROJECT.md Key Decisions table.
 - Zero package modifications: all new code in Samples~/LivestreamSample/
 - SendText director notes for mid-session narrative steering (Live API cannot update system instructions)
 - Additive scene loading for movie clip (preserves WebSocket + chat state)
+- Combined scriptedMessages + messageAlternatives as single indexed pool in ChatBotManager.PickMessage
+- Burst loop pattern: async Awaitable with destroyCancellationToken, try/catch OperationCanceledException
 
 ### Pending Todos
 
@@ -60,6 +62,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-17T21:37:12Z
-Stopped at: Completed 12-03-PLAN.md (LivestreamUI shell -- Phase 12 complete)
+Last session: 2026-02-17T22:40:25Z
+Stopped at: Completed 13-01-PLAN.md (ChatBotManager scripted burst loop + TrackedChatMessage)
 Resume file: None
