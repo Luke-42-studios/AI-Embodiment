@@ -28,8 +28,8 @@
 - [x] **Phase 9: TTS Abstraction** - ITTSProvider interface and ChirpTTSClient adaptation
 - [x] **Phase 10: Function Calling and Goals Migration** - WebSocket-native tool declarations and mid-session instruction updates
 - [x] **Phase 11: Integration Verification** - Sample scene and PacketAssembler validation with new transport
-- [ ] **Phase 11.1: Queued Response Sample** - Push-to-talk transcript approval UX with pre-fetched AI response playback (INSERTED)
-- [ ] **Phase 11.2: Chirp Custom Voice Bearer Auth** - OAuth2 bearer token auth for Chirp Custom Voice TTS via service account credentials (INSERTED)
+- [x] **Phase 11.1: Queued Response Sample** - Push-to-talk transcript approval UX with pre-fetched AI response playback (INSERTED)
+- [x] **Phase 11.2: Chirp Custom Voice Bearer Auth** - OAuth2 bearer token auth for Chirp Custom Voice TTS via service account credentials (INSERTED)
 
 ## Phase Details
 
@@ -118,8 +118,8 @@ Plans:
 **Plans:** 2 plans
 
 Plans:
-- [ ] 11.1-01-PLAN.md -- Project structure, UI assets (UXML/USS), QueuedResponseController state machine with audio buffering, QueuedResponseUI with state-driven display
-- [ ] 11.1-02-PLAN.md -- Samples~ sync and end-to-end human verification of the queued response UX
+- [x] 11.1-01-PLAN.md -- Project structure, UI assets (UXML/USS), QueuedResponseController state machine with audio buffering, QueuedResponseUI with state-driven display
+- [x] 11.1-02-PLAN.md -- Samples~ sync and end-to-end human verification of the queued response UX
 
 ### Phase 11.2: Chirp Custom Voice Bearer Auth (INSERTED)
 **Goal**: ChirpTTSClient authenticates with Google Cloud TTS via OAuth2 bearer tokens (service account JWT exchange) instead of API key, enabling Chirp Custom Voice cloning on the v1beta1 endpoint
@@ -153,5 +153,5 @@ Plans:
 | 9. TTS Abstraction | v0.8 | 2/2 | Complete | 2026-02-13 |
 | 10. Function Calling and Goals Migration | v0.8 | 2/2 | Complete | 2026-02-13 |
 | 11. Integration Verification | v0.8 | 2/2 | Complete | 2026-02-13 |
-| 11.1. Queued Response Sample | v0.8 | 0/2 | Planned | - |
+| 11.1. Queued Response Sample | v0.8 | 2/2 | Complete | 2026-02-17 |
 | 11.2. Chirp Custom Voice Bearer Auth | v0.8 | 2/2 | Complete | 2026-02-17 |
