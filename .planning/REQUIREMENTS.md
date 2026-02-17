@@ -16,7 +16,7 @@ Requirements for the Livestream Experience milestone. Builds on existing v0.8 pa
 
 ### Chat Bot System
 
-- [ ] **BOT-01**: ChatBotConfig ScriptableObject (name, personality, color, scripted message pool, typing speed)
+- [x] **BOT-01**: ChatBotConfig ScriptableObject (name, personality, color, scripted message pool, typing speed)
 - [ ] **BOT-02**: Configurable number of bot personas per stream
 - [ ] **BOT-03**: Chat burst system with randomized bot count, shuffled order, message alternatives, configurable delays (0.8-3.0s)
 - [ ] **BOT-04**: Dynamic Gemini responses to user input via REST structured output (gemini-2.5-flash)
@@ -46,12 +46,12 @@ Requirements for the Livestream Experience milestone. Builds on existing v0.8 pa
 
 ### Infrastructure
 
-- [ ] **INF-01**: GeminiTextClient -- REST generateContent wrapper for structured output (chat bot responses)
-- [ ] **INF-02**: Livestream UI -- chat feed (ListView for performance), push-to-talk indicator, Aya transcript, stream status
+- [x] **INF-01**: GeminiTextClient -- REST generateContent wrapper for structured output (chat bot responses)
+- [x] **INF-02**: Livestream UI -- chat feed (ListView for performance), push-to-talk indicator, Aya transcript, stream status
 
 ### Content Migration
 
-- [ ] **MIG-01**: Migrate StreamingCharacter ScriptableObjects from nevatars to ChatBotConfig format (preserve names, colors, personalities)
+- [x] **MIG-01**: Migrate StreamingCharacter ScriptableObjects from nevatars to ChatBotConfig format (preserve names, colors, personalities)
 - [ ] **MIG-02**: Migrate NarrativeBeat/Scene assets from nevatars (preserve beat structure, scene ordering, scripted messages, cue timing)
 - [ ] **MIG-03**: Migrate response patterns and message alternatives from nevatars (preserve bot dialogue pools)
 
