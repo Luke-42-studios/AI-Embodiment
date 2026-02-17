@@ -32,6 +32,11 @@ Assets/Editor Default Resources.meta
 Assets/Resources/AIEmbodimentSettings.asset
 Assets/Resources/AIEmbodimentSettings.asset.meta
 
+# Service account credentials (sensitive -- never commit)
+*.service-account.json
+*-service-account.json
+service-account*.json
+
 # Firebase credentials (sensitive)
 Assets/google-services.json
 Assets/google-services.json.meta
