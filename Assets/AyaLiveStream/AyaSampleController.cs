@@ -16,6 +16,8 @@ namespace AIEmbodiment.Samples
     {
         [SerializeField] private PersonaSession _session;
         [SerializeField] private AyaChatUI _chatUI;
+        [SerializeField] private LivestreamUI _livestreamUI;
+        [SerializeField] private AnimationConfig _animationConfig;
         [SerializeField] private AudioSource _introAudioSource;
         [SerializeField] private AudioClip _introClip;
 
@@ -39,42 +41,34 @@ namespace AIEmbodiment.Samples
 
         private void RegisterFunctions()
         {
-            _session.RegisterFunction("emote",
-                new FunctionDeclaration("emote", "Play a character animation or emote")
-                    .AddString("animation_name", "Name of the animation to play"),
-                HandleEmote);
-
-            _session.RegisterFunction("start_movie",
-                new FunctionDeclaration("start_movie", "Switch to movie viewing mode"),
-                HandleStartMovie);
-
-            _session.RegisterFunction("start_drawing",
-                new FunctionDeclaration("start_drawing", "Switch to drawing mode"),
-                HandleStartDrawing);
+            // Animation function -- data-driven from ScriptableObject
+            if (_animationConfig != null && _animationConfig.animations != null
+                && _animationConfig.animations.Length > 0)
+            {
+                string[] animNames = _animationConfig.GetAnimationNames();
+                var animDecl = new FunctionDeclaration(
+                        "play_animation",
+                        "Play a character animation or gesture during conversation. Use this to add expressiveness.")
+                    .AddEnum("animation_name", "Name of the animation to play", animNames);
+                _session.RegisterFunction("play_animation", animDecl, HandlePlayAnimation);
+            }
+            else
+            {
+                Debug.LogWarning("[AyaSampleController] No AnimationConfig assigned or empty -- animation function calls disabled.");
+            }
         }
 
-        private IDictionary<string, object> HandleEmote(FunctionCallContext ctx)
+        private IDictionary<string, object> HandlePlayAnimation(FunctionCallContext ctx)
         {
             string animName = ctx.GetString("animation_name", "idle");
-            _chatUI.LogSystemMessage($"[Emote: {animName}]");
-            return null; // fire-and-forget
-        }
-
-        private IDictionary<string, object> HandleStartMovie(FunctionCallContext ctx)
-        {
-            _chatUI.LogSystemMessage("[Movie mode activated]");
-            return null; // fire-and-forget
-        }
-
-        private IDictionary<string, object> HandleStartDrawing(FunctionCallContext ctx)
-        {
-            _chatUI.LogSystemMessage("[Drawing mode activated]");
+            Debug.Log($"[Animation] play_animation triggered: {animName}");
+            _livestreamUI?.ShowToast($"*{animName}*");
             return null; // fire-and-forget
         }
 
         private void HandleFunctionError(string functionName, Exception ex)
         {
-            _chatUI.LogSystemMessage($"[Function error: {functionName} -- {ex.Message}]");
+            Debug.LogError($"[AyaSampleController] Function error: {functionName} -- {ex.Message}");
         }
 
         private IEnumerator PlayIntroThenGoLive()
