@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-17)
 ## Current Position
 
 Phase: 14 of 16 (Narrative Director & User Interaction)
-Plan: 1 of 4 in current phase
+Plan: 2 of 4 in current phase
 Status: In progress
-Last activity: 2026-02-17 -- Completed 14-01-PLAN.md
+Last activity: 2026-02-17 -- Completed 14-02-PLAN.md
 
-Progress: [███████░░░░░░░░] 7/15 plans (47%)
+Progress: [████████░░░░░░░] 8/15 plans (53%)
 
 ## Performance Metrics
 
 **Velocity:**
 - v1 MVP: 17 plans in ~1 day
 - v0.8 WebSocket Migration: 14 plans in ~5 days
-- Total plans completed: 38
+- Total plans completed: 39
 - v1.0 Livestream Experience: 15 plans planned
 
 **By Phase:**
@@ -55,6 +55,9 @@ Full decision log in PROJECT.md Key Decisions table.
 - Rapid PTT guard: _dynamicResponseInFlight with _queuedTranscript queuing
 - Editor script approach for beat asset generation (avoids GUID issues, follows MigrateChatBotConfigs pattern)
 - GoalUrgency enum (Low/Medium/High) for escalating narrative intensity across beats
+- Pending beat queue: director notes queued for OnTurnComplete when Aya is speaking (Pitfall 3 guard)
+- Event-based NarrativeDirector coordination: IsAyaSpeaking, OnBeatTransition (never direct field manipulation)
+- ChatBotManager pacing: 2x min lull, 1.5x max, half bots when Aya speaks; 5s pause at beat transitions
 
 ### Pending Todos
 
@@ -69,6 +72,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-17T23:43:27Z
-Stopped at: Completed 14-01-PLAN.md (Narrative Beat Data Model)
+Last session: 2026-02-17T23:47:25Z
+Stopped at: Completed 14-02-PLAN.md (NarrativeDirector Core)
 Resume file: None
