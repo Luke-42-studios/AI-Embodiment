@@ -96,6 +96,7 @@ namespace AIEmbodiment
         private bool _isListening;
 
         private ITTSProvider _ttsProvider;
+        private GoogleServiceAccountAuth _serviceAuth;
         private readonly StringBuilder _ttsTextBuffer = new StringBuilder();
         private readonly StringBuilder _functionCallBuffer = new StringBuilder();
 
@@ -203,9 +204,28 @@ namespace AIEmbodiment
                 // Initialize TTS provider based on voice backend
                 if (_config.voiceBackend == VoiceBackend.ChirpTTS)
                 {
-                    _ttsProvider = new ChirpTTSClient(
-                        settings.ApiKey,
-                        _config.IsCustomChirpVoice ? _config.voiceCloningKey : null);
+                    string serviceAccountJson = settings.LoadServiceAccountJson();
+                    string voiceCloningKey = _config.IsCustomChirpVoice ? _config.voiceCloningKey : null;
+
+                    if (serviceAccountJson != null)
+                    {
+                        // Bearer auth path: service account enables v1beta1 endpoint (required for custom voice cloning)
+                        _serviceAuth = new GoogleServiceAccountAuth(serviceAccountJson);
+                        _ttsProvider = new ChirpTTSClient(_serviceAuth, voiceCloningKey);
+                    }
+                    else
+                    {
+                        // API key fallback: v1 endpoint (standard voices only, no custom voice cloning)
+                        _ttsProvider = new ChirpTTSClient(settings.ApiKey, voiceCloningKey);
+
+                        if (!string.IsNullOrEmpty(voiceCloningKey))
+                        {
+                            Debug.LogWarning(
+                                "PersonaSession: Voice cloning key set but no service account configured. " +
+                                "Custom voice cloning requires bearer auth via service account. " +
+                                "Configure a service account in AIEmbodimentSettings.");
+                        }
+                    }
                 }
                 else if (_config.voiceBackend == VoiceBackend.Custom)
                 {
@@ -824,6 +844,11 @@ namespace AIEmbodiment
                     _ttsProvider.Dispose();
                     _ttsProvider = null;
                 }
+                if (_serviceAuth != null)
+                {
+                    _serviceAuth.Dispose();
+                    _serviceAuth = null;
+                }
                 _ttsTextBuffer.Clear();
                 _functionCallBuffer.Clear();
 
@@ -864,6 +889,11 @@ namespace AIEmbodiment
             {
                 _ttsProvider.Dispose();
                 _ttsProvider = null;
+            }
+            if (_serviceAuth != null)
+            {
+                _serviceAuth.Dispose();
+                _serviceAuth = null;
             }
 
             _sessionCts?.Cancel();
