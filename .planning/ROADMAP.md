@@ -29,6 +29,7 @@
 - [x] **Phase 10: Function Calling and Goals Migration** - WebSocket-native tool declarations and mid-session instruction updates
 - [x] **Phase 11: Integration Verification** - Sample scene and PacketAssembler validation with new transport
 - [ ] **Phase 11.1: Queued Response Sample** - Push-to-talk transcript approval UX with pre-fetched AI response playback (INSERTED)
+- [ ] **Phase 11.2: Chirp Custom Voice Bearer Auth** - OAuth2 bearer token auth for Chirp Custom Voice TTS via service account credentials (INSERTED)
 
 ## Phase Details
 
@@ -120,9 +121,24 @@ Plans:
 - [ ] 11.1-01-PLAN.md -- Project structure, UI assets (UXML/USS), QueuedResponseController state machine with audio buffering, QueuedResponseUI with state-driven display
 - [ ] 11.1-02-PLAN.md -- Samples~ sync and end-to-end human verification of the queued response UX
 
+### Phase 11.2: Chirp Custom Voice Bearer Auth (INSERTED)
+**Goal**: ChirpTTSClient authenticates with Google Cloud TTS via OAuth2 bearer tokens (service account JWT exchange) instead of API key, enabling Chirp Custom Voice cloning on the v1beta1 endpoint
+**Depends on**: Phase 11.1
+**Success Criteria** (what must be TRUE):
+  1. ChirpTTSClient generates a JWT from a service account JSON key, exchanges it for an OAuth2 access token via `oauth2.googleapis.com/token`, and uses `Authorization: Bearer` header for TTS requests
+  2. Access tokens are cached and automatically refreshed before the 1-hour expiry
+  3. Custom voice synthesis requests target `texttospeech.googleapis.com/v1beta1/text:synthesize` with `voiceClone.voiceCloningKey` in the request body
+  4. Standard (non-custom) Chirp voices continue to work via the same bearer token auth path
+  5. Service account credentials are loaded securely (not shipped in player builds)
+**Plans:** 2 plans
+
+Plans:
+- [ ] 11.2-01-PLAN.md -- GoogleServiceAccountAuth credential provider (JWT signing, token exchange, caching), AIEmbodimentSettings service account path field, editor UI file picker, .gitignore updates
+- [ ] 11.2-02-PLAN.md -- ChirpTTSClient dual-auth (API key v1 / bearer token v1beta1), PersonaSession service account lifecycle and auth-aware TTS provider creation
+
 ## Progress
 
-**Execution Order:** 7 -> 8 -> 9 -> 10 -> 11 -> 11.1 (Phases 9 and 10 can run in parallel after Phase 8)
+**Execution Order:** 7 -> 8 -> 9 -> 10 -> 11 -> 11.1 -> 11.2 (Phases 9 and 10 can run in parallel after Phase 8)
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -138,3 +154,4 @@ Plans:
 | 10. Function Calling and Goals Migration | v0.8 | 2/2 | Complete | 2026-02-13 |
 | 11. Integration Verification | v0.8 | 2/2 | Complete | 2026-02-13 |
 | 11.1. Queued Response Sample | v0.8 | 0/2 | Planned | - |
+| 11.2. Chirp Custom Voice Bearer Auth | v0.8 | 0/2 | Planned | - |
