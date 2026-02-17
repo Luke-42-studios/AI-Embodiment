@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Text;
 using UnityEngine;
 
 namespace AIEmbodiment.Samples
@@ -24,6 +26,7 @@ namespace AIEmbodiment.Samples
         [SerializeField] private PersonaSession _session;
         [SerializeField] private NarrativeBeatConfig[] _beats;
         [SerializeField] private LivestreamUI _livestreamUI;
+        [SerializeField] private ChatBotManager _chatBotManager;
 
         // --- Public API (for other systems to consume) ---
 
@@ -69,6 +72,8 @@ namespace AIEmbodiment.Samples
         private int _currentBeatIndex = -1;
         private NarrativeBeatConfig _pendingBeatTransition;
         private bool _narrativeRunning;
+        private bool _turnComplete;
+        private int _questionsAnsweredCount;
 
         // Event handler references for clean unsubscription
         private Action _onAISpeakingStarted;
@@ -124,11 +129,14 @@ namespace AIEmbodiment.Samples
         }
 
         /// <summary>
-        /// If a beat transition was queued because Aya was speaking, execute it now
-        /// that her turn is complete (Pitfall 3: never send while Aya speaks).
+        /// Signals scene execution that Aya finished her current turn, and if a
+        /// beat transition was queued because Aya was speaking, executes it now
+        /// (Pitfall 3: never send while Aya speaks).
         /// </summary>
         private void HandleTurnComplete()
         {
+            _turnComplete = true;
+
             if (_pendingBeatTransition != null)
             {
                 ExecuteBeatTransition(_pendingBeatTransition);
@@ -182,6 +190,7 @@ namespace AIEmbodiment.Samples
                 {
                     _currentBeatIndex = i;
                     _beatGoalMet = false;
+                    _questionsAnsweredCount = 0;
                     var beat = _beats[i];
 
                     // Fire beat transition event (sync point for ChatBotManager)
@@ -206,12 +215,16 @@ namespace AIEmbodiment.Samples
                         ExecuteBeatTransition(beat);
                     }
 
-                    // Beat timer loop: advance on goal-met or time-expired
-                    float elapsed = 0f;
-                    while (elapsed < beat.timeBudgetSeconds && !_beatGoalMet)
+                    // Run scenes within beat's time budget
+                    float beatStartTime = Time.time;
+                    await ExecuteBeatScenes(beat, beatStartTime);
+
+                    // After scenes complete, wait for remaining beat time (if any) or goal-met
+                    float remaining = beat.timeBudgetSeconds - (Time.time - beatStartTime);
+                    while (remaining > 0 && !_beatGoalMet)
                     {
                         await Awaitable.WaitForSecondsAsync(1f, destroyCancellationToken);
-                        elapsed += 1f;
+                        remaining = beat.timeBudgetSeconds - (Time.time - beatStartTime);
                         if (!_narrativeRunning) return;
                     }
 
@@ -240,6 +253,199 @@ namespace AIEmbodiment.Samples
             if (!string.IsNullOrEmpty(beat.directorNote))
             {
                 _session.SendText(beat.directorNote);
+            }
+        }
+
+        // --- Scene Execution ---
+
+        /// <summary>
+        /// Iterates through the beat's scenes sequentially, stopping early if the
+        /// beat time budget expires or the beat goal is met.
+        /// </summary>
+        private async Awaitable ExecuteBeatScenes(NarrativeBeatConfig beat, float beatStartTime)
+        {
+            if (beat.scenes == null) return;
+
+            for (int i = 0; i < beat.scenes.Length; i++)
+            {
+                if (!_narrativeRunning || _beatGoalMet) return;
+
+                // Check if beat time budget has expired
+                if (Time.time - beatStartTime >= beat.timeBudgetSeconds) return;
+
+                var scene = beat.scenes[i];
+                await ExecuteScene(scene);
+            }
+        }
+
+        /// <summary>
+        /// Routes a scene to the appropriate handler based on its type, then
+        /// waits for any conditional transition before advancing to the next scene.
+        /// </summary>
+        private async Awaitable ExecuteScene(NarrativeSceneConfig scene)
+        {
+            switch (scene.type)
+            {
+                case SceneType.AyaDialogue:
+                    await ExecuteAyaDialogue(scene);
+                    break;
+                case SceneType.AyaChecksChat:
+                    await ExecuteAyaChecksChat(scene);
+                    break;
+                case SceneType.AyaAction:
+                    ExecuteAyaAction(scene);
+                    break;
+                case SceneType.ChatBurst:
+                    // ChatBurst runs on the chat queue (ChatBotManager) independently
+                    // No action needed here -- ChatBotManager burst loop handles this
+                    break;
+                case SceneType.UserChoice:
+                    // UserChoice not implemented in Phase 14 per scope
+                    Debug.Log($"[NarrativeDirector] UserChoice scene '{scene.sceneId}' skipped (Phase 14 scope)");
+                    break;
+            }
+
+            // Handle conditional transitions
+            if (scene.isConditional)
+            {
+                await WaitForCondition(scene);
+            }
+        }
+
+        /// <summary>
+        /// Sends a randomly selected dialogue alternative to Gemini via SendText.
+        /// Waits for Aya to be idle before sending (Pitfall 3) and waits for her
+        /// turn to complete before returning.
+        /// </summary>
+        private async Awaitable ExecuteAyaDialogue(NarrativeSceneConfig scene)
+        {
+            if (scene.dialogueAlternatives == null || scene.dialogueAlternatives.Length == 0) return;
+
+            // Pick a random dialogue alternative
+            string dialogue = scene.dialogueAlternatives[UnityEngine.Random.Range(0, scene.dialogueAlternatives.Length)];
+
+            // Wait for Aya to finish any current speech (never send while speaking -- Pitfall 3)
+            await WaitForAyaIdle();
+
+            // Send dialogue context to Gemini via SendText
+            _session.SendText(dialogue);
+
+            // Wait for Aya to respond and complete her turn
+            _turnComplete = false;
+            await WaitForTurnComplete();
+        }
+
+        /// <summary>
+        /// Gathers unresponded chat messages (user messages prioritized over bot messages),
+        /// builds a summary, and sends it to Aya via SendText as a director note. Marks
+        /// addressed messages as responded. Waits for Aya's turn to complete before returning.
+        /// </summary>
+        private async Awaitable ExecuteAyaChecksChat(NarrativeSceneConfig scene)
+        {
+            if (_chatBotManager == null) return;
+
+            var unresponded = _chatBotManager.GetUnrespondedMessages();
+            if (unresponded.Count == 0)
+            {
+                Debug.Log($"[NarrativeDirector] AyaChecksChat '{scene.sceneId}': no unresponded messages");
+                return;
+            }
+
+            // User messages get priority over bot messages (per CONTEXT.md decision)
+            var userMessages = new List<TrackedChatMessage>();
+            var botMessages = new List<TrackedChatMessage>();
+            foreach (var msg in unresponded)
+            {
+                if (msg.Message.IsFromUser) userMessages.Add(msg);
+                else botMessages.Add(msg);
+            }
+
+            var toAddress = userMessages.Count > 0 ? userMessages : botMessages;
+            int count = Mathf.Min(toAddress.Count, scene.maxResponsesToGenerate);
+
+            // Build summary rather than injecting each message (Pitfall 8: context window)
+            var sb = new StringBuilder();
+            sb.AppendLine("[Director: Your chat audience has been active. Here are messages to respond to:]");
+            for (int i = 0; i < count; i++)
+            {
+                var msg = toAddress[i];
+                sb.AppendLine($"- {msg.Message.BotName}: \"{msg.Message.Text}\"");
+                msg.AyaHasResponded = true; // Mark as addressed
+            }
+            sb.AppendLine("[Respond naturally to one or more of these, then continue your current topic.]");
+
+            // Wait for Aya to finish any current speech
+            await WaitForAyaIdle();
+
+            _session.SendText(sb.ToString());
+
+            // Wait for Aya's response to complete
+            _turnComplete = false;
+            await WaitForTurnComplete();
+
+            _questionsAnsweredCount += count;
+        }
+
+        /// <summary>
+        /// Phase 15 placeholder for action execution. Logs the action description.
+        /// </summary>
+        private void ExecuteAyaAction(NarrativeSceneConfig scene)
+        {
+            Debug.Log($"[NarrativeDirector] AyaAction '{scene.sceneId}': {scene.actionDescription} (Phase 15 placeholder)");
+        }
+
+        /// <summary>
+        /// Waits for a conditional transition to be satisfied before the next scene
+        /// can execute. Supports TimedOut (waits N seconds), QuestionsAnswered
+        /// (waits for response count), and Always (immediate, no wait).
+        /// </summary>
+        private async Awaitable WaitForCondition(NarrativeSceneConfig scene)
+        {
+            switch (scene.conditionType)
+            {
+                case ConditionType.Always:
+                    // Immediate -- no wait
+                    break;
+
+                case ConditionType.TimedOut:
+                    float elapsed = 0f;
+                    while (elapsed < scene.maxDuration && !_beatGoalMet)
+                    {
+                        await Awaitable.WaitForSecondsAsync(1f, destroyCancellationToken);
+                        elapsed += 1f;
+                    }
+                    break;
+
+                case ConditionType.QuestionsAnswered:
+                    while (_questionsAnsweredCount < scene.requiredValue && !_beatGoalMet)
+                    {
+                        await Awaitable.WaitForSecondsAsync(0.5f, destroyCancellationToken);
+                    }
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// Waits until Aya is not speaking. Guards all SendText calls to prevent
+        /// the interruption anti-pattern (Pitfall 3).
+        /// </summary>
+        private async Awaitable WaitForAyaIdle()
+        {
+            while (_isAyaSpeaking)
+            {
+                await Awaitable.WaitForSecondsAsync(0.1f, destroyCancellationToken);
+            }
+        }
+
+        /// <summary>
+        /// Waits until Aya's current turn completes (signaled by HandleTurnComplete
+        /// setting _turnComplete = true).
+        /// </summary>
+        private async Awaitable WaitForTurnComplete()
+        {
+            while (!_turnComplete)
+            {
+                await Awaitable.WaitForSecondsAsync(0.1f, destroyCancellationToken);
             }
         }
 
