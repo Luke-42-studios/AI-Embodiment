@@ -52,12 +52,12 @@ Plans:
   3. When the user speaks via push-to-talk, bots generate dynamic responses via Gemini structured output that react to what the user said (not just scripted lines)
   4. TrackedChatMessage system tracks which messages Aya has and has not responded to, preventing Aya from acknowledging the same bot message twice
   5. Migrated message pools from nevatars response patterns provide the scripted dialogue content for each bot
-**Plans**: TBD
+**Plans:** 3 plans
 
 Plans:
-- [ ] 13-01: ChatBotManager with scripted message scheduling and burst timing
-- [ ] 13-02: Dynamic Gemini REST responses and TrackedChatMessage system
-- [ ] 13-03: Nevatars response pattern migration and per-bot personality tuning
+- [ ] 13-01-PLAN.md -- ChatBotManager with scripted burst loop, TrackedChatMessage, and per-bot personality transforms
+- [ ] 13-02-PLAN.md -- Dynamic Gemini REST responses triggered by user push-to-talk speech
+- [ ] 13-03-PLAN.md -- Nevatars response pattern migration (chatBurstMessages to messageAlternatives)
 
 ### Phase 14: Narrative Director & User Interaction
 **Goal**: Aya drives a time-based narrative arc through beat/scene structure, responds to user push-to-talk with finish-first priority (completing her current thought before addressing the user), and the dual-queue system orchestrates chat scenes and Aya scenes in parallel
