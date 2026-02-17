@@ -21,7 +21,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 12: Foundation & Data Model** - REST client, UI shell, ChatBotConfig ScriptableObject, and migrated character data
 - [x] **Phase 13: Chat Bot System** - Scripted and dynamic chat bots with burst timing, personality, and tracked messages
 - [ ] **Phase 14: Narrative Director & User Interaction** - Beat/scene structure, dual-queue orchestration, push-to-talk finish-first, and narrative steering
-- [ ] **Phase 15: Scene Transition & Animation** - Animation function calls, additive movie clip loading, and pre-load strategy
+- [ ] **Phase 15: Scene Transition & Animation** - Animation function calls, clean scene transition to movie clip, toast UI feedback
 - [ ] **Phase 16: Integration & Experience Loop** - Full livestream scene wiring, cross-system context injection, and end-to-end experience
 
 ## Phase Details
@@ -78,18 +78,18 @@ Plans:
 - [ ] 14-04-PLAN.md -- PushToTalkController with finish-first state machine, transcript overlay, and visual acknowledgment
 
 ### Phase 15: Scene Transition & Animation
-**Goal**: Aya can trigger pre-authored animations via function calls, and the narrative climax triggers an additive scene load for the Unity-rendered movie clip -- all without destroying the livestream WebSocket or chat state
-**Depends on**: Phase 14 (NarrativeDirector reaching reveal goal triggers scene load)
+**Goal**: Aya can trigger pre-authored animations via function calls during conversation, and the narrative climax triggers a clean scene exit to the movie clip -- with visible toast feedback for animation triggers and explicit WebSocket disconnect before scene unload
+**Depends on**: Phase 14 (NarrativeDirector.OnAllBeatsComplete triggers scene transition)
 **Requirements**: ANI-01, ANI-02, ANI-03
 **Success Criteria** (what must be TRUE):
-  1. Aya triggers animation function calls (wave, spin, draw gestures) naturally during conversation, and the registered handlers fire (verified via console logs or placeholder animations)
-  2. When the narrative reaches the reveal goal, additive scene loading activates the pre-loaded movie clip scene while the livestream scene remains loaded (PersonaSession WebSocket stays connected, chat history preserved)
-  3. Movie clip scene is pre-loaded with allowSceneActivation = false early in the session, so activation at reveal time is near-instant (no loading stall)
-**Plans**: TBD
+  1. Aya triggers animation function calls (wave, point, laugh, think, nod) naturally during conversation, and the registered handlers fire (verified via Debug.Log in console AND toast message in livestream UI)
+  2. AnimationConfig ScriptableObject defines available animations in the Inspector -- developers add/remove animations without code changes, and the play_animation function uses an enum parameter constraining Gemini to valid animation names
+  3. When the narrative reaches all-beats-complete, PersonaSession disconnects cleanly and the movie clip scene loads via SceneManager.LoadSceneAsync with LoadSceneMode.Single (livestream scene fully unloads, instant cut transition)
+**Plans:** 2 plans
 
 Plans:
-- [ ] 15-01: Animation function call registration and handler wiring
-- [ ] 15-02: SceneTransition handler with additive loading, pre-load strategy, and camera/AudioListener management
+- [ ] 15-01-PLAN.md -- AnimationConfig ScriptableObject, data-driven play_animation function registration, toast UI feedback
+- [ ] 15-02-PLAN.md -- SceneTransitionHandler with clean scene exit, explicit Disconnect, and Build Settings validation
 
 ### Phase 16: Integration & Experience Loop
 **Goal**: The complete livestream sample scene runs as a cohesive 10-minute experience -- Aya hosts, bots chat, user talks, narrative builds, and the movie clip reveals -- with cross-system context injection ensuring coherence
