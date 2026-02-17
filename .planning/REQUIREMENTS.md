@@ -103,8 +103,8 @@
 | DEP-02 | Phase 8 | Complete |
 | DEP-03 | Phase 8 | Complete |
 | DEP-04 | Phase 8 | Complete |
-| INT-01 | Phase 11 | Pending |
-| INT-02 | Phase 11 | Pending |
+| INT-01 | Phase 11 | Complete |
+| INT-02 | Phase 11 | Complete |
 
 **Coverage:**
 - v0.8 requirements: 26 total
@@ -113,4 +113,4 @@
 
 ---
 *Requirements defined: 2026-02-13*
-*Last updated: 2026-02-13 after Phase 10 completion*
+*Last updated: 2026-02-17 after Phase 11.2 completion*
