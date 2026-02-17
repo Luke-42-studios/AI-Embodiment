@@ -58,6 +58,10 @@ Full decision log in PROJECT.md Key Decisions table.
 - Pending beat queue: director notes queued for OnTurnComplete when Aya is speaking (Pitfall 3 guard)
 - Event-based NarrativeDirector coordination: IsAyaSpeaking, OnBeatTransition (never direct field manipulation)
 - ChatBotManager pacing: 2x min lull, 1.5x max, half bots when Aya speaks; 5s pause at beat transitions
+- Scene execution within beat time budget: sequential scenes with early exit on budget expiry or goal-met
+- AyaChecksChat summary-based injection: StringBuilder director note, not raw messages (Pitfall 8: context window)
+- User messages always prioritized over bot messages in AyaChecksChat (foreach, not LINQ)
+- Per-beat _questionsAnsweredCount for QuestionsAnswered conditional transitions
 - WaitingForAya PTT sub-state defers mic until Aya finishes (prevents Gemini audio interruption)
 - Idempotent SubmitTranscript guard prevents Enter + auto-submit timer race (Pitfall 6)
 - ChatBotManager NOT paused during PTT (only Aya pauses, chat keeps flowing)
@@ -75,6 +79,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-17T23:52:02Z
-Stopped at: Completed 14-04-PLAN.md (Push-to-Talk Controller)
+Last session: 2026-02-17T23:52:42Z
+Stopped at: Completed 14-03-PLAN.md (Scene Execution) and 14-04-PLAN.md (Push-to-Talk Controller)
 Resume file: None
