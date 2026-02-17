@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-17)
 ## Current Position
 
 Phase: 13 of 16 (Chat Bot System)
-Plan: 1 of 3 in current phase
+Plan: 3 of 3 in current phase
 Status: In progress
-Last activity: 2026-02-17 -- Completed 13-01-PLAN.md
+Last activity: 2026-02-17 -- Completed 13-03-PLAN.md
 
-Progress: [████░░░░░░░░░░░] 4/15 plans (27%)
+Progress: [█████░░░░░░░░░░] 5/15 plans (33%)
 
 ## Performance Metrics
 
@@ -48,6 +48,8 @@ Full decision log in PROJECT.md Key Decisions table.
 - Additive scene loading for movie clip (preserves WebSocket + chat state)
 - Combined scriptedMessages + messageAlternatives as single indexed pool in ChatBotManager.PickMessage
 - Burst loop pattern: async Awaitable with destroyCancellationToken, try/catch OperationCanceledException
+- Keyword-hit scoring for nevatars message categorization across 6 bot personalities
+- Lurker matched by message length (1-3 words), not keywords
 
 ### Pending Todos
 
@@ -62,6 +64,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-17T22:40:25Z
-Stopped at: Completed 13-01-PLAN.md (ChatBotManager scripted burst loop + TrackedChatMessage)
+Last session: 2026-02-17T22:42:55Z
+Stopped at: Completed 13-03-PLAN.md (MigrateResponsePatterns editor script)
 Resume file: None
