@@ -17,11 +17,11 @@ Requirements for the Livestream Experience milestone. Builds on existing v0.8 pa
 ### Chat Bot System
 
 - [x] **BOT-01**: ChatBotConfig ScriptableObject (name, personality, color, scripted message pool, typing speed)
-- [ ] **BOT-02**: Configurable number of bot personas per stream
-- [ ] **BOT-03**: Chat burst system with randomized bot count, shuffled order, message alternatives, configurable delays (0.8-3.0s)
-- [ ] **BOT-04**: Dynamic Gemini responses to user input via REST structured output (gemini-2.5-flash)
-- [ ] **BOT-05**: Per-bot personality in typing cadence and speech style
-- [ ] **BOT-06**: TrackedChatMessage system (tracks which bot messages Aya has responded to)
+- [x] **BOT-02**: Configurable number of bot personas per stream
+- [x] **BOT-03**: Chat burst system with randomized bot count, shuffled order, message alternatives, configurable delays (0.8-3.0s)
+- [x] **BOT-04**: Dynamic Gemini responses to user input via REST structured output (gemini-2.5-flash)
+- [x] **BOT-05**: Per-bot personality in typing cadence and speech style
+- [x] **BOT-06**: TrackedChatMessage system (tracks which bot messages Aya has responded to)
 
 ### Narrative & Goals
 
@@ -53,7 +53,7 @@ Requirements for the Livestream Experience milestone. Builds on existing v0.8 pa
 
 - [x] **MIG-01**: Migrate StreamingCharacter ScriptableObjects from nevatars to ChatBotConfig format (preserve names, colors, personalities)
 - [ ] **MIG-02**: Migrate NarrativeBeat/Scene assets from nevatars (preserve beat structure, scene ordering, scripted messages, cue timing)
-- [ ] **MIG-03**: Migrate response patterns and message alternatives from nevatars (preserve bot dialogue pools)
+- [x] **MIG-03**: Migrate response patterns and message alternatives from nevatars (preserve bot dialogue pools)
 
 ## v2.0 Requirements (Deferred)
 
@@ -90,12 +90,12 @@ Requirements for the Livestream Experience milestone. Builds on existing v0.8 pa
 | LIVE-02 | Phase 14 | Pending |
 | LIVE-03 | Phase 14 | Pending |
 | LIVE-04 | Phase 14 | Pending |
-| BOT-01 | Phase 12 | Pending |
-| BOT-02 | Phase 13 | Pending |
-| BOT-03 | Phase 13 | Pending |
-| BOT-04 | Phase 13 | Pending |
-| BOT-05 | Phase 13 | Pending |
-| BOT-06 | Phase 13 | Pending |
+| BOT-01 | Phase 12 | Complete |
+| BOT-02 | Phase 13 | Complete |
+| BOT-03 | Phase 13 | Complete |
+| BOT-04 | Phase 13 | Complete |
+| BOT-05 | Phase 13 | Complete |
+| BOT-06 | Phase 13 | Complete |
 | NAR-01 | Phase 14 | Pending |
 | NAR-02 | Phase 14 | Pending |
 | NAR-03 | Phase 14 | Pending |
@@ -108,11 +108,11 @@ Requirements for the Livestream Experience milestone. Builds on existing v0.8 pa
 | ANI-01 | Phase 15 | Pending |
 | ANI-02 | Phase 15 | Pending |
 | ANI-03 | Phase 15 | Pending |
-| INF-01 | Phase 12 | Pending |
-| INF-02 | Phase 12 | Pending |
-| MIG-01 | Phase 12 | Pending |
+| INF-01 | Phase 12 | Complete |
+| INF-02 | Phase 12 | Complete |
+| MIG-01 | Phase 12 | Complete |
 | MIG-02 | Phase 14 | Pending |
-| MIG-03 | Phase 13 | Pending |
+| MIG-03 | Phase 13 | Complete |
 
 **Coverage:**
 - v1.0 requirements: 27 total

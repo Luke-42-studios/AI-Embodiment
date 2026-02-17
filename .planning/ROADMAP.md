@@ -19,7 +19,7 @@ Build a livestream sample scene where Aya hosts an intimate art stream, interact
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 12: Foundation & Data Model** - REST client, UI shell, ChatBotConfig ScriptableObject, and migrated character data
-- [ ] **Phase 13: Chat Bot System** - Scripted and dynamic chat bots with burst timing, personality, and tracked messages
+- [x] **Phase 13: Chat Bot System** - Scripted and dynamic chat bots with burst timing, personality, and tracked messages
 - [ ] **Phase 14: Narrative Director & User Interaction** - Beat/scene structure, dual-queue orchestration, push-to-talk finish-first, and narrative steering
 - [ ] **Phase 15: Scene Transition & Animation** - Animation function calls, additive movie clip loading, and pre-load strategy
 - [ ] **Phase 16: Integration & Experience Loop** - Full livestream scene wiring, cross-system context injection, and end-to-end experience
@@ -55,9 +55,9 @@ Plans:
 **Plans:** 3 plans
 
 Plans:
-- [ ] 13-01-PLAN.md -- ChatBotManager with scripted burst loop, TrackedChatMessage, and per-bot personality transforms
-- [ ] 13-02-PLAN.md -- Dynamic Gemini REST responses triggered by user push-to-talk speech
-- [ ] 13-03-PLAN.md -- Nevatars response pattern migration (chatBurstMessages to messageAlternatives)
+- [x] 13-01-PLAN.md -- ChatBotManager with scripted burst loop, TrackedChatMessage, and per-bot personality transforms
+- [x] 13-02-PLAN.md -- Dynamic Gemini REST responses triggered by user push-to-talk speech
+- [x] 13-03-PLAN.md -- Nevatars response pattern migration (chatBurstMessages to messageAlternatives)
 
 ### Phase 14: Narrative Director & User Interaction
 **Goal**: Aya drives a time-based narrative arc through beat/scene structure, responds to user push-to-talk with finish-first priority (completing her current thought before addressing the user), and the dual-queue system orchestrates chat scenes and Aya scenes in parallel
@@ -115,7 +115,7 @@ Phases execute in numeric order: 12 -> 13 -> 14 -> 15 -> 16
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 12. Foundation & Data Model | 3/3 | Complete | 2026-02-17 |
-| 13. Chat Bot System | 0/3 | Not started | - |
+| 13. Chat Bot System | 3/3 | Complete | 2026-02-17 |
 | 14. Narrative Director & User Interaction | 0/4 | Not started | - |
 | 15. Scene Transition & Animation | 0/2 | Not started | - |
 | 16. Integration & Experience Loop | 0/3 | Not started | - |
