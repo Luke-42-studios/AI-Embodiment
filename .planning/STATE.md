@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-17)
 ## Current Position
 
 Phase: 15 of 16 (Scene Transition & Animation)
-Plan: 0 of 2 in current phase
-Status: Ready to plan
-Last activity: 2026-02-17 -- Phase 14 complete
+Plan: 2 of 2 in current phase (plan 1 pending)
+Status: In progress
+Last activity: 2026-02-17 -- Completed 15-02-PLAN.md
 
-Progress: [██████████░░░░░] 10/15 plans (67%)
+Progress: [███████████░░░░] 11/15 plans (73%)
 
 ## Performance Metrics
 
@@ -45,7 +45,7 @@ Full decision log in PROJECT.md Key Decisions table.
 - Dual Gemini path: Live WebSocket for Aya, REST generateContent for chat bots
 - Zero package modifications: all new code in Samples~/LivestreamSample/
 - SendText director notes for mid-session narrative steering (Live API cannot update system instructions)
-- Additive scene loading for movie clip (preserves WebSocket + chat state)
+- Clean exit scene transition for movie clip (LoadSceneMode.Single, explicit Disconnect before load -- supersedes additive loading decision)
 - Combined scriptedMessages + messageAlternatives as single indexed pool in ChatBotManager.PickMessage
 - Burst loop pattern: async Awaitable with destroyCancellationToken, try/catch OperationCanceledException
 - Keyword-hit scoring for nevatars message categorization across 6 bot personalities
@@ -65,6 +65,8 @@ Full decision log in PROJECT.md Key Decisions table.
 - WaitingForAya PTT sub-state defers mic until Aya finishes (prevents Gemini audio interruption)
 - Idempotent SubmitTranscript guard prevents Enter + auto-submit timer race (Pitfall 6)
 - ChatBotManager NOT paused during PTT (only Aya pauses, chat keeps flowing)
+- Instant cut scene transition (no fade, no crossfade) per Phase 15 CONTEXT.md
+- Application.CanStreamedLevelBeLoaded pre-check with Debug.LogError for missing Build Settings entry
 
 ### Pending Todos
 
@@ -79,6 +81,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-17T23:59:00Z
-Stopped at: Phase 14 complete (Narrative Director & User Interaction)
+Last session: 2026-02-17T23:58:09Z
+Stopped at: Completed 15-02-PLAN.md (SceneTransitionHandler with clean scene exit)
 Resume file: None
