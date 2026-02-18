@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-17)
 
 **Core value:** Developers can drop an AI character into their Unity scene and have it talking -- with synchronized voice, text, and animation events -- in minutes, not weeks.
-**Current focus:** Phase 15.1 - Audio2Animation Pipeline
+**Current focus:** Phase 16 - Integration & Experience Loop
 
 ## Current Position
 
 Phase: 15.1 (Audio2Animation Pipeline - INSERTED)
-Plan: 1 of 2 in current phase
-Status: In progress
-Last activity: 2026-02-17 - Completed 15.1-01-PLAN.md (Audio2Animation pipeline core)
+Plan: 2 of 2 in current phase
+Status: Phase complete
+Last activity: 2026-02-17 - Completed 15.1-02-PLAN.md (FaceAnimationPlayer sample MonoBehaviour)
 
-Progress: [█████████████░░] 13/17 plans (76%)
+Progress: [██████████████░] 14/17 plans (82%)
 
 ## Performance Metrics
 
 **Velocity:**
 - v1 MVP: 17 plans in ~1 day
 - v0.8 WebSocket Migration: 14 plans in ~5 days
-- Total plans completed: 42
+- Total plans completed: 43
 - v1.0 Livestream Experience: 17 plans planned
 
 **By Phase:**
@@ -32,7 +32,7 @@ Progress: [█████████████░░] 13/17 plans (76%)
 | 13 | 3 | - | - |
 | 14 | 4 | - | - |
 | 15 | 2 | - | - |
-| 15.1 | 1 | 2min | 2min |
+| 15.1 | 2 | 3min | 1.5min |
 | 16 | 3 | - | - |
 
 ## Accumulated Context
@@ -73,6 +73,9 @@ Full decision log in PROJECT.md Key Decisions table.
 - SetFrameCallback on IAnimationModel (not event) for constructor-time wiring from Audio2Animation
 - Tick() excluded from IAnimationModel interface -- implementation detail of time-based models
 - Cancel() preserves frame index -- next audio resumes from where playback left off
+- FaceAnimationPlayer in AIEmbodiment.Samples namespace (matches AyaSampleController convention)
+- Max 3 frames drained per Update to prevent queue buildup without skipping
+- ClearQueue resets all blendshape weights to 0 for clean neutral pose on barge-in
 
 ### Roadmap Evolution
 
@@ -92,5 +95,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Completed 15.1-01-PLAN.md (Audio2Animation pipeline core)
+Stopped at: Completed 15.1-02-PLAN.md (FaceAnimationPlayer sample MonoBehaviour) -- Phase 15.1 complete
 Resume file: None
