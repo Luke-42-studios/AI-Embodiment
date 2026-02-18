@@ -44,6 +44,12 @@ Requirements for the Livestream Experience milestone. Builds on existing v0.8 pa
 - [x] **ANI-02**: Goal-triggered additive scene loading for Unity-rendered movie clip
 - [x] **ANI-03**: Pre-load movie scene with allowSceneActivation = false
 
+### Audio2Animation Pipeline
+
+- [x] **A2A-01**: Audio2Animation class accepts audio chunks and emits BlendshapeAnimationData frame packets via event/callback
+- [x] **A2A-02**: Fake model streams frames from pre-recorded JSON synchronized to audio timing (not dumped all at once)
+- [x] **A2A-03**: Sample app subscribes to Audio2Animation output and applies blendshape frames to SkinnedMeshRenderer face rig
+
 ### Infrastructure
 
 - [x] **INF-01**: GeminiTextClient -- REST generateContent wrapper for structured output (chat bot responses)
@@ -108,6 +114,9 @@ Requirements for the Livestream Experience milestone. Builds on existing v0.8 pa
 | ANI-01 | Phase 15 | Complete |
 | ANI-02 | Phase 15 | Complete |
 | ANI-03 | Phase 15 | Complete |
+| A2A-01 | Phase 15.1 | Complete |
+| A2A-02 | Phase 15.1 | Complete |
+| A2A-03 | Phase 15.1 | Complete |
 | INF-01 | Phase 12 | Complete |
 | INF-02 | Phase 12 | Complete |
 | MIG-01 | Phase 12 | Complete |
@@ -115,8 +124,8 @@ Requirements for the Livestream Experience milestone. Builds on existing v0.8 pa
 | MIG-03 | Phase 13 | Complete |
 
 **Coverage:**
-- v1.0 requirements: 27 total
-- Mapped to phases: 27
+- v1.0 requirements: 30 total
+- Mapped to phases: 30
 - Unmapped: 0
 
 ---

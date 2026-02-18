@@ -22,7 +22,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 13: Chat Bot System** - Scripted and dynamic chat bots with burst timing, personality, and tracked messages
 - [x] **Phase 14: Narrative Director & User Interaction** - Beat/scene structure, dual-queue orchestration, push-to-talk finish-first, and narrative steering
 - [x] **Phase 15: Scene Transition & Animation** - Animation function calls, clean scene transition to movie clip, toast UI feedback
-- [ ] **Phase 15.1: Audio2Animation Pipeline** - Audio-to-animation pipeline in package runtime with fake model streaming pre-recorded blendshape data (INSERTED)
+- [x] **Phase 15.1: Audio2Animation Pipeline** - Audio-to-animation pipeline in package runtime with fake model streaming pre-recorded blendshape data (INSERTED)
 - [ ] **Phase 16: Integration & Experience Loop** - Full livestream scene wiring, cross-system context injection, and end-to-end experience
 
 ## Phase Details
@@ -104,8 +104,8 @@ Plans:
 **Plans:** 2 plans
 
 Plans:
-- [ ] 15.1-01-PLAN.md -- IAnimationModel interface, Audio2Animation orchestrator, FakeAnimationModel with time-accumulator frame streaming
-- [ ] 15.1-02-PLAN.md -- FaceAnimationPlayer MonoBehaviour wiring pipeline to SkinnedMeshRenderer face rig
+- [x] 15.1-01-PLAN.md -- IAnimationModel interface, Audio2Animation orchestrator, FakeAnimationModel with time-accumulator frame streaming
+- [x] 15.1-02-PLAN.md -- FaceAnimationPlayer MonoBehaviour wiring pipeline to SkinnedMeshRenderer face rig
 
 ### Phase 16: Integration & Experience Loop
 **Goal**: The complete livestream sample scene runs as a cohesive 10-minute experience -- Aya hosts, bots chat, user talks, narrative builds, and the movie clip reveals -- with cross-system context injection ensuring coherence
@@ -134,5 +134,5 @@ Phases execute in numeric order: 12 -> 13 -> 14 -> 15 -> 15.1 -> 16
 | 13. Chat Bot System | 3/3 | Complete | 2026-02-17 |
 | 14. Narrative Director & User Interaction | 4/4 | Complete | 2026-02-17 |
 | 15. Scene Transition & Animation | 2/2 | Complete | 2026-02-17 |
-| 15.1. Audio2Animation Pipeline | 0/2 | Planned | - |
+| 15.1. Audio2Animation Pipeline | 2/2 | Complete | 2026-02-17 |
 | 16. Integration & Experience Loop | 0/3 | Not started | - |
