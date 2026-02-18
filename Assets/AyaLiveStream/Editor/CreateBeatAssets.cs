@@ -96,6 +96,15 @@ namespace AIEmbodiment.Samples.Editor
                     }
                 };
 
+                beat.catalystGoal = "Get Aya talking about what she's working on today";
+                beat.catalystMessages = new string[]
+                {
+                    "ooh what are you drawing today??",
+                    "is this a new project or something you've been working on?",
+                    "I love watching you start new pieces! what's the plan today?"
+                };
+                beat.topicKeywords = new string[0];
+
                 AssetDatabase.CreateAsset(beat, $"{folderPath}/Beat_WarmUp.asset");
                 EditorUtility.SetDirty(beat);
                 count++;
@@ -167,6 +176,16 @@ namespace AIEmbodiment.Samples.Editor
                         requiredValue = 1
                     }
                 };
+
+                beat.catalystGoal = "Get Aya to talk about the characters she's designing and tease the reveal";
+                beat.catalystMessages = new string[]
+                {
+                    "are those character designs?? they look amazing",
+                    "tell us about the characters!! who are they?",
+                    "I can see you're working on something special... what is it?",
+                    "omg those characters look so cool, what's their story?"
+                };
+                beat.topicKeywords = new string[] { "character", "design", "drawing", "sketch", "art style" };
 
                 AssetDatabase.CreateAsset(beat, $"{folderPath}/Beat_ArtProcess.asset");
                 EditorUtility.SetDirty(beat);
@@ -240,6 +259,17 @@ namespace AIEmbodiment.Samples.Editor
                         requiredValue = 1
                     }
                 };
+
+                beat.catalystGoal = "Push Aya toward revealing the movie clip";
+                beat.catalystMessages = new string[]
+                {
+                    "omg are you gonna show us the thing??",
+                    "I heard you've been working on something big... is it ready??",
+                    "SHOW US SHOW US",
+                    "wait is there a video?? please tell me there's a video",
+                    "I've been waiting for this reveal all stream!!"
+                };
+                beat.topicKeywords = new string[] { "movie", "film", "clip", "video", "animation", "reveal", "show" };
 
                 AssetDatabase.CreateAsset(beat, $"{folderPath}/Beat_Characters.asset");
                 EditorUtility.SetDirty(beat);

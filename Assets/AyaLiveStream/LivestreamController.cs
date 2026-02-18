@@ -49,12 +49,24 @@ namespace AIEmbodiment.Samples
         private Action _onTurnComplete;
         private Action _onAISpeakingStarted;
         private Action<string, Exception> _onFunctionError;
+        private Action<NarrativeBeatConfig> _onBeatStarted;
 
         private void Start()
         {
             // Create cross-system context objects
             _ayaTranscriptBuffer = new AyaTranscriptBuffer(maxTurns: 5);
             _factTracker = new FactTracker();
+
+            // Wire cross-system context to subsystems (Plan 03 integration)
+            _chatBotManager?.SetContextProviders(_ayaTranscriptBuffer, _factTracker);
+            _narrativeDirector?.SetFactTracker(_factTracker);
+
+            // Subscribe to beat transitions so ChatBotManager knows which beat is active
+            _onBeatStarted = beat => _chatBotManager?.SetCurrentBeat(beat);
+            if (_narrativeDirector != null)
+            {
+                _narrativeDirector.OnBeatStarted += _onBeatStarted;
+            }
 
             // Create event handler references for clean unsubscription
             _onOutputTranscription = HandleOutputTranscription;
@@ -283,10 +295,12 @@ namespace AIEmbodiment.Samples
                     _session.OnFunctionError -= _onFunctionError;
             }
 
-            // Unsubscribe narrative completion
+            // Unsubscribe narrative events
             if (_narrativeDirector != null)
             {
                 _narrativeDirector.OnAllBeatsComplete -= HandleNarrativeComplete;
+                if (_onBeatStarted != null)
+                    _narrativeDirector.OnBeatStarted -= _onBeatStarted;
             }
         }
     }
