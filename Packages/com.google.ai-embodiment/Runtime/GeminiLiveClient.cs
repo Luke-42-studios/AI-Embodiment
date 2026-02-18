@@ -408,7 +408,7 @@ namespace AIEmbodiment
                                 }
                             }
 
-                            // text part -> OutputTranscription (rare in AUDIO modality, but surface it)
+                            // text part -> TextPart (model text output, not spoken audio transcription)
                             var textToken = part["text"];
                             if (textToken != null)
                             {
@@ -417,7 +417,7 @@ namespace AIEmbodiment
                                 {
                                     Enqueue(new GeminiEvent
                                     {
-                                        Type = GeminiEventType.OutputTranscription,
+                                        Type = GeminiEventType.TextPart,
                                         Text = t
                                     });
                                 }

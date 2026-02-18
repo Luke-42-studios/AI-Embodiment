@@ -269,10 +269,15 @@ namespace AIEmbodiment.Samples
                     float beatStartTime = Time.time;
                     await ExecuteBeatScenes(beat, beatStartTime);
 
-                    // After scenes complete, wait for remaining beat time (if any) or goal-met
+                    // After scenes complete, wait for remaining beat time only if user is engaged.
+                    // When user is silent, skip the padding and advance the narrative
+                    // so the experience doesn't stall during autonomous flow.
                     float remaining = beat.timeBudgetSeconds - (Time.time - beatStartTime);
                     while (remaining > 0 && !_beatGoalMet)
                     {
+                        bool userSilent = _isUserSilent == null || _isUserSilent();
+                        if (userSilent) break;
+
                         await Awaitable.WaitForSecondsAsync(1f, destroyCancellationToken);
                         remaining = beat.timeBudgetSeconds - (Time.time - beatStartTime);
                         if (!_narrativeRunning) return;
@@ -341,6 +346,29 @@ namespace AIEmbodiment.Samples
 
                 var scene = beat.scenes[i];
                 await ExecuteScene(scene);
+
+                // Pause between scenes to give the conversation breathing room.
+                // Adaptive: short pause when autonomous (user silent), longer when
+                // user is actively engaging so they have time to follow up via PTT.
+                bool ayaSpoke = scene.type == SceneType.AyaDialogue ||
+                                scene.type == SceneType.AyaChecksChat;
+                if (ayaSpoke && i < beat.scenes.Length - 1)
+                {
+                    float sceneEndTime = Time.time;
+                    while (_narrativeRunning && !_beatGoalMet)
+                    {
+                        if (Time.time - beatStartTime >= beat.timeBudgetSeconds) break;
+
+                        float elapsed = Time.time - sceneEndTime;
+                        bool userSilent = _isUserSilent == null || _isUserSilent();
+
+                        // 8s pause for autonomous flow, 30s when user might want to respond
+                        float waitDuration = userSilent ? 8f : 30f;
+                        if (elapsed >= waitDuration) break;
+
+                        await Awaitable.WaitForSecondsAsync(1f);
+                    }
+                }
             }
         }
 

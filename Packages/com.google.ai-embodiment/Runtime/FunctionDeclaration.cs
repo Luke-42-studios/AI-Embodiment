@@ -29,6 +29,7 @@ namespace AIEmbodiment
         public string Description { get; }
 
         private readonly List<ParameterDef> _parameters = new List<ParameterDef>();
+        private string _behavior;
 
         /// <summary>
         /// Creates a new function declaration with the given name and description.
@@ -39,6 +40,18 @@ namespace AIEmbodiment
         {
             Name = name;
             Description = description;
+        }
+
+        /// <summary>
+        /// Sets the function calling behavior. Use "NON_BLOCKING" for audio-only models
+        /// so the model can invoke the function without pausing audio generation.
+        /// </summary>
+        /// <param name="behavior">The behavior string (e.g., "NON_BLOCKING").</param>
+        /// <returns>This declaration for fluent chaining.</returns>
+        public FunctionDeclaration SetBehavior(string behavior)
+        {
+            _behavior = behavior;
+            return this;
         }
 
         /// <summary>Add a string parameter.</summary>
@@ -112,6 +125,11 @@ namespace AIEmbodiment
                 ["name"] = Name,
                 ["description"] = Description
             };
+
+            if (!string.IsNullOrEmpty(_behavior))
+            {
+                obj["behavior"] = _behavior;
+            }
 
             if (_parameters.Count > 0)
             {

@@ -32,11 +32,11 @@ namespace AIEmbodiment.Samples
 
         [Header("Configuration")]
         [SerializeField] private float _connectionTimeout = 15f;
-        [SerializeField] private float _deadAirThreshold = 10f;
-        [SerializeField] private float _thinkingIndicatorDelay = 5f;
+        [SerializeField] private float _deadAirThreshold = 45f;
+        [SerializeField] private float _thinkingIndicatorDelay = 35f;
 
         [Header("User Priority")]
-        [SerializeField] private float _userSilenceThreshold = 120f;
+        [SerializeField] private float _userSilenceThreshold = 30f;
 
         // Cross-system context objects (plain C#, created in Start)
         private AyaTranscriptBuffer _ayaTranscriptBuffer;
@@ -52,10 +52,12 @@ namespace AIEmbodiment.Samples
 
         // Event handler references for clean unsubscription (same pattern as NarrativeDirector)
         private Action<string> _onOutputTranscription;
+        private Action<string> _onInputTranscription;
         private Action _onTurnComplete;
         private Action _onAISpeakingStarted;
         private Action<string, Exception> _onFunctionError;
         private Action<NarrativeBeatConfig> _onBeatStarted;
+        private Action _onUserSpeakingStarted;
         private Action _onUserSpeakingStopped;
 
         private void Start()
@@ -69,7 +71,11 @@ namespace AIEmbodiment.Samples
             _narrativeDirector?.SetFactTracker(_factTracker);
 
             // Subscribe to beat transitions so ChatBotManager knows which beat is active
-            _onBeatStarted = beat => _chatBotManager?.SetCurrentBeat(beat);
+            _onBeatStarted = beat =>
+            {
+                _chatBotManager?.SetCurrentBeat(beat);
+                _livestreamUI?.ShowToast($"~ {beat.title} ~");
+            };
             if (_narrativeDirector != null)
             {
                 _narrativeDirector.OnBeatStarted += _onBeatStarted;
@@ -77,6 +83,7 @@ namespace AIEmbodiment.Samples
 
             // Create event handler references for clean unsubscription
             _onOutputTranscription = HandleOutputTranscription;
+            _onInputTranscription = HandleInputTranscription;
             _onTurnComplete = HandleTurnComplete;
             _onAISpeakingStarted = HandleAISpeakingStarted;
             _onFunctionError = HandleFunctionError;
@@ -85,16 +92,20 @@ namespace AIEmbodiment.Samples
             if (_session != null)
             {
                 _session.OnOutputTranscription += _onOutputTranscription;
+                _session.OnInputTranscription += _onInputTranscription;
                 _session.OnTurnComplete += _onTurnComplete;
                 _session.OnAISpeakingStarted += _onAISpeakingStarted;
                 _session.OnFunctionError += _onFunctionError;
             }
 
             // User priority: track when user last spoke via PTT
+            // Update on both start and stop so the silence timer stays accurate during long recordings
             _lastUserSpeechTime = Time.time;
+            _onUserSpeakingStarted = () => { _lastUserSpeechTime = Time.time; };
             _onUserSpeakingStopped = () => { _lastUserSpeechTime = Time.time; };
             if (_session != null)
             {
+                _session.OnUserSpeakingStarted += _onUserSpeakingStarted;
                 _session.OnUserSpeakingStopped += _onUserSpeakingStopped;
             }
 
@@ -128,7 +139,8 @@ namespace AIEmbodiment.Samples
                 var animDecl = new FunctionDeclaration(
                         "play_animation",
                         "Play a character animation or gesture during conversation. Use this to add expressiveness.")
-                    .AddEnum("animation_name", "Name of the animation to play", animNames);
+                    .AddEnum("animation_name", "Name of the animation to play", animNames)
+                    .SetBehavior("NON_BLOCKING");
                 _session.RegisterFunction("play_animation", animDecl, HandlePlayAnimation);
             }
             else
@@ -142,7 +154,12 @@ namespace AIEmbodiment.Samples
             string animName = ctx.GetString("animation_name", "idle");
             Debug.Log($"[Animation] play_animation triggered: {animName}");
             _livestreamUI?.ShowToast($"*{animName}*");
-            return null; // fire-and-forget
+            // NON_BLOCKING + SILENT: model continues speaking, doesn't acknowledge the result
+            return new Dictionary<string, object>
+            {
+                { "status", "playing" },
+                { "scheduling", "SILENT" }
+            };
         }
 
         // --- Event Handlers ---
@@ -150,13 +167,21 @@ namespace AIEmbodiment.Samples
         private void HandleOutputTranscription(string text)
         {
             _ayaTranscriptBuffer.AppendText(text);
+            // Pass all text to LivestreamUI -- it filters [CALL:] tags on the
+            // accumulated buffer so fragmented tags across chunks are handled.
             _livestreamUI?.UpdateAyaTranscript(text);
+        }
+
+        private void HandleInputTranscription(string text)
+        {
+            _livestreamUI?.UpdateUserTranscript(text);
         }
 
         private void HandleTurnComplete()
         {
             _ayaTranscriptBuffer.CompleteTurn();
             _livestreamUI?.CompleteAyaTurn();
+            _livestreamUI?.CompleteUserTurn();
         }
 
         private void HandleAISpeakingStarted()
@@ -306,12 +331,16 @@ namespace AIEmbodiment.Samples
             {
                 if (_onOutputTranscription != null)
                     _session.OnOutputTranscription -= _onOutputTranscription;
+                if (_onInputTranscription != null)
+                    _session.OnInputTranscription -= _onInputTranscription;
                 if (_onTurnComplete != null)
                     _session.OnTurnComplete -= _onTurnComplete;
                 if (_onAISpeakingStarted != null)
                     _session.OnAISpeakingStarted -= _onAISpeakingStarted;
                 if (_onFunctionError != null)
                     _session.OnFunctionError -= _onFunctionError;
+                if (_onUserSpeakingStarted != null)
+                    _session.OnUserSpeakingStarted -= _onUserSpeakingStarted;
                 if (_onUserSpeakingStopped != null)
                     _session.OnUserSpeakingStopped -= _onUserSpeakingStopped;
             }

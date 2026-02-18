@@ -36,9 +36,7 @@ namespace AIEmbodiment.Samples
         private string _transcript = "";
         private float _autoSubmitTimer;
         private const float AutoSubmitDelay = 3f;
-        private bool _ayaWasSpeakingOnPress;
-
-        private enum PTTState { Idle, WaitingForAya, Recording, Reviewing, Submitted }
+        private enum PTTState { Idle, Recording, Reviewing, Submitted }
 
         private void Start()
         {
@@ -62,22 +60,20 @@ namespace AIEmbodiment.Samples
         }
 
         /// <summary>
-        /// Two responsibilities depending on state:
-        /// 1. WaitingForAya: Aya finished speaking, NOW start recording.
-        /// 2. Submitted: Aya finished responding to user's input, reset to Idle.
+        /// Aya finished responding -- reset PTT to Idle.
+        /// Handles TurnComplete arriving during Reviewing (before auto-submit timer)
+        /// which is common when Gemini responds faster than the 3s countdown.
         /// </summary>
         private void HandleTurnComplete()
         {
-            if (_state == PTTState.WaitingForAya)
+            // TurnComplete arrived before auto-submit -- force submit now
+            if (_state == PTTState.Reviewing)
             {
-                // Aya has finished speaking -- now start recording
-                _session.StartListening();
-                _state = PTTState.Recording;
-                _livestreamUI.SetPTTStatus("Recording...", active: true);
+                SubmitTranscript();
             }
-            else if (_state == PTTState.Submitted)
+
+            if (_state == PTTState.Submitted)
             {
-                // Aya has finished responding to the user's input -- reset
                 _state = PTTState.Idle;
                 _livestreamUI.ShowPTTAcknowledgment(false);
                 _livestreamUI.ShowTranscriptOverlay(false);
@@ -96,57 +92,42 @@ namespace AIEmbodiment.Samples
                         EnterRecording();
                     break;
 
-                case PTTState.WaitingForAya:
-                    // User is holding SPACE, waiting for Aya to finish.
-                    // If user releases SPACE before Aya finishes, cancel the deferred recording.
-                    if (Keyboard.current.spaceKey.wasReleasedThisFrame)
-                    {
-                        _state = PTTState.Idle;
-                        _livestreamUI.ShowPTTAcknowledgment(false);
-                        _livestreamUI.SetPTTStatus("Hold SPACE to talk", active: false);
-                    }
-                    break;
-
                 case PTTState.Recording:
                     if (Keyboard.current.spaceKey.wasReleasedThisFrame)
                         EnterReviewing();
                     break;
 
                 case PTTState.Reviewing:
-                    UpdateReviewState();
+                    // User pressed SPACE during review — submit current and start new recording
+                    if (Keyboard.current.spaceKey.wasPressedThisFrame)
+                    {
+                        SubmitTranscript();
+                        EnterRecording();
+                    }
+                    else
+                    {
+                        UpdateReviewState();
+                    }
                     break;
 
                 case PTTState.Submitted:
-                    // Waiting for HandleTurnComplete to reset to Idle
+                    // User pressed SPACE while Aya is responding — allow new recording
+                    if (Keyboard.current.spaceKey.wasPressedThisFrame)
+                        EnterRecording();
                     break;
             }
         }
 
         /// <summary>
-        /// Initiates recording or defers if Aya is speaking (finish-first pattern).
+        /// Starts recording immediately. If Aya is speaking, Gemini handles the
+        /// barge-in natively (interrupts Aya and listens to the user).
         /// </summary>
         private void EnterRecording()
         {
             _transcript = "";
-            _ayaWasSpeakingOnPress = _narrativeDirector != null && _narrativeDirector.IsAyaSpeaking;
-
-            if (_ayaWasSpeakingOnPress)
-            {
-                // FINISH-FIRST PATTERN: Aya is speaking -- show acknowledgment but defer recording.
-                // Do NOT call StartListening yet. Audio sent to Gemini during Aya's turn would
-                // trigger an interruption, clearing Aya's audio buffer (Pitfall 3).
-                // Instead, wait for OnTurnComplete to fire, then start recording.
-                _state = PTTState.WaitingForAya;
-                _livestreamUI.ShowPTTAcknowledgment(true);
-                _livestreamUI.SetPTTStatus("Aya is finishing...", active: true);
-            }
-            else
-            {
-                // Aya is NOT speaking -- start recording immediately
-                _state = PTTState.Recording;
-                _session.StartListening();
-                _livestreamUI.SetPTTStatus("Recording...", active: true);
-            }
+            _state = PTTState.Recording;
+            _session.StartListening();
+            _livestreamUI.SetPTTStatus("Recording...", active: true);
         }
 
         /// <summary>

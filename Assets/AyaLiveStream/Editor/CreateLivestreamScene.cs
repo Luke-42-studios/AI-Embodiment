@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UIElements;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using AIEmbodiment;
@@ -7,109 +8,252 @@ using AIEmbodiment.Samples;
 namespace AIEmbodiment.Samples.Editor
 {
     /// <summary>
-    /// One-click editor menu script that programmatically sets up a LivestreamSampleScene
-    /// from AyaSampleScene. Opens the template scene, swaps AyaSampleController for the
-    /// livestream subsystem components (LivestreamController, NarrativeDirector, ChatBotManager,
-    /// PushToTalkController, SceneTransitionHandler), wires all SerializeField references via
-    /// SerializedObject/SerializedProperty, and saves as a new scene.
+    /// One-click editor script that sets up a complete livestream scene from scratch.
+    /// Creates all required GameObjects and components if missing:
+    /// - PersonaSession with AudioCapture, AudioPlayback, AudioSource, and PersonaConfig
+    /// - LivestreamUI with UIDocument wired to LivestreamPanel.uxml
+    /// - LivestreamController with NarrativeDirector, ChatBotManager, PushToTalkController,
+    ///   SceneTransitionHandler, and AnimationConfig
     ///
     /// Run via: AI Embodiment > Samples > Create Livestream Scene
     /// </summary>
     public static class CreateLivestreamScene
     {
-        private const string TemplateScenePath = "Assets/Scenes/AyaSampleScene.unity";
-        private const string OutputScenePath = "Assets/Scenes/LivestreamSampleScene.unity";
         private const string BeatDataFolder = "Assets/AyaLiveStream/Data";
         private const string BotConfigFolder = "Assets/AyaLiveStream/ChatBotConfigs";
-        private const string AnimationConfigFolder = "Assets/AyaLiveStream/Data";
+        private const string AnimConfigFolder = "Assets/AyaLiveStream/Data";
+        private const string UxmlPath = "Assets/AyaLiveStream/UI/LivestreamPanel.uxml";
+        private const string PanelSettingsPath = "Assets/UI Toolkit/PanelSettings.asset";
+        private const string PersonaConfigPath = "Assets/AyaLiveStream/AyaPersonaConfig.asset";
 
         [MenuItem("AI Embodiment/Samples/Create Livestream Scene")]
         public static void Create()
         {
-            // --- Step 1: Open template scene ---
+            // --- Step 1: Work with the currently open scene ---
 
-            var templateScene = EditorSceneManager.OpenScene(TemplateScenePath, OpenSceneMode.Single);
-            if (!templateScene.IsValid())
+            var activeScene = EditorSceneManager.GetActiveScene();
+            if (!activeScene.IsValid())
             {
-                Debug.LogError($"[CreateLivestreamScene] Failed to open template scene: {TemplateScenePath}");
+                Debug.LogError("[CreateLivestreamScene] No active scene open.");
                 return;
             }
 
-            // --- Step 2: Find existing scene GameObjects by component type ---
-
-            var ayaController = Object.FindFirstObjectByType<AyaSampleController>();
-            if (ayaController == null)
+            // Check if LivestreamController already exists (re-run safety)
+            var existingController = Object.FindFirstObjectByType<LivestreamController>();
+            if (existingController != null)
             {
-                Debug.LogError("[CreateLivestreamScene] AyaSampleController not found in scene.");
+                Debug.LogError("[CreateLivestreamScene] LivestreamController already exists in scene. " +
+                    "Delete it first if you want to re-run setup.");
                 return;
             }
+
+            // --- Step 2: PersonaSession (find or create) ---
 
             var personaSession = Object.FindFirstObjectByType<PersonaSession>();
             if (personaSession == null)
             {
-                Debug.LogWarning("[CreateLivestreamScene] PersonaSession not found in scene. References will be null.");
+                var sessionGO = new GameObject("PersonaSession");
+
+                // Add AudioSource first (AudioPlayback needs it)
+                var audioSource = sessionGO.AddComponent<AudioSource>();
+                audioSource.playOnAwake = false;
+                audioSource.spatialBlend = 0f; // 2D audio
+
+                // Add audio components
+                var audioCapture = sessionGO.AddComponent<AudioCapture>();
+                var audioPlayback = sessionGO.AddComponent<AudioPlayback>();
+
+                // Wire AudioPlayback._audioSource
+                var playbackSO = new SerializedObject(audioPlayback);
+                SetObjectRef(playbackSO, "_audioSource", audioSource);
+                playbackSO.ApplyModifiedPropertiesWithoutUndo();
+
+                // Add PersonaSession
+                personaSession = sessionGO.AddComponent<PersonaSession>();
+
+                // Wire PersonaSession fields
+                var sessionSO = new SerializedObject(personaSession);
+                SetObjectRef(sessionSO, "_audioCapture", audioCapture);
+                SetObjectRef(sessionSO, "_audioPlayback", audioPlayback);
+
+                // Wire PersonaConfig if the asset exists
+                var personaConfig = AssetDatabase.LoadAssetAtPath<PersonaConfig>(PersonaConfigPath);
+                if (personaConfig == null)
+                {
+                    personaConfig = FindAssetOfTypeGlobal<PersonaConfig>();
+                }
+                if (personaConfig != null)
+                {
+                    SetObjectRef(sessionSO, "_config", personaConfig);
+                    Debug.Log($"[CreateLivestreamScene] Wired PersonaConfig: {personaConfig.name}");
+                }
+                else
+                {
+                    Debug.LogWarning("[CreateLivestreamScene] No PersonaConfig asset found. " +
+                        "Create one via Assets > Create > AI Embodiment > Persona Config.");
+                }
+
+                sessionSO.ApplyModifiedPropertiesWithoutUndo();
+                Debug.Log("[CreateLivestreamScene] Created PersonaSession with AudioCapture + AudioPlayback.");
             }
+            else
+            {
+                // PersonaSession exists -- ensure audio components are present
+                var audioCapture = personaSession.GetComponent<AudioCapture>();
+                var audioPlayback = personaSession.GetComponent<AudioPlayback>();
+
+                if (audioCapture == null)
+                {
+                    audioCapture = personaSession.gameObject.AddComponent<AudioCapture>();
+                    var sessionSO = new SerializedObject(personaSession);
+                    SetObjectRef(sessionSO, "_audioCapture", audioCapture);
+                    sessionSO.ApplyModifiedPropertiesWithoutUndo();
+                    Debug.Log("[CreateLivestreamScene] Added missing AudioCapture to PersonaSession.");
+                }
+
+                if (audioPlayback == null)
+                {
+                    var audioSource = personaSession.GetComponent<AudioSource>();
+                    if (audioSource == null)
+                    {
+                        audioSource = personaSession.gameObject.AddComponent<AudioSource>();
+                        audioSource.playOnAwake = false;
+                        audioSource.spatialBlend = 0f;
+                    }
+
+                    audioPlayback = personaSession.gameObject.AddComponent<AudioPlayback>();
+                    var playbackSO = new SerializedObject(audioPlayback);
+                    SetObjectRef(playbackSO, "_audioSource", audioSource);
+                    playbackSO.ApplyModifiedPropertiesWithoutUndo();
+
+                    var sessionSO = new SerializedObject(personaSession);
+                    SetObjectRef(sessionSO, "_audioPlayback", audioPlayback);
+                    sessionSO.ApplyModifiedPropertiesWithoutUndo();
+                    Debug.Log("[CreateLivestreamScene] Added missing AudioPlayback to PersonaSession.");
+                }
+            }
+
+            // --- Step 3: LivestreamUI (find or create) ---
 
             var livestreamUI = Object.FindFirstObjectByType<LivestreamUI>();
             if (livestreamUI == null)
             {
-                Debug.LogWarning("[CreateLivestreamScene] LivestreamUI not found in scene. References will be null.");
+                var uiGO = new GameObject("LivestreamUI");
+
+                // Add UIDocument
+                var uiDoc = uiGO.AddComponent<UIDocument>();
+
+                // Wire PanelSettings
+                var panelSettings = AssetDatabase.LoadAssetAtPath<PanelSettings>(PanelSettingsPath);
+                if (panelSettings == null)
+                {
+                    panelSettings = FindAssetOfTypeGlobal<PanelSettings>();
+                }
+                if (panelSettings != null)
+                {
+                    uiDoc.panelSettings = panelSettings;
+                }
+                else
+                {
+                    Debug.LogWarning("[CreateLivestreamScene] No PanelSettings asset found.");
+                }
+
+                // Wire UXML source asset
+                var uxml = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(UxmlPath);
+                if (uxml != null)
+                {
+                    uiDoc.visualTreeAsset = uxml;
+                }
+                else
+                {
+                    Debug.LogWarning($"[CreateLivestreamScene] UXML not found at {UxmlPath}.");
+                }
+
+                // Add LivestreamUI and wire its _uiDocument
+                livestreamUI = uiGO.AddComponent<LivestreamUI>();
+                var uiSO = new SerializedObject(livestreamUI);
+                SetObjectRef(uiSO, "_uiDocument", uiDoc);
+                uiSO.ApplyModifiedPropertiesWithoutUndo();
+
+                Debug.Log("[CreateLivestreamScene] Created LivestreamUI with UIDocument.");
             }
 
-            // --- Step 3: Swap components on the controller GameObject ---
+            // --- Step 4: AnimationConfig (find or create) ---
 
-            GameObject controllerGO = ayaController.gameObject;
+            AnimationConfig animConfig = FindAssetOfType<AnimationConfig>(AnimConfigFolder);
+            if (animConfig == null)
+            {
+                animConfig = FindAssetOfType<AnimationConfig>("Assets/AyaLiveStream");
+            }
+            if (animConfig == null)
+            {
+                animConfig = FindAssetOfTypeGlobal<AnimationConfig>();
+            }
+            if (animConfig == null)
+            {
+                // Create a default AnimationConfig with common animations
+                animConfig = ScriptableObject.CreateInstance<AnimationConfig>();
+                animConfig.animations = new AnimationConfig.AnimationEntry[]
+                {
+                    new AnimationConfig.AnimationEntry { name = "wave", description = "Friendly wave greeting" },
+                    new AnimationConfig.AnimationEntry { name = "nod", description = "Nodding in agreement" },
+                    new AnimationConfig.AnimationEntry { name = "think", description = "Thinking pose, hand on chin" },
+                    new AnimationConfig.AnimationEntry { name = "laugh", description = "Laughing at something funny" },
+                    new AnimationConfig.AnimationEntry { name = "point", description = "Pointing at something to draw attention" },
+                };
 
-            // Remove AyaSampleController
-            Object.DestroyImmediate(ayaController);
+                string configFolder = "Assets/AyaLiveStream/Data";
+                if (!AssetDatabase.IsValidFolder(configFolder))
+                {
+                    if (!AssetDatabase.IsValidFolder("Assets/AyaLiveStream"))
+                        AssetDatabase.CreateFolder("Assets", "AyaLiveStream");
+                    AssetDatabase.CreateFolder("Assets/AyaLiveStream", "Data");
+                }
+                AssetDatabase.CreateAsset(animConfig, $"{configFolder}/AnimationConfig.asset");
+                Debug.Log("[CreateLivestreamScene] Created default AnimationConfig with 5 animations.");
+            }
 
-            // Add new components
+            // --- Step 5: Load beat and bot ScriptableObjects ---
+
+            NarrativeBeatConfig[] beats = FindAllAssetsOfType<NarrativeBeatConfig>(BeatDataFolder);
+            if (beats.Length == 0)
+            {
+                Debug.LogWarning($"[CreateLivestreamScene] No NarrativeBeatConfig assets in {BeatDataFolder}. " +
+                    "Run 'AI Embodiment > Samples > Create Demo Beat Assets' first.");
+            }
+
+            ChatBotConfig[] bots = FindAllAssetsOfType<ChatBotConfig>(BotConfigFolder);
+            if (bots.Length == 0)
+            {
+                Debug.LogWarning($"[CreateLivestreamScene] No ChatBotConfig assets in {BotConfigFolder}. " +
+                    "Run 'AI Embodiment > Samples > Migrate Chat Bot Configs' first.");
+            }
+
+            // --- Step 6: LivestreamController + subsystems ---
+
+            // Try to swap AyaSampleController, otherwise create new GO
+            GameObject controllerGO;
+            var ayaController = Object.FindFirstObjectByType<AyaSampleController>();
+            if (ayaController != null)
+            {
+                controllerGO = ayaController.gameObject;
+                Object.DestroyImmediate(ayaController);
+                Debug.Log("[CreateLivestreamScene] Replaced AyaSampleController.");
+            }
+            else
+            {
+                controllerGO = new GameObject("LivestreamController");
+            }
+
             var livestreamController = controllerGO.AddComponent<LivestreamController>();
             var narrativeDirector = controllerGO.AddComponent<NarrativeDirector>();
             var chatBotManager = controllerGO.AddComponent<ChatBotManager>();
             var pttController = controllerGO.AddComponent<PushToTalkController>();
             var sceneTransitionHandler = controllerGO.AddComponent<SceneTransitionHandler>();
 
-            // --- Step 4: Load ScriptableObject assets ---
+            // --- Step 7: Wire all SerializeField references ---
 
-            // Load AnimationConfig
-            AnimationConfig animConfig = FindAssetOfType<AnimationConfig>(AnimationConfigFolder);
-            if (animConfig == null)
-            {
-                // Also search the root AyaLiveStream folder
-                animConfig = FindAssetOfType<AnimationConfig>("Assets/AyaLiveStream");
-            }
-            if (animConfig == null)
-            {
-                Debug.LogWarning("[CreateLivestreamScene] AnimationConfig asset not found. Searching entire project...");
-                animConfig = FindAssetOfTypeGlobal<AnimationConfig>();
-            }
-            if (animConfig == null)
-            {
-                Debug.LogWarning("[CreateLivestreamScene] No AnimationConfig asset found anywhere in project.");
-            }
-
-            // Load NarrativeBeatConfig assets
-            NarrativeBeatConfig[] beats = FindAllAssetsOfType<NarrativeBeatConfig>(BeatDataFolder);
-            if (beats.Length == 0)
-            {
-                Debug.LogWarning($"[CreateLivestreamScene] No NarrativeBeatConfig assets found in {BeatDataFolder}. " +
-                    "Run 'AI Embodiment > Samples > Create Demo Beat Assets' first.");
-            }
-
-            // Load ChatBotConfig assets
-            ChatBotConfig[] bots = FindAllAssetsOfType<ChatBotConfig>(BotConfigFolder);
-            if (bots.Length == 0)
-            {
-                Debug.LogWarning($"[CreateLivestreamScene] No ChatBotConfig assets found in {BotConfigFolder}. " +
-                    "Run 'AI Embodiment > Samples > Migrate Chat Bot Configs' first.");
-            }
-
-            // --- Step 5: Wire SerializeField references via SerializedObject/SerializedProperty ---
-
-            // LivestreamController fields:
-            //   _session, _narrativeDirector, _chatBotManager, _pttController,
-            //   _sceneTransitionHandler, _livestreamUI, _animationConfig
+            // LivestreamController
             {
                 var so = new SerializedObject(livestreamController);
                 SetObjectRef(so, "_session", personaSession);
@@ -122,8 +266,7 @@ namespace AIEmbodiment.Samples.Editor
                 so.ApplyModifiedPropertiesWithoutUndo();
             }
 
-            // NarrativeDirector fields:
-            //   _session, _beats, _livestreamUI, _chatBotManager
+            // NarrativeDirector
             {
                 var so = new SerializedObject(narrativeDirector);
                 SetObjectRef(so, "_session", personaSession);
@@ -133,8 +276,7 @@ namespace AIEmbodiment.Samples.Editor
                 so.ApplyModifiedPropertiesWithoutUndo();
             }
 
-            // ChatBotManager fields:
-            //   _livestreamUI, _session, _bots, _narrativeDirector
+            // ChatBotManager
             {
                 var so = new SerializedObject(chatBotManager);
                 SetObjectRef(so, "_livestreamUI", livestreamUI);
@@ -144,8 +286,7 @@ namespace AIEmbodiment.Samples.Editor
                 so.ApplyModifiedPropertiesWithoutUndo();
             }
 
-            // PushToTalkController fields:
-            //   _session, _narrativeDirector, _livestreamUI, _chatBotManager
+            // PushToTalkController
             {
                 var so = new SerializedObject(pttController);
                 SetObjectRef(so, "_session", personaSession);
@@ -155,8 +296,7 @@ namespace AIEmbodiment.Samples.Editor
                 so.ApplyModifiedPropertiesWithoutUndo();
             }
 
-            // SceneTransitionHandler fields:
-            //   _narrativeDirector, _session
+            // SceneTransitionHandler
             {
                 var so = new SerializedObject(sceneTransitionHandler);
                 SetObjectRef(so, "_narrativeDirector", narrativeDirector);
@@ -164,27 +304,22 @@ namespace AIEmbodiment.Samples.Editor
                 so.ApplyModifiedPropertiesWithoutUndo();
             }
 
-            // --- Step 6: Save the scene ---
+            // --- Step 8: Save ---
 
-            EditorSceneManager.SaveScene(templateScene, OutputScenePath);
+            EditorSceneManager.MarkSceneDirty(activeScene);
+            EditorSceneManager.SaveScene(activeScene);
 
-            // --- Step 7: Add to Build Settings (if not already present) ---
+            if (!string.IsNullOrEmpty(activeScene.path))
+            {
+                AddSceneToBuildSettings(activeScene.path);
+            }
 
-            AddSceneToBuildSettings(OutputScenePath);
-
-            // Mark scene dirty so Unity knows it has been modified
-            EditorSceneManager.MarkSceneDirty(templateScene);
-
-            Debug.Log($"[CreateLivestreamScene] LivestreamSampleScene created at {OutputScenePath}");
-            Debug.Log($"[CreateLivestreamScene] Wired: {(personaSession != null ? "PersonaSession" : "MISSING PersonaSession")}, " +
-                $"{(livestreamUI != null ? "LivestreamUI" : "MISSING LivestreamUI")}, " +
-                $"{beats.Length} beat(s), {bots.Length} bot(s), " +
-                $"{(animConfig != null ? "AnimationConfig" : "MISSING AnimationConfig")}");
+            Debug.Log($"[CreateLivestreamScene] Complete! Scene: {activeScene.name}");
+            Debug.Log($"[CreateLivestreamScene] PersonaSession: OK, " +
+                $"LivestreamUI: {(livestreamUI != null ? "OK" : "MISSING")}, " +
+                $"AnimationConfig: {animConfig.animations.Length} anims, " +
+                $"{beats.Length} beat(s), {bots.Length} bot(s)");
         }
-
-        // -----------------------------------------------------------------
-        // Helper: Set a single object reference on a SerializedProperty
-        // -----------------------------------------------------------------
 
         private static void SetObjectRef(SerializedObject so, string propertyName, Object value)
         {
@@ -197,10 +332,6 @@ namespace AIEmbodiment.Samples.Editor
             prop.objectReferenceValue = value;
         }
 
-        // -----------------------------------------------------------------
-        // Helper: Set an array of object references on a SerializedProperty
-        // -----------------------------------------------------------------
-
         private static void SetObjectArray<T>(SerializedObject so, string propertyName, T[] values) where T : Object
         {
             var prop = so.FindProperty(propertyName);
@@ -209,7 +340,6 @@ namespace AIEmbodiment.Samples.Editor
                 Debug.LogWarning($"[CreateLivestreamScene] Array property '{propertyName}' not found on {so.targetObject.GetType().Name}.");
                 return;
             }
-
             prop.arraySize = values.Length;
             for (int i = 0; i < values.Length; i++)
             {
@@ -217,79 +347,45 @@ namespace AIEmbodiment.Samples.Editor
             }
         }
 
-        // -----------------------------------------------------------------
-        // Helper: Find a single asset of type T in a specific folder
-        // -----------------------------------------------------------------
-
         private static T FindAssetOfType<T>(string folder) where T : Object
         {
+            if (!AssetDatabase.IsValidFolder(folder)) return null;
             string[] guids = AssetDatabase.FindAssets($"t:{typeof(T).Name}", new[] { folder });
             if (guids.Length == 0) return null;
-            string path = AssetDatabase.GUIDToAssetPath(guids[0]);
-            return AssetDatabase.LoadAssetAtPath<T>(path);
+            return AssetDatabase.LoadAssetAtPath<T>(AssetDatabase.GUIDToAssetPath(guids[0]));
         }
-
-        // -----------------------------------------------------------------
-        // Helper: Find a single asset of type T anywhere in the project
-        // -----------------------------------------------------------------
 
         private static T FindAssetOfTypeGlobal<T>() where T : Object
         {
             string[] guids = AssetDatabase.FindAssets($"t:{typeof(T).Name}");
             if (guids.Length == 0) return null;
-            string path = AssetDatabase.GUIDToAssetPath(guids[0]);
-            return AssetDatabase.LoadAssetAtPath<T>(path);
+            return AssetDatabase.LoadAssetAtPath<T>(AssetDatabase.GUIDToAssetPath(guids[0]));
         }
-
-        // -----------------------------------------------------------------
-        // Helper: Find all assets of type T in a specific folder
-        // -----------------------------------------------------------------
 
         private static T[] FindAllAssetsOfType<T>(string folder) where T : Object
         {
-            if (!AssetDatabase.IsValidFolder(folder))
-            {
-                return new T[0];
-            }
-
+            if (!AssetDatabase.IsValidFolder(folder)) return new T[0];
             string[] guids = AssetDatabase.FindAssets($"t:{typeof(T).Name}", new[] { folder });
             T[] assets = new T[guids.Length];
             for (int i = 0; i < guids.Length; i++)
             {
-                string path = AssetDatabase.GUIDToAssetPath(guids[i]);
-                assets[i] = AssetDatabase.LoadAssetAtPath<T>(path);
+                assets[i] = AssetDatabase.LoadAssetAtPath<T>(AssetDatabase.GUIDToAssetPath(guids[i]));
             }
             return assets;
         }
 
-        // -----------------------------------------------------------------
-        // Helper: Add scene to Build Settings if not already present
-        // -----------------------------------------------------------------
-
         private static void AddSceneToBuildSettings(string scenePath)
         {
             var scenes = EditorBuildSettings.scenes;
-
-            // Check if already in build settings
             foreach (var scene in scenes)
             {
-                if (scene.path == scenePath)
-                {
-                    Debug.Log($"[CreateLivestreamScene] Scene already in Build Settings: {scenePath}");
-                    return;
-                }
+                if (scene.path == scenePath) return;
             }
-
-            // Add to build settings
             var newScenes = new EditorBuildSettingsScene[scenes.Length + 1];
-            for (int i = 0; i < scenes.Length; i++)
-            {
-                newScenes[i] = scenes[i];
-            }
+            for (int i = 0; i < scenes.Length; i++) newScenes[i] = scenes[i];
             newScenes[scenes.Length] = new EditorBuildSettingsScene(scenePath, true);
             EditorBuildSettings.scenes = newScenes;
-
-            Debug.Log($"[CreateLivestreamScene] Added scene to Build Settings: {scenePath}");
+            Debug.Log($"[CreateLivestreamScene] Added to Build Settings: {scenePath}");
         }
     }
 }

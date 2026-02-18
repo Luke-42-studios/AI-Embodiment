@@ -112,9 +112,12 @@ namespace AIEmbodiment
                 _animationBudgetSeconds -= _frameDuration;
             }
 
-            // Clamp budget to 0
-            if (_animationBudgetSeconds < 0f)
+            // Clamp budget to 0 and reset frame index so next audio starts fresh
+            if (_animationBudgetSeconds <= 0f)
+            {
                 _animationBudgetSeconds = 0f;
+                _currentFrameIndex = 0;
+            }
         }
     }
 }

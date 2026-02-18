@@ -20,7 +20,6 @@ namespace AIEmbodiment.Samples
         private Button _pttButton;
         private VisualElement _speakingIndicator;
 
-        private Label _currentAyaMessage;
         private Label _currentUserMessage;
         private bool _isUserSpeaking;
 
@@ -33,9 +32,8 @@ namespace AIEmbodiment.Samples
             _pttButton = root.Q<Button>("ptt-button");
             _speakingIndicator = root.Q("speaking-indicator");
 
-            _nameLabel.text = _session.Config.displayName;
+            _nameLabel.text = "Aya";//_session.Config.displayName;
 
-            _session.OnOutputTranscription += HandleAITranscription;
             _session.OnInputTranscription += HandleUserTranscription;
             _session.OnAISpeakingStarted += HandleAISpeakingStarted;
             _session.OnAISpeakingStopped += HandleAISpeakingStopped;
@@ -52,7 +50,6 @@ namespace AIEmbodiment.Samples
         {
             if (_session != null)
             {
-                _session.OnOutputTranscription -= HandleAITranscription;
                 _session.OnInputTranscription -= HandleUserTranscription;
                 _session.OnAISpeakingStarted -= HandleAISpeakingStarted;
                 _session.OnAISpeakingStopped -= HandleAISpeakingStopped;
@@ -61,18 +58,6 @@ namespace AIEmbodiment.Samples
                 _session.OnStateChanged -= HandleStateChanged;
                 _session.OnTurnComplete -= HandleTurnComplete;
             }
-        }
-
-        private void HandleAITranscription(string text)
-        {
-            if (_currentAyaMessage == null)
-            {
-                _currentAyaMessage = new Label();
-                _currentAyaMessage.AddToClassList("msg-aya");
-                _chatLog.Add(_currentAyaMessage);
-            }
-            _currentAyaMessage.text = $"Aya: {text}";
-            AutoScroll();
         }
 
         private void HandleUserTranscription(string text)
@@ -89,7 +74,6 @@ namespace AIEmbodiment.Samples
 
         private void HandleTurnComplete()
         {
-            _currentAyaMessage = null;
             AutoScroll();
         }
 

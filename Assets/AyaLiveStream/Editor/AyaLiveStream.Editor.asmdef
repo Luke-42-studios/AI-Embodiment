@@ -2,7 +2,8 @@
     "name": "com.google.ai-embodiment.samples.ayalivestream.editor",
     "rootNamespace": "AIEmbodiment.Samples.Editor",
     "references": [
-        "com.google.ai-embodiment.samples.ayalivestream"
+        "com.google.ai-embodiment.samples.ayalivestream",
+        "com.google.ai-embodiment"
     ],
     "includePlatforms": ["Editor"],
     "excludePlatforms": [],

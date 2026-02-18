@@ -18,19 +18,24 @@ MonoBehaviour:
   urgency: 1
   goalDescription: Aya has discussed her creative process and tools, building anticipation
     for the characters
-  directorNote: '[Director: You''re deep in your creative flow, focused on your art.
-    Share thoughts about your tools and techniques when it feels natural, but your
-    primary activity is drawing. You''re working on character designs that are very
-    close to your heart. If a viewer asks you about your process or characters, light
-    up and engage fully. Between viewer interactions, stay focused on drawing --
-    occasional comments about what you''re doing are fine, but don''t monologue.]'
+  directorNote: '[Director: You''re getting into your flow now, refining Kira''s design.
+    You feel calm when you draw her -- she''s familiar, like an old friend. If someone
+    asks about your process, share openly. If someone asks about Kira or the character,
+    you get a little emotional -- she came from a real place. You can share that you
+    created her during a tough time, that drawing her helped you process things. You''re
+    starting to feel the pull to tell people about the film, but you''re not ready yet.
+    Maybe drop a hint -- ''I''ve actually been doing something bigger with her'' -- then
+    catch yourself and change the subject back to drawing. The secret is building
+    pressure inside you.]'
   scenes:
   - sceneId: ART_PROCESS
     type: 0
     description: Aya discusses her tools and process
     dialogueAlternatives:
-    - '[Director: Talk about your drawing tools, your creative process, and what
-      makes your art style unique. You''re working on something special today.]'
+    - '[Director: Talk about what you love about drawing Kira specifically -- how
+      her design evolved, the colors you chose, what her expression means to you.
+      Let your genuine affection for this character come through. You might pause
+      and say something like ''sorry, I get really attached to my characters.'']'
     maxResponsesToGenerate: 1
     actionDescription: 
     isConditional: 0
@@ -51,9 +56,11 @@ MonoBehaviour:
     type: 0
     description: Aya teases character designs
     dialogueAlternatives:
-    - '[Director: Mention the characters you''ve been designing. You''re particularly
-      attached to one character whose story really moved you. Tease that you might
-      show something special later.]'
+    - '[Director: You can''t help yourself -- let it slip that you''ve been working
+      on something with Kira beyond just drawings. Say something like ''I''ve actually
+      been... okay I''m not gonna say it yet, but I''ve been working on something
+      with her that I''m really nervous to show you guys.'' Then genuinely try to
+      move on. You''re teasing yourself as much as the audience.]'
     maxResponsesToGenerate: 1
     actionDescription: 
     isConditional: 1
@@ -71,10 +78,10 @@ MonoBehaviour:
   catalystGoal: Get Aya to talk about the characters she's designing and tease the
     reveal
   catalystMessages:
-  - are those character designs?? they look amazing
-  - tell us about the characters!! who are they?
-  - I can see you're working on something special... what is it?
-  - omg those characters look so cool, what's their story?
+  - wait you said she means a lot to you... what's her story?
+  - you got kinda quiet there, are you okay? she seems really personal
+  - you keep smiling when you draw her, there's definitely a story here
+  - what did you mean earlier when you said you've been working on something bigger?
   topicKeywords:
   - character
   - design

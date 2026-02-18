@@ -31,7 +31,7 @@ namespace AIEmbodiment
         /// [CALL: name {"arg": "val"}] tags parsed from transcription.
         /// Default: true (native path). Set to false if native tool calling is unreliable with audio-only models.
         /// </summary>
-        public static bool UseNativeFunctionCalling = false;
+        public static bool UseNativeFunctionCalling = true;
 
         /// <summary>Current session lifecycle state.</summary>
         public SessionState State { get; private set; } = SessionState.Disconnected;
@@ -409,10 +409,11 @@ namespace AIEmbodiment
             if (_client == null || !_client.IsConnected || State != SessionState.Connected)
                 return;
 
-            // Suppress mic audio while the AI is speaking to prevent a feedback loop:
-            // speaker audio → mic → Gemini → "interrupted" → buffer cleared → only last word heard.
-            if (_aiSpeaking)
-                return;
+            // PTT mode: do NOT suppress audio while AI is speaking.
+            // StartListening/StopListening is explicit push-to-talk -- the user intentionally
+            // chose to speak. Gemini handles barge-in natively (interrupts AI, processes user).
+            // The old suppression dropped all user audio during AI speech, making PTT useless
+            // whenever Aya was talking.
 
             // Track user speaking state
             if (!_userSpeaking)
@@ -448,6 +449,10 @@ namespace AIEmbodiment
 
                 case GeminiEventType.OutputTranscription:
                     HandleOutputTranscription(ev.Text);
+                    break;
+
+                case GeminiEventType.TextPart:
+                    HandleTextPart(ev.Text);
                     break;
 
                 case GeminiEventType.InputTranscription:
@@ -514,6 +519,25 @@ namespace AIEmbodiment
                 _packetAssembler?.AddAudio(ev.AudioData);
             }
             // If _ttsProvider != null: discard Gemini audio (TTS provider handles playback)
+        }
+
+        /// <summary>
+        /// Handles model text parts (non-audio text output, e.g. thoughts, function calls).
+        /// Routes to function call buffer and OnTextReceived but NOT OnOutputTranscription,
+        /// so it won't appear in the UI transcript (subtitles show spoken audio only).
+        /// </summary>
+        private void HandleTextPart(string text)
+        {
+            if (string.IsNullOrEmpty(text)) return;
+
+            OnTextReceived?.Invoke(text);
+
+            // Prompt-based function calling: buffer text and scan for [CALL: ...] tags
+            if (!UseNativeFunctionCalling && _functionRegistry.HasRegistrations)
+            {
+                _functionCallBuffer.Append(text);
+                ParsePromptFunctionCalls();
+            }
         }
 
         /// <summary>

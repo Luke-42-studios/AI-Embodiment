@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Text;
+using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -40,9 +42,15 @@ namespace AIEmbodiment.Samples
         private Label _loadingText;
         private Label _thinkingIndicator;
 
+        private static readonly Regex FunctionCallPattern =
+            new Regex(@"\[CALL:\s*\w+\s*\{[^}]*\}\]", RegexOptions.Compiled);
+
         private readonly List<ChatMessage> _messages = new();
         private float _sessionStartTime;
         private Label _currentAyaMessage;
+        private readonly StringBuilder _ayaMessageBuilder = new();
+        private Label _currentUserMessage;
+        private readonly StringBuilder _userMessageBuilder = new();
 
         private void OnEnable()
         {
@@ -144,9 +152,22 @@ namespace AIEmbodiment.Samples
                 _currentAyaMessage = new Label();
                 _currentAyaMessage.AddToClassList("aya-msg");
                 _ayaTranscript.Add(_currentAyaMessage);
+                _ayaMessageBuilder.Clear();
             }
 
-            _currentAyaMessage.text = text;
+            _ayaMessageBuilder.Append(text);
+
+            // Strip [CALL: ...] function call tags from accumulated text.
+            // Filtering on accumulated text handles fragmentation across chunks.
+            string accumulated = _ayaMessageBuilder.ToString();
+            string display = FunctionCallPattern.Replace(accumulated, "");
+
+            // Hide trailing partial tags not yet closed (e.g., "[CALL: play_anim")
+            int partialStart = display.LastIndexOf("[CALL:", StringComparison.Ordinal);
+            if (partialStart >= 0)
+                display = display.Substring(0, partialStart);
+
+            _currentAyaMessage.text = display;
 
             // Auto-scroll the transcript (deferred, matching AyaChatUI pattern)
             _ayaTranscript.schedule.Execute(() =>
@@ -163,6 +184,39 @@ namespace AIEmbodiment.Samples
         public void CompleteAyaTurn()
         {
             _currentAyaMessage = null;
+        }
+
+        /// <summary>
+        /// Updates the transcript panel with user speech text.
+        /// Accumulates fragments into a single label per turn (same pattern as UpdateAyaTranscript).
+        /// </summary>
+        public void UpdateUserTranscript(string text)
+        {
+            if (_currentUserMessage == null)
+            {
+                _currentUserMessage = new Label();
+                _currentUserMessage.AddToClassList("user-msg");
+                _ayaTranscript.Add(_currentUserMessage);
+                _userMessageBuilder.Clear();
+            }
+
+            _userMessageBuilder.Append(text);
+            _currentUserMessage.text = _userMessageBuilder.ToString();
+
+            _ayaTranscript.schedule.Execute(() =>
+            {
+                _ayaTranscript.scrollOffset = new Vector2(
+                    0, _ayaTranscript.contentContainer.layout.height);
+            });
+        }
+
+        /// <summary>
+        /// Marks the current user speech as complete. The next call to
+        /// <see cref="UpdateUserTranscript"/> will create a new label.
+        /// </summary>
+        public void CompleteUserTurn()
+        {
+            _currentUserMessage = null;
         }
 
         /// <summary>

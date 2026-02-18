@@ -5,6 +5,7 @@ namespace AIEmbodiment
     {
         Audio,
         OutputTranscription,
+        TextPart,
         InputTranscription,
         TurnComplete,
         Interrupted,
