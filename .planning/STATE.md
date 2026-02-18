@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-17)
 
 **Core value:** Developers can drop an AI character into their Unity scene and have it talking -- with synchronized voice, text, and animation events -- in minutes, not weeks.
-**Current focus:** Phase 16 - Integration & Polish
+**Current focus:** Phase 16 - Integration & Experience Loop
 
 ## Current Position
 
-Phase: 15 of 16 (Scene Transition & Animation)
-Plan: 2 of 2 in current phase
-Status: Phase complete
-Last activity: 2026-02-17 -- Completed 15-01-PLAN.md
+Phase: 16 of 16 (Integration & Experience Loop)
+Plan: 0 of 3 in current phase
+Status: Not started
+Last activity: 2026-02-17 -- Completed Phase 15 (Scene Transition & Animation)
 
 Progress: [████████████░░░] 12/15 plans (80%)
 
@@ -83,6 +83,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-17T23:59:16Z
-Stopped at: Completed 15-01-PLAN.md (Animation function calls) -- Phase 15 complete
+Last session: 2026-02-17
+Stopped at: Completed Phase 15 (Scene Transition & Animation) -- verified 7/7 must-haves
 Resume file: None

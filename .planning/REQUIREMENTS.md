@@ -40,9 +40,9 @@ Requirements for the Livestream Experience milestone. Builds on existing v0.8 pa
 
 ### Animation & Scene
 
-- [ ] **ANI-01**: Animation function calls (wave, spin, draw gestures) registered via existing function calling system
-- [ ] **ANI-02**: Goal-triggered additive scene loading for Unity-rendered movie clip
-- [ ] **ANI-03**: Pre-load movie scene with allowSceneActivation = false
+- [x] **ANI-01**: Animation function calls (wave, spin, draw gestures) registered via existing function calling system
+- [x] **ANI-02**: Goal-triggered additive scene loading for Unity-rendered movie clip
+- [x] **ANI-03**: Pre-load movie scene with allowSceneActivation = false
 
 ### Infrastructure
 
@@ -105,9 +105,9 @@ Requirements for the Livestream Experience milestone. Builds on existing v0.8 pa
 | USR-01 | Phase 14 | Complete |
 | USR-02 | Phase 14 | Complete |
 | USR-03 | Phase 14 | Complete |
-| ANI-01 | Phase 15 | Pending |
-| ANI-02 | Phase 15 | Pending |
-| ANI-03 | Phase 15 | Pending |
+| ANI-01 | Phase 15 | Complete |
+| ANI-02 | Phase 15 | Complete |
+| ANI-03 | Phase 15 | Complete |
 | INF-01 | Phase 12 | Complete |
 | INF-02 | Phase 12 | Complete |
 | MIG-01 | Phase 12 | Complete |

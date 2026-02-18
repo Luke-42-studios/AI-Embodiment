@@ -21,7 +21,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 12: Foundation & Data Model** - REST client, UI shell, ChatBotConfig ScriptableObject, and migrated character data
 - [x] **Phase 13: Chat Bot System** - Scripted and dynamic chat bots with burst timing, personality, and tracked messages
 - [x] **Phase 14: Narrative Director & User Interaction** - Beat/scene structure, dual-queue orchestration, push-to-talk finish-first, and narrative steering
-- [ ] **Phase 15: Scene Transition & Animation** - Animation function calls, clean scene transition to movie clip, toast UI feedback
+- [x] **Phase 15: Scene Transition & Animation** - Animation function calls, clean scene transition to movie clip, toast UI feedback
 - [ ] **Phase 16: Integration & Experience Loop** - Full livestream scene wiring, cross-system context injection, and end-to-end experience
 
 ## Phase Details
@@ -88,8 +88,8 @@ Plans:
 **Plans:** 2 plans
 
 Plans:
-- [ ] 15-01-PLAN.md -- AnimationConfig ScriptableObject, data-driven play_animation function registration, toast UI feedback
-- [ ] 15-02-PLAN.md -- SceneTransitionHandler with clean scene exit, explicit Disconnect, and Build Settings validation
+- [x] 15-01-PLAN.md -- AnimationConfig ScriptableObject, data-driven play_animation function registration, toast UI feedback
+- [x] 15-02-PLAN.md -- SceneTransitionHandler with clean scene exit, explicit Disconnect, and Build Settings validation
 
 ### Phase 16: Integration & Experience Loop
 **Goal**: The complete livestream sample scene runs as a cohesive 10-minute experience -- Aya hosts, bots chat, user talks, narrative builds, and the movie clip reveals -- with cross-system context injection ensuring coherence
@@ -117,5 +117,5 @@ Phases execute in numeric order: 12 -> 13 -> 14 -> 15 -> 16
 | 12. Foundation & Data Model | 3/3 | Complete | 2026-02-17 |
 | 13. Chat Bot System | 3/3 | Complete | 2026-02-17 |
 | 14. Narrative Director & User Interaction | 4/4 | Complete | 2026-02-17 |
-| 15. Scene Transition & Animation | 0/2 | Not started | - |
+| 15. Scene Transition & Animation | 2/2 | Complete | 2026-02-17 |
 | 16. Integration & Experience Loop | 0/3 | Not started | - |
