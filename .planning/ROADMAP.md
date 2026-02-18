@@ -116,12 +116,12 @@ Plans:
   2. Chat bots act as narrative catalysts -- bot questions visibly steer Aya toward the next narrative beat (e.g., "omg are you gonna show us the thing?" nudges Aya toward the reveal)
   3. User push-to-talk questions about upcoming content accelerate the narrative arc (asking about the movie clip moves Aya closer to the reveal faster than waiting)
   4. Cross-system coherence is maintained -- Aya acknowledges bot messages she has seen, bots react to what Aya actually said, and no bot asserts facts Aya has not mentioned
-**Plans**: TBD
+**Plans:** 3 plans
 
 Plans:
-- [ ] 16-01: LivestreamController orchestrator wiring all subsystems
-- [ ] 16-02: Cross-system context injection (bot messages to Aya, director notes, shared state) and narrative catalyst tuning
-- [ ] 16-03: End-to-end experience validation and polish
+- [ ] 16-01-PLAN.md -- LivestreamController orchestrator, FactTracker, AyaTranscriptBuffer, and LivestreamUI extensions
+- [ ] 16-02-PLAN.md -- Cross-system context injection (NarrativeBeatConfig catalysts, ChatBotManager enriched prompts, NarrativeDirector fact tracking and skip-ahead)
+- [ ] 16-03-PLAN.md -- Final wiring, beat asset catalyst content, and end-to-end experience validation
 
 ## Progress
 
