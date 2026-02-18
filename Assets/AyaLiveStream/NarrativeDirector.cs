@@ -75,6 +75,7 @@ namespace AIEmbodiment.Samples
         private bool _narrativeRunning;
         private bool _turnComplete;
         private int _questionsAnsweredCount;
+        private FactTracker _factTracker;
 
         // Event handler references for clean unsubscription
         private Action _onAISpeakingStarted;
@@ -130,6 +131,15 @@ namespace AIEmbodiment.Samples
         }
 
         /// <summary>
+        /// Injects the shared FactTracker for beat-level fact recording.
+        /// Called by LivestreamController in Start().
+        /// </summary>
+        public void SetFactTracker(FactTracker factTracker)
+        {
+            _factTracker = factTracker;
+        }
+
+        /// <summary>
         /// Signals scene execution that Aya finished her current turn, and if a
         /// beat transition was queued because Aya was speaking, executes it now
         /// (Pitfall 3: never send while Aya speaks).
@@ -145,21 +155,48 @@ namespace AIEmbodiment.Samples
         }
 
         /// <summary>
-        /// Checks if the user's speech transcript contains any skip keywords for
-        /// the current beat. If found, sets _beatGoalMet = true for early exit
-        /// and skips to the last beat.
+        /// Checks user speech for topic keywords (skip-ahead to specific future beats)
+        /// and skip keywords (fast-forward to the final beat). Topic keywords are checked
+        /// first: if the user mentions a future beat's topic, the narrative jumps to that
+        /// beat. Skip keywords remain the "fast forward to finale" mechanism.
         /// </summary>
         private void CheckSkipKeywords(string transcript)
         {
             if (_currentBeatIndex < 0 || _currentBeatIndex >= _beats.Length)
                 return;
 
-            var beat = _beats[_currentBeatIndex];
-            if (beat.skipKeywords == null || beat.skipKeywords.Length == 0)
-                return;
-
             // Don't skip if we're already on the last beat
             if (_currentBeatIndex >= _beats.Length - 1)
+                return;
+
+            // --- Topic keyword check: jump to a specific future beat ---
+            // Check all future beats (exclusive of current and final) for topic keyword matches.
+            // Final beat skip is handled by the existing skipKeywords mechanism below.
+            for (int i = _currentBeatIndex + 1; i < _beats.Length - 1; i++)
+            {
+                var futureBeat = _beats[i];
+                if (futureBeat.topicKeywords == null || futureBeat.topicKeywords.Length == 0)
+                    continue;
+
+                foreach (string keyword in futureBeat.topicKeywords)
+                {
+                    if (string.IsNullOrEmpty(keyword))
+                        continue;
+
+                    if (transcript.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        // Set index so the loop advances to this specific beat
+                        _currentBeatIndex = i - 1;
+                        _beatGoalMet = true;
+                        Debug.Log($"[NarrativeDirector] Topic keyword match for beat '{futureBeat.beatId}', advancing.");
+                        return;
+                    }
+                }
+            }
+
+            // --- Skip keyword check: fast-forward to final beat ---
+            var beat = _beats[_currentBeatIndex];
+            if (beat.skipKeywords == null || beat.skipKeywords.Length == 0)
                 return;
 
             foreach (string keyword in beat.skipKeywords)
@@ -230,6 +267,12 @@ namespace AIEmbodiment.Samples
                     }
 
                     OnBeatEnded?.Invoke(beat);
+
+                    // Record beat completion fact
+                    if (_factTracker != null)
+                    {
+                        _factTracker.SetFact($"beat_{beat.beatId}_completed");
+                    }
                 }
 
                 OnAllBeatsComplete?.Invoke();
@@ -250,6 +293,16 @@ namespace AIEmbodiment.Samples
             _pendingBeatTransition = null;
             CurrentBeat = beat;
             OnBeatStarted?.Invoke(beat);
+
+            // Record beat-level facts for cross-system coherence
+            if (_factTracker != null)
+            {
+                _factTracker.SetFact($"beat_{beat.beatId}_started");
+                if (_currentBeatIndex == _beats.Length - 1)
+                {
+                    _factTracker.SetFact("approaching_reveal");
+                }
+            }
 
             if (!string.IsNullOrEmpty(beat.directorNote))
             {
