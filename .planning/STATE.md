@@ -9,19 +9,19 @@ See: .planning/PROJECT.md (updated 2026-02-17)
 
 ## Current Position
 
-Phase: 15.1 (Audio2Animation Pipeline - INSERTED)
-Plan: 2 of 2 in current phase
-Status: Phase complete
-Last activity: 2026-02-17 - Completed 15.1-02-PLAN.md (FaceAnimationPlayer sample MonoBehaviour)
+Phase: 16 (Integration & Experience Loop)
+Plan: 1 of 3 in current phase
+Status: In progress
+Last activity: 2026-02-17 - Completed 16-01-PLAN.md (Foundation Orchestrator)
 
-Progress: [██████████████░] 14/17 plans (82%)
+Progress: [███████████████░░] 15/17 plans (88%)
 
 ## Performance Metrics
 
 **Velocity:**
 - v1 MVP: 17 plans in ~1 day
 - v0.8 WebSocket Migration: 14 plans in ~5 days
-- Total plans completed: 43
+- Total plans completed: 44
 - v1.0 Livestream Experience: 17 plans planned
 
 **By Phase:**
@@ -76,6 +76,9 @@ Full decision log in PROJECT.md Key Decisions table.
 - FaceAnimationPlayer in AIEmbodiment.Samples namespace (matches AyaSampleController convention)
 - Max 3 frames drained per Update to prevent queue buildup without skipping
 - ClearQueue resets all blendshape weights to 0 for clean neutral pose on barge-in
+- Named event handler references for clean unsubscription in LivestreamController (NarrativeDirector pattern)
+- Graceful degradation on connection timeout: start bots only, skip narrative
+- Dead air tracks only Aya silence, not bot messages -- bots are visual-only
 
 ### Roadmap Evolution
 
@@ -95,5 +98,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Completed 15.1-02-PLAN.md (FaceAnimationPlayer sample MonoBehaviour) -- Phase 15.1 complete
+Stopped at: Completed 16-01-PLAN.md (Foundation Orchestrator)
 Resume file: None
