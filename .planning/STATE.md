@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-17)
 
 **Core value:** Developers can drop an AI character into their Unity scene and have it talking -- with synchronized voice, text, and animation events -- in minutes, not weeks.
-**Current focus:** Phase 16 - Integration & Experience Loop (Phase 15.1 complete)
+**Current focus:** Phase 16 - Integration & Experience Loop
 
 ## Current Position
 
 Phase: 16 (Integration & Experience Loop)
-Plan: 1 of 3 in current phase
+Plan: 2 of 3 in current phase
 Status: In progress
-Last activity: 2026-02-17 - Completed 16-01-PLAN.md (Foundation Orchestrator)
+Last activity: 2026-02-17 - Completed 16-02-PLAN.md (Cross-System Context Injection)
 
-Progress: [███████████████░░] 15/17 plans (88%)
+Progress: [████████████████░] 16/17 plans (94%)
 
 ## Performance Metrics
 
 **Velocity:**
 - v1 MVP: 17 plans in ~1 day
 - v0.8 WebSocket Migration: 14 plans in ~5 days
-- Total plans completed: 44
+- Total plans completed: 45
 - v1.0 Livestream Experience: 17 plans planned
 
 **By Phase:**
@@ -79,6 +79,9 @@ Full decision log in PROJECT.md Key Decisions table.
 - Named event handler references for clean unsubscription in LivestreamController (NarrativeDirector pattern)
 - Graceful degradation on connection timeout: start bots only, skip narrative
 - Dead air tracks only Aya silence, not bot messages -- bots are visual-only
+- Catalyst messages bypass per-bot _usedMessageIndices tracking (come from beat, not bot pool)
+- topicKeywords check excludes final beat (skipKeywords handles finale skip)
+- 25% catalyst rate: roughly 1 in 4 burst messages nudges narrative forward
 
 ### Roadmap Evolution
 
@@ -98,5 +101,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Completed Phase 15.1 (Audio2Animation Pipeline) -- 4/4 must-haves verified
+Stopped at: Completed 16-02-PLAN.md (Cross-System Context Injection)
 Resume file: None
