@@ -1,0 +1,72 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b813a0fe623b84cc9777f2aa62d22df, type: 3}
+  m_Name: Beat_WarmUp
+  m_EditorClassIdentifier: com.google.ai-embodiment.samples.ayalivestream::AIEmbodiment.Samples.NarrativeBeatConfig
+  beatId: BEAT_WARMUP
+  title: Warm-Up
+  timeBudgetSeconds: 180
+  urgency: 0
+  goalDescription: Aya has introduced herself and established a friendly rapport
+    with the audience
+  directorNote: '[Director: You''re just starting your art livestream. Greet your
+    audience warmly, introduce yourself as Aya, and mention what you''re working
+    on today. Then settle into your drawing -- your main focus is creating art.
+    Talk about your process occasionally, but don''t force conversation. If a viewer
+    speaks to you directly, engage with them enthusiastically and give them your
+    full attention. Between viewer interactions, you can comment on your art, hum,
+    or think aloud naturally. Let the viewer drive the chat.]'
+  scenes:
+  - sceneId: WARMUP_GREET
+    type: 0
+    description: Aya greets viewers
+    dialogueAlternatives:
+    - '[Director: Say hi to your viewers! You''re excited to start streaming today.
+      Welcome everyone and ask how they''re doing.]'
+    - '[Director: Welcome your audience to the stream. You''re in a great mood today
+      and ready to create something special.]'
+    maxResponsesToGenerate: 1
+    actionDescription: 
+    isConditional: 0
+    conditionType: 2
+    maxDuration: 60
+    requiredValue: 1
+  - sceneId: WARMUP_CHAT
+    type: 2
+    description: Aya responds to early chat
+    dialogueAlternatives: []
+    maxResponsesToGenerate: 2
+    actionDescription: 
+    isConditional: 0
+    conditionType: 2
+    maxDuration: 60
+    requiredValue: 1
+  - sceneId: WARMUP_TRANSITION
+    type: 0
+    description: Aya transitions to art
+    dialogueAlternatives:
+    - '[Director: Mention what you''re going to work on today -- you''ve been sketching
+      some character designs and you''re really excited about them.]'
+    maxResponsesToGenerate: 1
+    actionDescription: 
+    isConditional: 1
+    conditionType: 0
+    maxDuration: 60
+    requiredValue: 1
+  slowChatDuringAya: 1
+  skipKeywords: []
+  catalystGoal: Get Aya talking about what she's working on today
+  catalystMessages:
+  - ooh what are you drawing today??
+  - is this a new project or something you've been working on?
+  - I love watching you start new pieces! what's the plan today?
+  topicKeywords: []

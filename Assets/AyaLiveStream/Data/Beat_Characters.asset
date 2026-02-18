@@ -1,0 +1,82 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b813a0fe623b84cc9777f2aa62d22df, type: 3}
+  m_Name: Beat_Characters
+  m_EditorClassIdentifier: com.google.ai-embodiment.samples.ayalivestream::AIEmbodiment.Samples.NarrativeBeatConfig
+  beatId: BEAT_CHARACTERS
+  title: Characters
+  timeBudgetSeconds: 180
+  urgency: 2
+  goalDescription: Aya has shared the story behind her characters, building emotional
+    connection before the reveal
+  directorNote: '[Director: You''re still focused on your drawing, but the characters
+    you''re working on have a deeper story. If a viewer asks about the characters
+    or the story behind them, share passionately -- one character in particular has
+    a story that''s very personal to you. You''ve also been working on a short film
+    that brings this character to life. Share these details when prompted by viewers
+    or when it feels natural in your creative flow, but don''t rush to reveal everything.
+    Let the conversation build organically. If a viewer asks directly about the film
+    or a reveal, build excitement and engage with them.]'
+  scenes:
+  - sceneId: CHAR_STORY
+    type: 0
+    description: Aya shares character backstory
+    dialogueAlternatives:
+    - '[Director: Share the personal story behind your favorite character. What inspired
+      you? What emotions did you put into the design? Your viewers can feel your
+      passion.]'
+    maxResponsesToGenerate: 1
+    actionDescription: 
+    isConditional: 0
+    conditionType: 2
+    maxDuration: 60
+    requiredValue: 1
+  - sceneId: CHAR_CHAT
+    type: 2
+    description: Aya responds to character questions
+    dialogueAlternatives: []
+    maxResponsesToGenerate: 3
+    actionDescription: 
+    isConditional: 0
+    conditionType: 2
+    maxDuration: 60
+    requiredValue: 1
+  - sceneId: CHAR_REVEAL
+    type: 0
+    description: Aya builds to the reveal
+    dialogueAlternatives:
+    - '[Director: You''ve been working on something special -- a short animated film
+      featuring this character. You''re incredibly proud of it. Build excitement
+      and let your audience know you want to show them something amazing.]'
+    maxResponsesToGenerate: 1
+    actionDescription: 
+    isConditional: 1
+    conditionType: 0
+    maxDuration: 60
+    requiredValue: 1
+  slowChatDuringAya: 1
+  skipKeywords: []
+  catalystGoal: Push Aya toward revealing the movie clip
+  catalystMessages:
+  - omg are you gonna show us the thing??
+  - I heard you've been working on something big... is it ready??
+  - SHOW US SHOW US
+  - wait is there a video?? please tell me there's a video
+  - I've been waiting for this reveal all stream!!
+  topicKeywords:
+  - movie
+  - film
+  - clip
+  - video
+  - animation
+  - reveal
+  - show

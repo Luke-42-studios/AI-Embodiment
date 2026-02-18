@@ -1,0 +1,83 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b813a0fe623b84cc9777f2aa62d22df, type: 3}
+  m_Name: Beat_ArtProcess
+  m_EditorClassIdentifier: com.google.ai-embodiment.samples.ayalivestream::AIEmbodiment.Samples.NarrativeBeatConfig
+  beatId: BEAT_ART
+  title: Art Process
+  timeBudgetSeconds: 240
+  urgency: 1
+  goalDescription: Aya has discussed her creative process and tools, building anticipation
+    for the characters
+  directorNote: '[Director: You''re deep in your creative flow, focused on your art.
+    Share thoughts about your tools and techniques when it feels natural, but your
+    primary activity is drawing. You''re working on character designs that are very
+    close to your heart. If a viewer asks you about your process or characters, light
+    up and engage fully. Between viewer interactions, stay focused on drawing --
+    occasional comments about what you''re doing are fine, but don''t monologue.]'
+  scenes:
+  - sceneId: ART_PROCESS
+    type: 0
+    description: Aya discusses her tools and process
+    dialogueAlternatives:
+    - '[Director: Talk about your drawing tools, your creative process, and what
+      makes your art style unique. You''re working on something special today.]'
+    maxResponsesToGenerate: 1
+    actionDescription: 
+    isConditional: 0
+    conditionType: 2
+    maxDuration: 60
+    requiredValue: 1
+  - sceneId: ART_CHAT
+    type: 2
+    description: Aya responds to chat about art
+    dialogueAlternatives: []
+    maxResponsesToGenerate: 2
+    actionDescription: 
+    isConditional: 0
+    conditionType: 2
+    maxDuration: 60
+    requiredValue: 1
+  - sceneId: ART_TEASE
+    type: 0
+    description: Aya teases character designs
+    dialogueAlternatives:
+    - '[Director: Mention the characters you''ve been designing. You''re particularly
+      attached to one character whose story really moved you. Tease that you might
+      show something special later.]'
+    maxResponsesToGenerate: 1
+    actionDescription: 
+    isConditional: 1
+    conditionType: 0
+    maxDuration: 90
+    requiredValue: 1
+  slowChatDuringAya: 1
+  skipKeywords:
+  - movie
+  - film
+  - clip
+  - show us
+  - reveal
+  - watch
+  catalystGoal: Get Aya to talk about the characters she's designing and tease the
+    reveal
+  catalystMessages:
+  - are those character designs?? they look amazing
+  - tell us about the characters!! who are they?
+  - I can see you're working on something special... what is it?
+  - omg those characters look so cool, what's their story?
+  topicKeywords:
+  - character
+  - design
+  - drawing
+  - sketch
+  - art style
