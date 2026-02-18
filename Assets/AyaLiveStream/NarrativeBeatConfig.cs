@@ -130,5 +130,17 @@ namespace AIEmbodiment.Samples
         [Header("Skip Detection")]
         [Tooltip("Keywords from the user that trigger a skip to the final beat (e.g. 'movie', 'reveal').")]
         public string[] skipKeywords;
+
+        [Header("Catalyst")]
+        [TextArea(1, 3)]
+        [Tooltip("What are bots trying to nudge Aya toward in this beat?")]
+        public string catalystGoal;
+
+        [TextArea(1, 3)]
+        [Tooltip("Catalyst messages sprinkled in chat to push narrative forward.")]
+        public string[] catalystMessages;
+
+        [Tooltip("Keywords in user speech that indicate interest in this beat's topic. Used for PTT skip-ahead to specific beats.")]
+        public string[] topicKeywords;
     }
 }

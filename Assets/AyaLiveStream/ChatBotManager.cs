@@ -46,6 +46,11 @@ namespace AIEmbodiment.Samples
         private bool _running;
         private bool _pausedForTransition;
 
+        // Cross-system context (injected via SetContextProviders / SetCurrentBeat)
+        private AyaTranscriptBuffer _ayaTranscriptBuffer;
+        private FactTracker _factTracker;
+        private NarrativeBeatConfig _currentBeat;
+
         // Dynamic response state
         private GeminiTextClient _textClient;
         private string _accumulatedTranscript = "";
@@ -87,6 +92,25 @@ namespace AIEmbodiment.Samples
         public IReadOnlyList<TrackedChatMessage> GetUnrespondedMessages()
         {
             return _trackedMessages.Where(m => !m.AyaHasResponded).ToList();
+        }
+
+        /// <summary>
+        /// Injects cross-system context providers for enriched dynamic Gemini prompts.
+        /// Called by LivestreamController in Start().
+        /// </summary>
+        public void SetContextProviders(AyaTranscriptBuffer transcriptBuffer, FactTracker factTracker)
+        {
+            _ayaTranscriptBuffer = transcriptBuffer;
+            _factTracker = factTracker;
+        }
+
+        /// <summary>
+        /// Updates the current narrative beat for catalyst message selection.
+        /// Called from LivestreamController subscribing to NarrativeDirector.OnBeatStarted.
+        /// </summary>
+        public void SetCurrentBeat(NarrativeBeatConfig beat)
+        {
+            _currentBeat = beat;
         }
 
         /// <summary>
@@ -280,6 +304,18 @@ namespace AIEmbodiment.Samples
         /// </summary>
         private string PickMessage(ChatBotConfig bot)
         {
+            // Catalyst message injection: 25% chance to pick a beat catalyst message
+            // (bypasses per-bot pool -- any bot can deliver a narrative nudge)
+            if (_currentBeat != null && _currentBeat.catalystMessages != null
+                && _currentBeat.catalystMessages.Length > 0)
+            {
+                if (UnityEngine.Random.value < 0.25f)
+                {
+                    return _currentBeat.catalystMessages[
+                        UnityEngine.Random.Range(0, _currentBeat.catalystMessages.Length)];
+                }
+            }
+
             // Build combined pool: scriptedMessages + messageAlternatives
             int scriptedCount = bot.scriptedMessages?.Length ?? 0;
             int altCount = bot.messageAlternatives?.Length ?? 0;
@@ -476,6 +512,31 @@ namespace AIEmbodiment.Samples
             sb.AppendLine("The viewer just said via push-to-talk:");
             sb.AppendLine($"\"{userTranscript}\"");
             sb.AppendLine();
+
+            // Inject Aya's recent transcript for cross-system context
+            if (_ayaTranscriptBuffer != null)
+            {
+                string recentTurns = _ayaTranscriptBuffer.GetRecentTurns(3);
+                if (!string.IsNullOrEmpty(recentTurns))
+                {
+                    sb.AppendLine("Aya (the host) has been saying:");
+                    sb.Append(recentTurns);
+                    sb.AppendLine();
+                }
+            }
+
+            // Inject established facts to prevent contradictions
+            if (_factTracker != null)
+            {
+                string facts = _factTracker.GetFactsSummary();
+                if (!string.IsNullOrEmpty(facts))
+                {
+                    sb.AppendLine("Established facts (do NOT contradict these):");
+                    sb.Append(facts);
+                    sb.AppendLine();
+                }
+            }
+
             sb.AppendLine("Available chat bots (return 1-3 reactions from the most natural responders):");
 
             foreach (var bot in _bots)
