@@ -9,7 +9,7 @@ Requirements for the Livestream Experience milestone. Builds on existing v0.8 pa
 
 ### Livestream Scene
 
-- [ ] **LIVE-01**: Livestream sample scene with Aya as AI host, chat feed, and user push-to-talk
+- [x] **LIVE-01**: Livestream sample scene with Aya as AI host, chat feed, and user push-to-talk
 - [x] **LIVE-02**: Beat/scene narrative structure (ordered scenes per beat with conditional transitions)
 - [x] **LIVE-03**: Dual-queue system -- chat scenes and Aya scenes run in parallel (chat non-blocking, Aya sequential)
 - [x] **LIVE-04**: Scene types: AyaDialogue, ChatBurst, AyaChecksChat, AyaAction, UserChoice
@@ -28,8 +28,8 @@ Requirements for the Livestream Experience milestone. Builds on existing v0.8 pa
 - [x] **NAR-01**: Time-based narrative arc (warm-up -> art process -> characters -> emotional build -> reveal)
 - [x] **NAR-02**: SendText director notes for mid-session Aya steering
 - [x] **NAR-03**: Goal chain with escalating urgency (multiple mini-goals, LOW -> HIGH)
-- [ ] **NAR-04**: Chat bots as narrative catalysts (bot questions help steer Aya toward the goal)
-- [ ] **NAR-05**: User questions can accelerate the narrative arc
+- [x] **NAR-04**: Chat bots as narrative catalysts (bot questions help steer Aya toward the goal)
+- [x] **NAR-05**: User questions can accelerate the narrative arc
 - [x] **NAR-06**: Conditional scene transitions (TimedOut, PatternMatched, QuestionsAnswered)
 
 ### User Interaction
@@ -92,7 +92,7 @@ Requirements for the Livestream Experience milestone. Builds on existing v0.8 pa
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| LIVE-01 | Phase 16 | Pending |
+| LIVE-01 | Phase 16 | Complete |
 | LIVE-02 | Phase 14 | Complete |
 | LIVE-03 | Phase 14 | Complete |
 | LIVE-04 | Phase 14 | Complete |
@@ -105,8 +105,8 @@ Requirements for the Livestream Experience milestone. Builds on existing v0.8 pa
 | NAR-01 | Phase 14 | Complete |
 | NAR-02 | Phase 14 | Complete |
 | NAR-03 | Phase 14 | Complete |
-| NAR-04 | Phase 16 | Pending |
-| NAR-05 | Phase 16 | Pending |
+| NAR-04 | Phase 16 | Complete |
+| NAR-05 | Phase 16 | Complete |
 | NAR-06 | Phase 14 | Complete |
 | USR-01 | Phase 14 | Complete |
 | USR-02 | Phase 14 | Complete |

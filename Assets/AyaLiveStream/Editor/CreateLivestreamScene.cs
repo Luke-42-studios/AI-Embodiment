@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEditor;
 using UnityEditor.SceneManagement;
+using AIEmbodiment;
 using AIEmbodiment.Samples;
 
 namespace AIEmbodiment.Samples.Editor
