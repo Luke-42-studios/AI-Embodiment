@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-17)
 
 **Core value:** Developers can drop an AI character into their Unity scene and have it talking -- with synchronized voice, text, and animation events -- in minutes, not weeks.
-**Current focus:** Phase 16 - Integration & Experience Loop (COMPLETE)
+**Current focus:** Phase 16.1 - User-Priority Interaction (COMPLETE)
 
 ## Current Position
 
-Phase: 16 of 16 (Integration & Experience Loop)
-Plan: 3 of 3 in current phase (COMPLETE)
-Status: Phase complete -- v1.0 Livestream Experience milestone finished
-Last activity: 2026-02-17 - Completed 16-03-PLAN.md (Final Wiring & Experience Validation)
+Phase: 16.1 of 16.1 (User-Priority Interaction)
+Plan: 1 of 1 in current phase
+Status: Phase complete -- v1.0 Livestream Experience milestone complete
+Last activity: 2026-02-18 - Completed 16.1-01-PLAN.md
 
-Progress: [█████████████████] 17/17 plans (100%)
+Progress: [██████████████████] 18/18 plans (100%)
 
 ## Performance Metrics
 
@@ -22,7 +22,7 @@ Progress: [█████████████████] 17/17 plans (100
 - v1 MVP: 17 plans in ~1 day
 - v0.8 WebSocket Migration: 14 plans in ~5 days
 - Total plans completed: 48
-- v1.0 Livestream Experience: 17 plans completed
+- v1.0 Livestream Experience: 18 plans completed
 
 **By Phase:**
 
@@ -34,6 +34,7 @@ Progress: [█████████████████] 17/17 plans (100
 | 15 | 2 | - | - |
 | 15.1 | 2 | 3min | 1.5min |
 | 16 | 3 | ~8min | ~2.7min |
+| 16.1 | 1 | 2min | 2min |
 
 ## Accumulated Context
 
@@ -82,10 +83,15 @@ Full decision log in PROJECT.md Key Decisions table.
 - Catalyst messages bypass per-bot _usedMessageIndices tracking (come from beat, not bot pool)
 - topicKeywords check excludes final beat (skipKeywords handles finale skip)
 - 25% catalyst rate: roughly 1 in 4 burst messages nudges narrative forward
+- User silence timer: _lastUserSpeechTime initialized to Time.time (not 0), giving user 2min before bots get attention
+- Func<bool> callback injection into NarrativeDirector via SetUserSilenceProvider (follows SetFactTracker pattern)
+- Only AyaChecksChat bot injection is gated by user silence -- AyaDialogue scenes fire normally for narrative progression
+- _isUserSilent == null fallback preserves backward compatibility (always process bots when no provider set)
 
 ### Roadmap Evolution
 
 - Phase 15.1 inserted after Phase 15: Audio2Animation pipeline in package runtime (URGENT) -- audio-to-blendshape sync driver with fake model, streams pre-recorded animation JSON synchronized to TTS audio chunks
+- Phase 16.1 inserted after Phase 16: User-priority interaction model (URGENT) -- Aya greets and focuses on drawing, only responds to bots after 2min user silence, user PTT always takes priority
 
 ### Pending Todos
 
@@ -100,6 +106,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-17
-Stopped at: Completed 16-03-PLAN.md (Final Wiring & Experience Validation) -- Phase 16 complete, v1.0 milestone finished
+Last session: 2026-02-18
+Stopped at: Completed 16.1-01-PLAN.md -- Phase 16.1 and v1.0 milestone complete
 Resume file: None

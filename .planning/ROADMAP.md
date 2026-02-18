@@ -8,7 +8,7 @@ Build a livestream sample scene where Aya hosts an intimate art stream, interact
 
 - v1 MVP (Phases 1-6) -- shipped 2026-02-05
 - v0.8 WebSocket Migration (Phases 7-11.2) -- shipped 2026-02-17
-- v1.0 Livestream Experience (Phases 12-16.1) -- in progress
+- v1.0 Livestream Experience (Phases 12-16.1) -- shipped 2026-02-18
 
 ## Phases
 
@@ -24,7 +24,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 15: Scene Transition & Animation** - Animation function calls, clean scene transition to movie clip, toast UI feedback
 - [x] **Phase 15.1: Audio2Animation Pipeline** - Audio-to-animation pipeline in package runtime with fake model streaming pre-recorded blendshape data (INSERTED)
 - [x] **Phase 16: Integration & Experience Loop** - Full livestream scene wiring, cross-system context injection, and end-to-end experience
-- [ ] **Phase 16.1: User-Priority Interaction** - Aya greets and focuses on drawing, user has priority for questions, bots only get responses after 2min user silence (INSERTED)
+- [x] **Phase 16.1: User-Priority Interaction** - Aya greets and focuses on drawing, user has priority for questions, bots only get responses after 2min user silence (INSERTED)
 
 ## Phase Details
 
@@ -136,7 +136,7 @@ Plans:
 **Plans:** 1 plan
 
 Plans:
-- [ ] 16.1-01-PLAN.md -- User silence timer in LivestreamController, gated bot injection in NarrativeDirector, drawing-focused beat director notes
+- [x] 16.1-01-PLAN.md -- User silence timer in LivestreamController, gated bot injection in NarrativeDirector, drawing-focused beat director notes
 
 ## Progress
 
@@ -151,4 +151,4 @@ Phases execute in numeric order: 12 -> 13 -> 14 -> 15 -> 15.1 -> 16 -> 16.1
 | 15. Scene Transition & Animation | 2/2 | Complete | 2026-02-17 |
 | 15.1. Audio2Animation Pipeline | 2/2 | Complete | 2026-02-17 |
 | 16. Integration & Experience Loop | 3/3 | Complete | 2026-02-17 |
-| 16.1. User-Priority Interaction | 0/1 | Planned | - |
+| 16.1. User-Priority Interaction | 1/1 | Complete | 2026-02-18 |
