@@ -35,6 +35,11 @@ namespace AIEmbodiment.Samples
         private Label _toastLabel;
         private int _toastCounter;
 
+        // Loading overlay and thinking indicator
+        private VisualElement _loadingOverlay;
+        private Label _loadingText;
+        private Label _thinkingIndicator;
+
         private readonly List<ChatMessage> _messages = new();
         private float _sessionStartTime;
         private Label _currentAyaMessage;
@@ -56,6 +61,10 @@ namespace AIEmbodiment.Samples
             _autoSubmitFill = root.Q("auto-submit-fill");
             _pttAck = root.Q("ptt-ack");
             _toastLabel = root.Q<Label>("toast-label");
+
+            _loadingOverlay = root.Q("loading-overlay");
+            _loadingText = root.Q<Label>("loading-text");
+            _thinkingIndicator = root.Q<Label>("thinking-indicator");
 
             // Configure ListView for chat messages
             _chatFeed.makeItem = MakeChatItem;
@@ -275,6 +284,63 @@ namespace AIEmbodiment.Samples
             {
                 _toastLabel.RemoveFromClassList("toast--visible");
             }
+        }
+
+        /// <summary>
+        /// Shows or hides the loading overlay. When true, displays "Connecting..."
+        /// centered over the main content area. When false, hides the overlay.
+        /// </summary>
+        public void SetLoadingState(bool loading)
+        {
+            if (_loadingOverlay == null) return;
+
+            if (loading)
+            {
+                _loadingOverlay.RemoveFromClassList("loading-overlay--hidden");
+                _loadingText.text = "Connecting...";
+                _loadingText.RemoveFromClassList("loading-text--live");
+            }
+            else
+            {
+                _loadingOverlay.AddToClassList("loading-overlay--hidden");
+            }
+        }
+
+        /// <summary>
+        /// Changes the loading overlay text to "GOING LIVE!" with emphasis styling,
+        /// then auto-hides after 1.5 seconds. Uses the same async Awaitable pattern
+        /// as <see cref="ShowToast"/>.
+        /// </summary>
+        public async void ShowGoingLive()
+        {
+            if (_loadingOverlay == null || _loadingText == null) return;
+
+            _loadingOverlay.RemoveFromClassList("loading-overlay--hidden");
+            _loadingText.text = "GOING LIVE!";
+            _loadingText.AddToClassList("loading-text--live");
+
+            try
+            {
+                await Awaitable.WaitForSecondsAsync(1.5f, destroyCancellationToken);
+            }
+            catch (OperationCanceledException) { return; }
+
+            _loadingOverlay.AddToClassList("loading-overlay--hidden");
+            _loadingText.RemoveFromClassList("loading-text--live");
+        }
+
+        /// <summary>
+        /// Toggles the "Aya is thinking..." indicator below the aya-indicator.
+        /// Uses CSS class toggle for a smooth opacity transition.
+        /// </summary>
+        public void ShowThinkingIndicator(bool show)
+        {
+            if (_thinkingIndicator == null) return;
+
+            if (show)
+                _thinkingIndicator.AddToClassList("thinking-indicator--visible");
+            else
+                _thinkingIndicator.RemoveFromClassList("thinking-indicator--visible");
         }
 
         private void Update()

@@ -271,3 +271,45 @@
 .toast--visible {
     opacity: 1;
 }
+
+/* Loading overlay (covers full panel while connecting) */
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: rgba(24, 24, 32, 0.9);
+    justify-content: center;
+    align-items: center;
+    display: flex;
+}
+
+.loading-overlay--hidden {
+    display: none;
+}
+
+.loading-text {
+    color: rgb(180, 180, 200);
+    font-size: 16px;
+}
+
+.loading-text--live {
+    color: rgb(100, 255, 100);
+    font-size: 24px;
+    -unity-font-style: bold;
+}
+
+/* Thinking indicator (below aya-indicator in header) */
+.thinking-indicator {
+    color: rgb(180, 180, 200);
+    font-size: 10px;
+    -unity-font-style: italic;
+    margin-left: 16px;
+    opacity: 0;
+    transition: opacity 300ms;
+}
+
+.thinking-indicator--visible {
+    opacity: 1;
+}

@@ -9,6 +9,11 @@
             <ui:Label name="duration-timer" text="00:00" class="duration-timer" />
         </ui:VisualElement>
 
+        <!-- Loading overlay (covers full panel while connecting) -->
+        <ui:VisualElement name="loading-overlay" class="loading-overlay">
+            <ui:Label name="loading-text" text="Connecting..." class="loading-text" />
+        </ui:VisualElement>
+
         <!-- Main content: chat panel (left) and Aya panel (right) -->
         <ui:VisualElement name="main-content" class="main-content">
 
@@ -47,6 +52,7 @@
                 <ui:VisualElement name="aya-header" class="aya-header">
                     <ui:VisualElement name="aya-indicator" class="aya-indicator" />
                     <ui:Label name="aya-name" text="Aya" class="aya-name" />
+                    <ui:Label name="thinking-indicator" text="Aya is thinking..." class="thinking-indicator" />
                 </ui:VisualElement>
 
                 <ui:ScrollView name="aya-transcript" class="aya-transcript"

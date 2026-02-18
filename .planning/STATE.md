@@ -5,24 +5,24 @@
 See: .planning/PROJECT.md (updated 2026-02-17)
 
 **Core value:** Developers can drop an AI character into their Unity scene and have it talking -- with synchronized voice, text, and animation events -- in minutes, not weeks.
-**Current focus:** Phase 16 - Integration & Experience Loop
+**Current focus:** Phase 15.1 - Audio2Animation Pipeline
 
 ## Current Position
 
-Phase: 16 of 16 (Integration & Experience Loop)
-Plan: 0 of 3 in current phase
-Status: Not started
-Last activity: 2026-02-17 -- Completed Phase 15 (Scene Transition & Animation)
+Phase: 15.1 (Audio2Animation Pipeline - INSERTED)
+Plan: 1 of 2 in current phase
+Status: In progress
+Last activity: 2026-02-17 - Completed 15.1-01-PLAN.md (Audio2Animation pipeline core)
 
-Progress: [████████████░░░] 12/15 plans (80%)
+Progress: [█████████████░░] 13/17 plans (76%)
 
 ## Performance Metrics
 
 **Velocity:**
 - v1 MVP: 17 plans in ~1 day
 - v0.8 WebSocket Migration: 14 plans in ~5 days
-- Total plans completed: 41
-- v1.0 Livestream Experience: 15 plans planned
+- Total plans completed: 42
+- v1.0 Livestream Experience: 17 plans planned
 
 **By Phase:**
 
@@ -32,6 +32,7 @@ Progress: [████████████░░░] 12/15 plans (80%)
 | 13 | 3 | - | - |
 | 14 | 4 | - | - |
 | 15 | 2 | - | - |
+| 15.1 | 1 | 2min | 2min |
 | 16 | 3 | - | - |
 
 ## Accumulated Context
@@ -69,6 +70,13 @@ Full decision log in PROJECT.md Key Decisions table.
 - Application.CanStreamedLevelBeLoaded pre-check with Debug.LogError for missing Build Settings entry
 - Single play_animation function with enum parameter (not one function per animation) from AnimationConfig ScriptableObject
 - HandleFunctionError decoupled from AyaChatUI, uses Debug.LogError directly
+- SetFrameCallback on IAnimationModel (not event) for constructor-time wiring from Audio2Animation
+- Tick() excluded from IAnimationModel interface -- implementation detail of time-based models
+- Cancel() preserves frame index -- next audio resumes from where playback left off
+
+### Roadmap Evolution
+
+- Phase 15.1 inserted after Phase 15: Audio2Animation pipeline in package runtime (URGENT) -- audio-to-blendshape sync driver with fake model, streams pre-recorded animation JSON synchronized to TTS audio chunks
 
 ### Pending Todos
 
@@ -84,5 +92,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Completed Phase 15 (Scene Transition & Animation) -- verified 7/7 must-haves
+Stopped at: Completed 15.1-01-PLAN.md (Audio2Animation pipeline core)
 Resume file: None
