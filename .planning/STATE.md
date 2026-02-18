@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-17)
 
 **Core value:** Developers can drop an AI character into their Unity scene and have it talking -- with synchronized voice, text, and animation events -- in minutes, not weeks.
-**Current focus:** Phase 15 - Scene Transition & Animation
+**Current focus:** Phase 16 - Integration & Polish
 
 ## Current Position
 
 Phase: 15 of 16 (Scene Transition & Animation)
-Plan: 2 of 2 in current phase (plan 1 pending)
-Status: In progress
-Last activity: 2026-02-17 -- Completed 15-02-PLAN.md
+Plan: 2 of 2 in current phase
+Status: Phase complete
+Last activity: 2026-02-17 -- Completed 15-01-PLAN.md
 
-Progress: [███████████░░░░] 11/15 plans (73%)
+Progress: [████████████░░░] 12/15 plans (80%)
 
 ## Performance Metrics
 
@@ -67,6 +67,8 @@ Full decision log in PROJECT.md Key Decisions table.
 - ChatBotManager NOT paused during PTT (only Aya pauses, chat keeps flowing)
 - Instant cut scene transition (no fade, no crossfade) per Phase 15 CONTEXT.md
 - Application.CanStreamedLevelBeLoaded pre-check with Debug.LogError for missing Build Settings entry
+- Single play_animation function with enum parameter (not one function per animation) from AnimationConfig ScriptableObject
+- HandleFunctionError decoupled from AyaChatUI, uses Debug.LogError directly
 
 ### Pending Todos
 
@@ -81,6 +83,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-17T23:58:09Z
-Stopped at: Completed 15-02-PLAN.md (SceneTransitionHandler with clean scene exit)
+Last session: 2026-02-17T23:59:16Z
+Stopped at: Completed 15-01-PLAN.md (Animation function calls) -- Phase 15 complete
 Resume file: None
