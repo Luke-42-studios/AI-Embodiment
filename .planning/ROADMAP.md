@@ -8,7 +8,7 @@ Build a livestream sample scene where Aya hosts an intimate art stream, interact
 
 - v1 MVP (Phases 1-6) -- shipped 2026-02-05
 - v0.8 WebSocket Migration (Phases 7-11.2) -- shipped 2026-02-17
-- v1.0 Livestream Experience (Phases 12-16) -- in progress
+- v1.0 Livestream Experience (Phases 12-16.1) -- in progress
 
 ## Phases
 
@@ -24,6 +24,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 15: Scene Transition & Animation** - Animation function calls, clean scene transition to movie clip, toast UI feedback
 - [x] **Phase 15.1: Audio2Animation Pipeline** - Audio-to-animation pipeline in package runtime with fake model streaming pre-recorded blendshape data (INSERTED)
 - [x] **Phase 16: Integration & Experience Loop** - Full livestream scene wiring, cross-system context injection, and end-to-end experience
+- [ ] **Phase 16.1: User-Priority Interaction** - Aya greets and focuses on drawing, user has priority for questions, bots only get responses after 2min user silence (INSERTED)
 
 ## Phase Details
 
@@ -123,10 +124,24 @@ Plans:
 - [x] 16-02-PLAN.md -- Cross-system context injection (NarrativeBeatConfig catalysts, ChatBotManager enriched prompts, NarrativeDirector fact tracking and skip-ahead)
 - [x] 16-03-PLAN.md -- Final wiring, beat asset catalyst content, and end-to-end experience validation
 
+### Phase 16.1: User-Priority Interaction (INSERTED)
+**Goal**: Shift the livestream interaction model to prioritize the user -- Aya greets viewers and focuses on drawing, only engages with chat bot messages if the user hasn't spoken via push-to-talk within 2 minutes. This gives the user more opportunity to ask questions and drive the conversation naturally, rather than Aya constantly responding to scripted bot chatter.
+**Depends on**: Phase 16 (LivestreamController, ChatBotManager, NarrativeDirector, PushToTalkController)
+**Requirements**: None (UX refinement of existing experience)
+**Success Criteria** (what must be TRUE):
+  1. Aya greets viewers on connection and then focuses on her art/drawing activity rather than immediately driving narrative beats
+  2. User push-to-talk input is always prioritized -- Aya responds to the user before any bot messages regardless of timing
+  3. Aya only responds to bot chat messages if the user has not spoken via PTT within a 2-minute silence window
+  4. The 2-minute user silence timer resets each time the user speaks, keeping Aya focused on user interaction as long as the user is active
+**Plans:** 1 plan
+
+Plans:
+- [ ] 16.1-01-PLAN.md -- User silence timer in LivestreamController, gated bot injection in NarrativeDirector, drawing-focused beat director notes
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 12 -> 13 -> 14 -> 15 -> 15.1 -> 16
+Phases execute in numeric order: 12 -> 13 -> 14 -> 15 -> 15.1 -> 16 -> 16.1
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -136,3 +151,4 @@ Phases execute in numeric order: 12 -> 13 -> 14 -> 15 -> 15.1 -> 16
 | 15. Scene Transition & Animation | 2/2 | Complete | 2026-02-17 |
 | 15.1. Audio2Animation Pipeline | 2/2 | Complete | 2026-02-17 |
 | 16. Integration & Experience Loop | 3/3 | Complete | 2026-02-17 |
+| 16.1. User-Priority Interaction | 0/1 | Planned | - |
