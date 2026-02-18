@@ -76,6 +76,7 @@ namespace AIEmbodiment.Samples
         private bool _turnComplete;
         private int _questionsAnsweredCount;
         private FactTracker _factTracker;
+        private Func<bool> _isUserSilent;
 
         // Event handler references for clean unsubscription
         private Action _onAISpeakingStarted;
@@ -137,6 +138,17 @@ namespace AIEmbodiment.Samples
         public void SetFactTracker(FactTracker factTracker)
         {
             _factTracker = factTracker;
+        }
+
+        /// <summary>
+        /// Injects a callback that returns true when the user has been silent
+        /// long enough that Aya should engage with bot messages. When the callback
+        /// returns false, AyaChecksChat skips bot messages and only processes
+        /// user messages. Called by LivestreamController in Start().
+        /// </summary>
+        public void SetUserSilenceProvider(Func<bool> isUserSilent)
+        {
+            _isUserSilent = isUserSilent;
         }
 
         /// <summary>
@@ -414,7 +426,25 @@ namespace AIEmbodiment.Samples
                 else botMessages.Add(msg);
             }
 
-            var toAddress = userMessages.Count > 0 ? userMessages : botMessages;
+            List<TrackedChatMessage> toAddress;
+            if (userMessages.Count > 0)
+            {
+                // User messages always get through (user priority)
+                toAddress = userMessages;
+            }
+            else if (_isUserSilent == null || _isUserSilent())
+            {
+                // No user silence provider, or user has been silent for threshold -- bots can get attention
+                toAddress = botMessages;
+            }
+            else
+            {
+                // User is active (or recently active) and no user messages queued.
+                // Skip bot messages -- Aya stays focused on drawing.
+                Debug.Log($"[NarrativeDirector] AyaChecksChat '{scene.sceneId}': " +
+                          "user recently active, skipping bot messages");
+                return;
+            }
             int count = Mathf.Min(toAddress.Count, scene.maxResponsesToGenerate);
 
             // Build summary rather than injecting each message (Pitfall 8: context window)

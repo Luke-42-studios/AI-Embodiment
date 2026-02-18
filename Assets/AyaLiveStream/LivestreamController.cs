@@ -35,6 +35,9 @@ namespace AIEmbodiment.Samples
         [SerializeField] private float _deadAirThreshold = 10f;
         [SerializeField] private float _thinkingIndicatorDelay = 5f;
 
+        [Header("User Priority")]
+        [SerializeField] private float _userSilenceThreshold = 120f;
+
         // Cross-system context objects (plain C#, created in Start)
         private AyaTranscriptBuffer _ayaTranscriptBuffer;
         private FactTracker _factTracker;
@@ -44,12 +47,16 @@ namespace AIEmbodiment.Samples
         private bool _running;
         private bool _thinkingShown;
 
+        // User silence tracking
+        private float _lastUserSpeechTime;
+
         // Event handler references for clean unsubscription (same pattern as NarrativeDirector)
         private Action<string> _onOutputTranscription;
         private Action _onTurnComplete;
         private Action _onAISpeakingStarted;
         private Action<string, Exception> _onFunctionError;
         private Action<NarrativeBeatConfig> _onBeatStarted;
+        private Action _onUserSpeakingStopped;
 
         private void Start()
         {
@@ -82,6 +89,18 @@ namespace AIEmbodiment.Samples
                 _session.OnAISpeakingStarted += _onAISpeakingStarted;
                 _session.OnFunctionError += _onFunctionError;
             }
+
+            // User priority: track when user last spoke via PTT
+            _lastUserSpeechTime = Time.time;
+            _onUserSpeakingStopped = () => { _lastUserSpeechTime = Time.time; };
+            if (_session != null)
+            {
+                _session.OnUserSpeakingStopped += _onUserSpeakingStopped;
+            }
+
+            // Inject user silence check into NarrativeDirector
+            _narrativeDirector?.SetUserSilenceProvider(
+                () => Time.time - _lastUserSpeechTime >= _userSilenceThreshold);
 
             // Subscribe to narrative completion for orderly shutdown
             if (_narrativeDirector != null)
@@ -293,6 +312,8 @@ namespace AIEmbodiment.Samples
                     _session.OnAISpeakingStarted -= _onAISpeakingStarted;
                 if (_onFunctionError != null)
                     _session.OnFunctionError -= _onFunctionError;
+                if (_onUserSpeakingStopped != null)
+                    _session.OnUserSpeakingStopped -= _onUserSpeakingStopped;
             }
 
             // Unsubscribe narrative events
