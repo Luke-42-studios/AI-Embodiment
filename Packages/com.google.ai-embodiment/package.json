@@ -10,12 +10,23 @@
   "author": {
     "name": "Google"
   },
-  "keywords": ["ai", "gemini", "conversational", "npc", "character"],
+  "keywords": [
+    "ai",
+    "gemini",
+    "conversational",
+    "npc",
+    "character"
+  ],
   "samples": [
     {
       "displayName": "Aya Live Stream",
       "description": "Full pipeline demo: AI persona with voice, chat log, function calls, and conversational goals.",
       "path": "Samples~/AyaLiveStream"
+    },
+    {
+      "displayName": "Conversation Demo",
+      "description": "Reusable chat UI with Finish-First PTT and confirmation timer.",
+      "path": "Samples~/ConversationDemo"
     }
   ]
 }

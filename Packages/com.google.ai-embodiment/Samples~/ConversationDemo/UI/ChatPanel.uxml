@@ -1,0 +1,20 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <ui:Style src="ChatPanel.uss" />
+    <ui:VisualElement name="root-container" class="root">
+        <ui:VisualElement name="header" class="header">
+            <ui:VisualElement name="speaking-indicator" class="indicator" />
+            <ui:Label name="persona-name" text="Queued Response Bot" class="name-label" />
+        </ui:VisualElement>
+
+        <!-- Main Chat Log -->
+        <ui:ScrollView name="chat-log" class="chat-log"
+            vertical-scroller-visibility="Auto"
+            horizontal-scroller-visibility="Hidden" />
+
+        <!-- Footer with Status and Hints -->
+        <ui:VisualElement name="footer" class="footer">
+            <ui:Label name="status-label" text="Ready" class="status" />
+            <ui:Label name="key-hints" text="[SPACE] Hold to Record" class="hints" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

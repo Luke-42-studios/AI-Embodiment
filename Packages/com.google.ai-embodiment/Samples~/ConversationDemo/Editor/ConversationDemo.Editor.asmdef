@@ -1,0 +1,19 @@
+{
+    "name": "ConversationDemo.Editor",
+    "rootNamespace": "AIEmbodiment.Samples.Editor",
+    "references": [
+        "com.google.ai-embodiment",
+        "com.google.ai-embodiment.samples.queuedresponse"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

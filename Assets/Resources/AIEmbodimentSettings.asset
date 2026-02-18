@@ -12,5 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cc5e07aa0d7040439efe58029cdec8d4, type: 3}
   m_Name: AIEmbodimentSettings
   m_EditorClassIdentifier: com.google.ai-embodiment::AIEmbodiment.AIEmbodimentSettings
-  _apiKey: AIzaSyDntCurjzKj8Q1QjhRmUG2SA3ACjYZ9_S0
+  _apiKey: AIzaSyDeKJUxDi4MjYUHoqyt0sMtWC4Lb9vs_-w
   _serviceAccountJsonPath: 
