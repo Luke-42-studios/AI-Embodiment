@@ -1,6 +1,6 @@
 .root {
     flex-grow: 1;
-    background-color: rgb(24, 24, 32);
+    background-color: rgba(24, 24, 32, 0.8);
     padding: 12px;
 }
 
@@ -42,7 +42,7 @@
 
 .chat-log {
     flex-grow: 1;
-    background-color: rgb(16, 16, 24);
+    background-color: rgba(16, 16, 24, 0.5);
     border-radius: 8px;
     padding: 8px;
     margin-bottom: 8px;

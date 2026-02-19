@@ -25,6 +25,7 @@ namespace AIEmbodiment.Samples
     {
         [SerializeField] private PersonaSession _session;
         [SerializeField] private AudioPlayback _audioPlayback;
+        [SerializeField] private FaceAnimator _faceAnimator;
         [SerializeField] private ChatUI _ui;
         [SerializeField] private float _confirmationTime = 5.0f;
 
@@ -33,6 +34,7 @@ namespace AIEmbodiment.Samples
         private bool _turnComplete;
         private bool _playbackInitialized;
         private float _reviewTimer;
+        private float _playbackGraceTimer; // Added for robustness
         private readonly List<float[]> _audioBuffer = new List<float[]>();
         private readonly StringBuilder _inputTranscriptBuilder = new StringBuilder();
         private readonly StringBuilder _outputTranscriptBuilder = new StringBuilder();
@@ -54,6 +56,13 @@ namespace AIEmbodiment.Samples
                 
                 if (_audioPlayback == null)
                     Debug.LogError("ConversationController: AudioPlayback component missing! No audio will play.");
+                if (_audioPlayback == null)
+                    Debug.LogError("ConversationController: AudioPlayback component missing! No audio will play.");
+            }
+
+            if (_faceAnimator == null)
+            {
+                Debug.LogWarning("ConversationController: FaceAnimator is not assigned! Face will not animate.");
             }
 
             // Register conversational goals
@@ -128,8 +137,23 @@ namespace AIEmbodiment.Samples
 
                 case ConversationState.Playing:
                     // Return to Idle once turn is complete and audio has finished playing
-                    if (_turnComplete && (_audioPlayback == null || !_audioPlayback.IsPlaying))
-                        EnterIdle();
+                    // Use a grace period to avoid stopping immediately on small buffer underruns
+                    if (_turnComplete)
+                    {
+                        if (_audioPlayback == null || !_audioPlayback.IsPlaying)
+                        {
+                            _playbackGraceTimer += Time.deltaTime;
+                            if (_playbackGraceTimer > 0.5f) // Wait 0.5s of silence before stopping
+                            {
+                                Debug.Log("[ConversationDemo] Playback finished (Grace period complete). Entering Idle.");
+                                EnterIdle();
+                            }
+                        }
+                        else
+                        {
+                            _playbackGraceTimer = 0f; // Reset timer if still playing
+                        }
+                    }
                     break;
             }
         }
@@ -161,9 +185,11 @@ namespace AIEmbodiment.Samples
 
         private void EnterPlaying()
         {
+            Debug.Log("[ConversationDemo] EnterPlaying - AI Speaking.");
             _state = ConversationState.Playing;
+            _playbackGraceTimer = 0f;
             EnsurePlaybackInitialized();
-
+            
             _ui.FinalizeUserMessage();
             _ui.SetState(ChatUI.State.Playing);
             _ui.SetStatus("AI Responding...");
@@ -172,7 +198,13 @@ namespace AIEmbodiment.Samples
             if (_audioPlayback != null)
             {
                 foreach (var chunk in _audioBuffer)
+                {
                     _audioPlayback.EnqueueAudio(chunk);
+                    if (_faceAnimator != null)
+                    {
+                        _faceAnimator.ProcessAudio(chunk);
+                    }
+                }
             }
             _audioBuffer.Clear();
 
@@ -182,6 +214,12 @@ namespace AIEmbodiment.Samples
 
         private void EnterIdle()
         {
+            // Ensure animation stops and resets
+            if (_faceAnimator != null)
+            {
+                _faceAnimator.Cancel();
+            }
+
             _state = ConversationState.Idle;
             _ui.FinalizeAIMessage();
             _ui.SetState(ChatUI.State.Idle);
@@ -199,6 +237,7 @@ namespace AIEmbodiment.Samples
             _outputTranscriptBuilder.Clear();
 
             _ui.DiscardDraft();
+            Debug.Log("[ConversationDemo] User Cancelled (Escape or Discard). Returning to Idle.");
             _ui.LogSystemMessage("[Cancelled]");
 
             _state = ConversationState.Idle;
@@ -221,6 +260,7 @@ namespace AIEmbodiment.Samples
         /// </summary>
         private void HandleAudioReceived(float[] samples)
         {
+            // Debug.Log($"[ConversationDemo] Audio Received. Bytes: {samples.Length}");
             if (_state == ConversationState.Recording || _state == ConversationState.Reviewing)
             {
                 // Buffer -- not ready to play yet
@@ -231,6 +271,7 @@ namespace AIEmbodiment.Samples
                 // Already confirmed -- play immediately as chunks arrive
                 EnsurePlaybackInitialized();
                 _audioPlayback.EnqueueAudio(samples);
+                if (_faceAnimator != null) _faceAnimator.ProcessAudio(samples);
             }
             // Ignore audio in other states (Connecting, Idle)
         }

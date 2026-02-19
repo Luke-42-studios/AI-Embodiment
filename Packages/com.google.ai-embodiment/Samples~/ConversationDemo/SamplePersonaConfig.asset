@@ -25,9 +25,9 @@ MonoBehaviour:
   voiceBackend: 0
   geminiVoiceName: Puck
   chirpLanguageCode: en-US
-  chirpVoiceShortName: Achernar
-  chirpVoiceName: en-US-Chirp3-HD-Achernar
-  synthesisMode: 0
+  chirpVoiceShortName: Custom
+  chirpVoiceName: en-US-Chirp3-HD-Custom
+  synthesisMode: 2
   customVoiceName: 
   voiceCloningKey: 
   _customTTSProvider: {fileID: 0}

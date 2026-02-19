@@ -1,4 +1,5 @@
 using System;
+using UnityEngine;
 
 namespace AIEmbodiment
 {
@@ -29,6 +30,7 @@ namespace AIEmbodiment
         private readonly float _frameDuration;
 
         private Action<BlendshapeFrame> _onFrameReady;
+        public int CurrentFrameIndex => _currentFrameIndex;
         private int _currentFrameIndex;
         private float _animationBudgetSeconds;
         private float _timeAccumulator;
@@ -73,6 +75,7 @@ namespace AIEmbodiment
         {
             float audioDuration = (float)audioSamples.Length / sampleRate;
             _animationBudgetSeconds += audioDuration;
+            Debug.Log($"[FaceAnimator] Processed {audioDuration:F2}s audio. New Budget: {_animationBudgetSeconds:F2}s");
         }
 
         /// <summary>
@@ -83,6 +86,14 @@ namespace AIEmbodiment
         {
             _animationBudgetSeconds = 0f;
             _timeAccumulator = 0f;
+        }
+
+        /// <summary>
+        /// Resets the frame index to 0.
+        /// </summary>
+        public void Reset()
+        {
+            _currentFrameIndex = 0;
         }
 
         /// <summary>
@@ -105,7 +116,10 @@ namespace AIEmbodiment
             while (_timeAccumulator >= _frameDuration && _animationBudgetSeconds > 0f)
             {
                 // Emit frame with modulo wrapping for looping (Pitfall 5)
-                _onFrameReady?.Invoke(_data.frames[_currentFrameIndex % _data.frames.Count]);
+                // Emit frame with modulo wrapping for looping (Pitfall 5)
+                var frame = _data.frames[_currentFrameIndex % _data.frames.Count];
+                Debug.Log($"[FaceAnimator] Emitting Frame {_currentFrameIndex}. TimeAccum: {_timeAccumulator:F3}");
+                _onFrameReady?.Invoke(frame);
 
                 _currentFrameIndex++;
                 _timeAccumulator -= _frameDuration;
